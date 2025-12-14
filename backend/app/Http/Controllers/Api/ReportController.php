@@ -293,12 +293,23 @@ class ReportController extends Controller
             ], 422);
         }
 
-        $data = $reportService->generate($shipment);
+        try {
+            $data = $reportService->generate($shipment);
 
-        return $pdfService->download(
-            'reports.shipment-settlement',
-            $data,
-            'settlement-' . $shipment->number
-        );
+            return $pdfService->download(
+                'reports.shipment-settlement',
+                $data,
+                'settlement-' . $shipment->number
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'RPT_003',
+                    'message' => 'PDF generation failed: ' . $e->getMessage(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : null
+                ]
+            ], 500);
+        }
     }
 }

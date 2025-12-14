@@ -120,13 +120,13 @@ class ShipmentSettlementReportService
             ->where('invoices.status', 'active')
             ->selectRaw('
                 products.id as product_id,
-                products.name_ar as product_name,
+                COALESCE(products.name, products.name_en) as product_name,
                 SUM(invoice_items.quantity) as quantity,
                 SUM(invoice_items.quantity * shipment_items.weight_per_unit) as weight,
                 SUM(invoice_items.subtotal) as total,
                 AVG(invoice_items.unit_price) as avg_price
             ')
-            ->groupBy('products.id', 'products.name_ar')
+            ->groupBy('products.id', 'products.name', 'products.name_en')
             ->get();
     }
 
