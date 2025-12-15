@@ -17,8 +17,8 @@ class ShipmentFactory extends Factory
             'supplier_id' => Supplier::factory(),
             'date' => $this->faker->date(),
             'status' => 'open',
-            'total_cost' => $this->faker->randomFloat(2, 1000, 50000),
             'notes' => $this->faker->optional()->sentence(),
+            'created_by' => \App\Models\User::factory(),
         ];
     }
 

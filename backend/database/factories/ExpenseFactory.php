@@ -21,14 +21,14 @@ class ExpenseFactory extends Factory
     public function definition(): array
     {
         return [
-            'expense_number' => 'EXP-' . fake()->unique()->numberBetween(1000, 9999),
             'type' => fake()->randomElement(['company', 'supplier']),
             'supplier_id' => null,
-            'category' => fake()->randomElement(['transport', 'labor', 'other']),
+            'shipment_id' => null,
             'date' => fake()->dateTimeBetween('-1 month', 'now'),
             'amount' => fake()->randomFloat(2, 50, 5000),
-            'payment_method' => fake()->randomElement(['cash', 'bank']),
             'description' => fake()->sentence(),
+            'payment_method' => fake()->randomElement(['cash', 'bank']),
+            'category' => fake()->randomElement(['transport', 'labor', 'other']),
             'notes' => fake()->optional()->sentence(),
             'created_by' => User::factory(),
         ];
