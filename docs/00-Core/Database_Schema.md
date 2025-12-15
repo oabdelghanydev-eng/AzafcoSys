@@ -212,37 +212,30 @@ CREATE TABLE suppliers (
 
 ## 4. Products Table (الأصناف)
 
+> **⚠️ ملاحظة:** الـ Schema الفعلي المُطبق يستخدم `name` بدلاً من `code` + `name_ar`
+> هذا هو الـ Schema المُنفذ في الـ Production migrations.
+
 ```sql
 CREATE TABLE products (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    code VARCHAR(50) NOT NULL UNIQUE,
-    name_ar VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     name_en VARCHAR(255) NULL,
-    
-    -- No image as per requirements
+    category VARCHAR(100) NULL,
+    description TEXT NULL,
     
     -- Status
     is_active BOOLEAN DEFAULT TRUE,
-    sort_order TINYINT UNSIGNED DEFAULT 0,
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    
-    INDEX idx_code (code)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Seed 9 fixed products
-INSERT INTO products (code, name_ar, name_en, sort_order) VALUES
-('P01', 'الصنف الأول', 'Product 1', 1),
-('P02', 'الصنف الثاني', 'Product 2', 2),
-('P03', 'الصنف الثالث', 'Product 3', 3),
-('P04', 'الصنف الرابع', 'Product 4', 4),
-('P05', 'الصنف الخامس', 'Product 5', 5),
-('P06', 'الصنف السادس', 'Product 6', 6),
-('P07', 'الصنف السابع', 'Product 7', 7),
-('P08', 'الصنف الثامن', 'Product 8', 8),
-('P09', 'الصنف التاسع', 'Product 9', 9);
+-- Seed products (example)
+INSERT INTO products (name, name_en, category) VALUES
+('الصنف الأول', 'Product 1', 'category_a'),
+('الصنف الثاني', 'Product 2', 'category_b'),
+('الصنف الثالث', 'Product 3', 'category_c');
 ```
 
 ---
