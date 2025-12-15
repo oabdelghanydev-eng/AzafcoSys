@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 
 <head>
     <meta charset="UTF-8">
@@ -18,6 +18,21 @@
             font-size: 11px;
             line-height: 1.4;
             color: #333;
+            direction: rtl;
+            text-align: right;
+        }
+
+        /* RTL Support for Arabic */
+        .rtl-text {
+            direction: rtl;
+            unicode-bidi: bidi-override;
+            text-align: right;
+        }
+
+        .ltr-text {
+            direction: ltr;
+            unicode-bidi: embed;
+            text-align: left;
         }
 
         /* Page Setup */
