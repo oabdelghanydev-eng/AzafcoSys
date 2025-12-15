@@ -35,7 +35,7 @@ class DailyClosingReportService
                 return [
                     'invoice_number' => $item->invoice->invoice_number,
                     'customer_name' => $item->invoice->customer->name,
-                    'product_name' => $item->product->name_ar ?? $item->product->name_en,
+                    'product_name' => $item->product->name ?? $item->product->name_en,
                     'quantity' => $item->quantity,
                     'weight_per_unit' => $weightPerUnit,
                     'total_weight' => $item->quantity * $weightPerUnit,

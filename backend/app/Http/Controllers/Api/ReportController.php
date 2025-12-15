@@ -264,13 +264,24 @@ class ReportController extends Controller
             ], 422);
         }
 
-        $data = $reportService->generate($date);
+        try {
+            $data = $reportService->generate($date);
 
-        return $pdfService->download(
-            'reports.daily-closing',
-            $data,
-            'daily-report-' . $date
-        );
+            return $pdfService->download(
+                'reports.daily-closing',
+                $data,
+                'daily-report-' . $date
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'RPT_003',
+                    'message' => 'PDF generation failed: ' . $e->getMessage(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : null
+                ]
+            ], 500);
+        }
     }
 
     /**
