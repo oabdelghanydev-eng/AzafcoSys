@@ -35,12 +35,12 @@ class ShipmentController extends Controller
 
     /**
      * List shipments with filters.
-     *
-     * Returns paginated inventory shipments.
-     * Filters: supplier_id, status (open/closed/settled), date_from, date_to, per_page.
+     * Permission: shipments.view
      */
     public function index(Request $request)
     {
+        $this->checkPermission('shipments.view');
+
         $query = Shipment::with(['supplier'])
             ->when($request->supplier_id, fn($q, $id) => $q->where('supplier_id', $id))
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
@@ -58,13 +58,12 @@ class ShipmentController extends Controller
 
     /**
      * Create new shipment.
-     *
-     * Creates inventory shipment with items from supplier.
-     * Each item tracks initial_quantity, remaining_quantity, and unit_cost
-     * for FIFO inventory allocation.
+     * Permission: shipments.create
      */
     public function store(StoreShipmentRequest $request)
     {
+        $this->checkPermission('shipments.create');
+
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
@@ -109,23 +108,23 @@ class ShipmentController extends Controller
 
     /**
      * Show shipment details.
-     *
-     * Returns shipment with items, products, and supplier info.
-     * Items include FIFO quantities (initial, remaining, sold).
+     * Permission: shipments.view
      */
     public function show(Shipment $shipment)
     {
+        $this->checkPermission('shipments.view');
+
         return new ShipmentResource($shipment->load(['items.product', 'supplier']));
     }
 
     /**
      * Delete shipment.
-     *
-     * Removes shipment if no invoices linked and not settled.
-     * Returns error if shipment has sales or is already settled.
+     * Permission: shipments.delete
      */
     public function destroy(Shipment $shipment): JsonResponse
     {
+        $this->checkPermission('shipments.delete');
+
         // Check if shipment has related invoice items
         $hasInvoices = $shipment->items()
             ->whereHas('invoiceItems')
@@ -156,13 +155,12 @@ class ShipmentController extends Controller
 
     /**
      * Close shipment.
-     *
-     * Marks shipment as closed - no more sales can be made from it.
-     * Shipment must be in 'open' status.
-     * Closed shipments can still be settled.
+     * Permission: shipments.close
      */
     public function close(Shipment $shipment): JsonResponse
     {
+        $this->checkPermission('shipments.close');
+
         if ($shipment->status !== 'open') {
             return $this->error(
                 'SHP_004',

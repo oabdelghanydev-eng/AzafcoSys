@@ -28,9 +28,12 @@ class CustomerController extends Controller
 
     /**
      * List customers
+     * Permission: customers.view
      */
     public function index(Request $request)
     {
+        $this->checkPermission('customers.view');
+
         $query = Customer::query()
             ->when($request->search, fn($q, $s) => $q->where(function ($query) use ($s) {
                 $query->where('name', 'like', "%{$s}%")
@@ -51,9 +54,12 @@ class CustomerController extends Controller
 
     /**
      * Create customer
+     * Permission: customers.create
      */
     public function store(StoreCustomerRequest $request): JsonResponse
     {
+        $this->checkPermission('customers.create');
+
         $validated = $request->validated();
         $validated['code'] = $this->numberGenerator->generate('customer');
 
@@ -68,17 +74,23 @@ class CustomerController extends Controller
 
     /**
      * Show customer
+     * Permission: customers.view
      */
     public function show(Customer $customer)
     {
+        $this->checkPermission('customers.view');
+
         return new CustomerResource($customer->loadCount('invoices'));
     }
 
     /**
      * Update customer
+     * Permission: customers.edit
      */
     public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
+        $this->checkPermission('customers.edit');
+
         $customer->update($request->validated());
 
         return $this->success(
@@ -89,9 +101,12 @@ class CustomerController extends Controller
 
     /**
      * Delete customer
+     * Permission: customers.delete
      */
     public function destroy(Customer $customer): JsonResponse
     {
+        $this->checkPermission('customers.delete');
+
         // Check if customer has invoices
         if ($customer->invoices()->exists()) {
             return $this->error(

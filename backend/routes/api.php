@@ -128,6 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/shipment/{shipment}', [ReportController::class, 'shipmentSettlement']);
         Route::get('/shipment/{shipment}/settlement/pdf', [ReportController::class, 'settlementPdf']);
         Route::get('/customer/{customer}', [ReportController::class, 'customerStatement']);
+        Route::get('/supplier/{supplier}', [ReportController::class, 'supplierStatement']);
     });
 
     // Settings

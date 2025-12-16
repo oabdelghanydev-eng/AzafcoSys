@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
  */
 class ExpenseController extends Controller
 {
+    use \App\Traits\ApiResponse;
+
     private NumberGeneratorService $numberGenerator;
 
     public function __construct(NumberGeneratorService $numberGenerator)
@@ -24,9 +26,12 @@ class ExpenseController extends Controller
 
     /**
      * List expenses with filters
+     * Permission: expenses.view
      */
     public function index(Request $request)
     {
+        $this->checkPermission('expenses.view');
+
         $query = Expense::with(['supplier', 'shipment', 'createdBy'])
             ->when($request->type, fn($q, $t) => $q->where('type', $t))
             ->when($request->supplier_id, fn($q, $id) => $q->where('supplier_id', $id))
@@ -46,9 +51,12 @@ class ExpenseController extends Controller
 
     /**
      * Create new expense
+     * Permission: expenses.create
      */
     public function store(Request $request): JsonResponse
     {
+        $this->checkPermission('expenses.create');
+
         $validated = $request->validate([
             'type' => 'required|in:supplier,company',
             'supplier_id' => 'required_if:type,supplier|nullable|exists:suppliers,id',
@@ -89,9 +97,12 @@ class ExpenseController extends Controller
 
     /**
      * Show single expense
+     * Permission: expenses.view
      */
     public function show(Expense $expense): ExpenseResource
     {
+        $this->checkPermission('expenses.view');
+
         return new ExpenseResource(
             $expense->load(['supplier', 'shipment', 'createdBy'])
         );
@@ -99,9 +110,12 @@ class ExpenseController extends Controller
 
     /**
      * Update expense
+     * Permission: expenses.edit
      */
     public function update(Request $request, Expense $expense): JsonResponse
     {
+        $this->checkPermission('expenses.edit');
+
         $validated = $request->validate([
             'type' => 'sometimes|required|in:supplier,company',
             'supplier_id' => 'nullable|exists:suppliers,id',
@@ -125,10 +139,12 @@ class ExpenseController extends Controller
 
     /**
      * Delete expense
+     * Permission: expenses.delete
      */
     public function destroy(Expense $expense): JsonResponse
     {
-        // Expenses can be deleted (unlike invoices)
+        $this->checkPermission('expenses.delete');
+
         $expense->delete();
 
         return response()->json([

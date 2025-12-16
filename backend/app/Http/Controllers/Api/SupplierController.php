@@ -16,6 +16,8 @@ use Illuminate\Http\JsonResponse;
  */
 class SupplierController extends Controller
 {
+    use \App\Traits\ApiResponse;
+
     private NumberGeneratorService $numberGenerator;
 
     public function __construct(NumberGeneratorService $numberGenerator)
@@ -25,9 +27,12 @@ class SupplierController extends Controller
 
     /**
      * List suppliers with filters
+     * Permission: suppliers.view
      */
     public function index(Request $request)
     {
+        $this->checkPermission('suppliers.view');
+
         $query = Supplier::query()
             ->when($request->search, fn($q, $s) => $q->where(function ($query) use ($s) {
                 $query->where('name', 'like', "%{$s}%")
@@ -47,9 +52,12 @@ class SupplierController extends Controller
 
     /**
      * Create new supplier
+     * Permission: suppliers.create
      */
     public function store(StoreSupplierRequest $request): JsonResponse
     {
+        $this->checkPermission('suppliers.create');
+
         $validated = $request->validated();
         $validated['code'] = $this->numberGenerator->generate('supplier');
 
@@ -64,9 +72,12 @@ class SupplierController extends Controller
 
     /**
      * Show single supplier
+     * Permission: suppliers.view
      */
     public function show(Supplier $supplier): SupplierResource
     {
+        $this->checkPermission('suppliers.view');
+
         return new SupplierResource(
             $supplier->loadCount(['shipments', 'expenses'])
         );
@@ -74,9 +85,12 @@ class SupplierController extends Controller
 
     /**
      * Update supplier
+     * Permission: suppliers.edit
      */
     public function update(UpdateSupplierRequest $request, Supplier $supplier): JsonResponse
     {
+        $this->checkPermission('suppliers.edit');
+
         $supplier->update($request->validated());
 
         return response()->json([
@@ -88,9 +102,12 @@ class SupplierController extends Controller
 
     /**
      * Delete supplier (soft check for relations)
+     * Permission: suppliers.delete
      */
     public function destroy(Supplier $supplier): JsonResponse
     {
+        $this->checkPermission('suppliers.delete');
+
         // Check if supplier has shipments
         if ($supplier->shipments()->exists()) {
             return response()->json([

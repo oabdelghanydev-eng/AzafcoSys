@@ -8,6 +8,7 @@ use App\Models\Collection;
 use App\Models\Expense;
 use App\Models\Shipment;
 use App\Models\Customer;
+use App\Models\Supplier;
 use App\Services\Reports\DailyClosingReportService;
 use App\Services\Reports\ShipmentSettlementReportService;
 use App\Services\Reports\PdfGeneratorService;
@@ -248,6 +249,90 @@ class ReportController extends Controller
                     'total_collections' => $collectionsQuery->sum('amount'),
                     'invoices_count' => $invoicesQuery->count(),
                     'collections_count' => $collectionsQuery->count(),
+                ],
+                'transactions' => $timeline,
+            ]
+        ]);
+    }
+
+    /**
+     * Get supplier statement
+     * Permission: reports.suppliers
+     */
+    public function supplierStatement(Request $request, Supplier $supplier): JsonResponse
+    {
+        $this->checkPermission('reports.suppliers');
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
+
+        // Get shipments (debit - له)
+        $shipmentsQuery = $supplier->shipments()
+            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
+            ->orderBy('date')
+            ->get(['id', 'number', 'date', 'total_amount']);
+
+        // Get expenses (credit - عليه/دفعنا له)
+        $expensesQuery = $supplier->expenses()
+            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
+            ->orderBy('date')
+            ->get(['id', 'expense_number', 'date', 'amount', 'description']);
+
+        // Build timeline
+        $timeline = collect();
+
+        foreach ($shipmentsQuery as $shipment) {
+            $timeline->push([
+                'type' => 'shipment',
+                'date' => $shipment->date->format('Y-m-d'),
+                'reference' => $shipment->number,
+                'debit' => (float) $shipment->total_amount,
+                'credit' => 0,
+                'description' => 'شحنة',
+            ]);
+        }
+
+        foreach ($expensesQuery as $expense) {
+            $timeline->push([
+                'type' => 'expense',
+                'date' => $expense->date->format('Y-m-d'),
+                'reference' => $expense->expense_number,
+                'debit' => 0,
+                'credit' => (float) $expense->amount,
+                'description' => $expense->description ?? 'مصروف',
+            ]);
+        }
+
+        // Sort by date
+        $timeline = $timeline->sortBy('date')->values();
+
+        // Calculate running balance (+له / -عليه)
+        $runningBalance = 0;
+        $timeline = $timeline->map(function ($item) use (&$runningBalance) {
+            $runningBalance += $item['debit'] - $item['credit'];
+            $item['balance'] = $runningBalance;
+            return $item;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'supplier' => [
+                    'id' => $supplier->id,
+                    'code' => $supplier->code,
+                    'name' => $supplier->name,
+                    'current_balance' => (float) $supplier->balance,
+                ],
+                'period' => [
+                    'from' => $dateFrom,
+                    'to' => $dateTo,
+                ],
+                'summary' => [
+                    'total_shipments' => $shipmentsQuery->sum('total_amount'),
+                    'total_expenses' => $expensesQuery->sum('amount'),
+                    'shipments_count' => $shipmentsQuery->count(),
+                    'expenses_count' => $expensesQuery->count(),
                 ],
                 'transactions' => $timeline,
             ]

@@ -32,12 +32,12 @@ class CollectionController extends Controller
 
     /**
      * List collections with filters.
-     *
-     * Returns paginated payment collections.
-     * Filters: customer_id, date_from, date_to, payment_method, per_page.
+     * Permission: collections.view
      */
     public function index(Request $request)
     {
+        $this->checkPermission('collections.view');
+
         $query = Collection::with(['customer'])
             ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
             ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
@@ -55,15 +55,12 @@ class CollectionController extends Controller
 
     /**
      * Create payment collection.
-     *
-     * Records a payment from customer with auto/manual invoice distribution.
-     * Auto distribution uses FIFO (oldest invoices first).
-     * Manual requires explicit allocations array.
-     *
-     * Requires open daily report.
+     * Permission: collections.create
      */
     public function store(StoreCollectionRequest $request)
     {
+        $this->checkPermission('collections.create');
+
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
@@ -96,24 +93,23 @@ class CollectionController extends Controller
 
     /**
      * Show collection details.
-     *
-     * Returns collection with customer and invoice allocations.
+     * Permission: collections.view
      */
     public function show(Collection $collection)
     {
+        $this->checkPermission('collections.view');
+
         return new CollectionResource($collection->load(['customer', 'allocations.invoice']));
     }
 
     /**
      * Delete collection.
-     *
-     * Removes collection and restores invoice balances automatically.
-     * Use with caution - affects financial records.
+     * Permission: collections.delete
      */
     public function destroy(Collection $collection)
     {
-        // Check if collection can be deleted (business rule: normally not allowed)
-        // For now, we allow deletion but this could be restricted
+        $this->checkPermission('collections.delete');
+
         $collection->delete();
 
         return $this->success(null, 'تم حذف التحصيل بنجاح');

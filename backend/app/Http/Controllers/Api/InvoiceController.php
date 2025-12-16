@@ -38,15 +38,12 @@ class InvoiceController extends Controller
      * Returns paginated list of invoices with optional filtering.
      * Includes related customer and creator data.
      *
-     * Filters:
-     * - `customer_id` - Filter by customer
-     * - `status` - Filter by status (active, cancelled)
-     * - `date_from` / `date_to` - Date range filter
-     * - `unpaid_only` - Show only invoices with balance > 0
-     * - `per_page` - Pagination (omit for all)
+     * Permission: invoices.view
      */
     public function index(Request $request)
     {
+        $this->checkPermission('invoices.view');
+
         $query = Invoice::with(['customer', 'createdBy'])
             ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
             ->when($request->status, fn($q, $s) => $q->where('status', $s))
@@ -67,13 +64,12 @@ class InvoiceController extends Controller
      * Create new invoice.
      *
      * Creates a sales invoice with automatic FIFO inventory allocation.
-     * Each item is matched to the oldest available shipment items.
-     * Invoice number is auto-generated.
-     *
-     * Requires open daily report (working.day middleware).
+     * Permission: invoices.create
      */
     public function store(StoreInvoiceRequest $request)
     {
+        $this->checkPermission('invoices.create');
+
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
@@ -121,11 +117,12 @@ class InvoiceController extends Controller
     /**
      * Show single invoice.
      *
-     * Returns detailed invoice with items, products, customer,
-     * and creator information. Items include FIFO source shipment data.
+     * Permission: invoices.view
      */
     public function show(Invoice $invoice)
     {
+        $this->checkPermission('invoices.view');
+
         return new InvoiceResource(
             $invoice->load(['items.product', 'items.shipmentItem', 'customer', 'createdBy'])
         );
@@ -134,12 +131,12 @@ class InvoiceController extends Controller
     /**
      * Cancel invoice.
      *
-     * Cancels an active invoice if within the edit window (same day).
-     * Restores FIFO inventory allocations automatically via observer.
-     * Cannot cancel already-cancelled invoices.
+     * Permission: invoices.cancel
      */
     public function cancel(Invoice $invoice)
     {
+        $this->checkPermission('invoices.cancel');
+
         // Check policy - edit window
         if (Gate::denies('cancel', $invoice)) {
             return $this->error(

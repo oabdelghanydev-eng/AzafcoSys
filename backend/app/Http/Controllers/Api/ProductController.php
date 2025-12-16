@@ -51,9 +51,12 @@ class ProductController extends Controller
 
     /**
      * Create new product
+     * Permission: products.create
      */
     public function store(Request $request): JsonResponse
     {
+        $this->checkPermission('products.create');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:products',
             'name_en' => 'nullable|string|max:255',
@@ -68,9 +71,12 @@ class ProductController extends Controller
 
     /**
      * Update product
+     * Permission: products.edit
      */
     public function update(Request $request, Product $product): JsonResponse
     {
+        $this->checkPermission('products.edit');
+
         $validated = $request->validate([
             'name' => 'sometimes|string|max:255|unique:products,name,' . $product->id,
             'name_en' => 'nullable|string|max:255',
@@ -85,9 +91,12 @@ class ProductController extends Controller
 
     /**
      * Delete product
+     * Permission: products.delete
      */
     public function destroy(Product $product): JsonResponse
     {
+        $this->checkPermission('products.delete');
+
         // Check if product has been used in any invoices or shipments
         $hasInvoiceItems = $product->invoiceItems()->exists();
         $hasShipmentItems = $product->shipmentItems()->exists();

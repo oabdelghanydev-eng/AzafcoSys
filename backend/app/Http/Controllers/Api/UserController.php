@@ -336,6 +336,10 @@ class UserController extends Controller
             'suppliers.create',
             'suppliers.edit',
             'suppliers.delete',
+            // Products
+            'products.create',
+            'products.edit',
+            'products.delete',
             // Reports
             'reports.daily',
             'reports.settlement',
@@ -403,6 +407,10 @@ class UserController extends Controller
             'suppliers' => [
                 'label' => 'الموردين',
                 'permissions' => ['view', 'create', 'edit', 'delete'],
+            ],
+            'products' => [
+                'label' => 'الأصناف',
+                'permissions' => ['create', 'edit', 'delete'],
             ],
             'reports' => [
                 'label' => 'التقارير',
