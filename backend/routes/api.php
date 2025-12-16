@@ -26,6 +26,15 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Health Check (Public - for monitoring)
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+        'version' => config('app.version', '1.0.0'),
+    ]);
+});
+
 // Auth Routes (Public)
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -133,4 +142,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users/{user}/unlock', [UserController::class, 'unlock']);
     Route::put('/users/{user}/permissions', [UserController::class, 'updatePermissions']);
     Route::put('/users/{user}/password', [UserController::class, 'updatePassword']);
+
+    // Audit Logs (Admin only)
+    Route::prefix('audit')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\AuditLogController::class, 'index']);
+        Route::get('/trail', [\App\Http\Controllers\Api\AuditLogController::class, 'trail']);
+    });
 });

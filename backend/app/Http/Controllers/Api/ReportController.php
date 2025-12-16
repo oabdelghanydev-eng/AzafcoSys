@@ -11,6 +11,8 @@ use App\Models\Customer;
 use App\Services\Reports\DailyClosingReportService;
 use App\Services\Reports\ShipmentSettlementReportService;
 use App\Services\Reports\PdfGeneratorService;
+use App\Traits\ApiResponse;
+use App\Exceptions\BusinessException;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -20,11 +22,15 @@ use Illuminate\Support\Facades\DB;
  */
 class ReportController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Get daily report for a specific date
+     * Permission: reports.daily
      */
     public function daily(Request $request, string $date): JsonResponse
     {
+        $this->checkPermission('reports.daily');
         // Validate date format
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json([
@@ -107,9 +113,11 @@ class ReportController extends Controller
 
     /**
      * Get shipment settlement report
+     * Permission: reports.settlement
      */
     public function shipmentSettlement(Shipment $shipment): JsonResponse
     {
+        $this->checkPermission('reports.settlement');
         $shipment->load(['supplier', 'items.product']);
 
         // Get sales from this shipment
@@ -163,9 +171,11 @@ class ReportController extends Controller
 
     /**
      * Get customer statement
+     * Permission: reports.customers
      */
     public function customerStatement(Request $request, Customer $customer): JsonResponse
     {
+        $this->checkPermission('reports.customers');
         $dateFrom = $request->date_from;
         $dateTo = $request->date_to;
 
@@ -253,6 +263,8 @@ class ReportController extends Controller
         DailyClosingReportService $reportService,
         PdfGeneratorService $pdfService
     ) {
+        $this->checkPermission('reports.export_pdf');
+
         // Validate date format
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json([
@@ -293,6 +305,8 @@ class ReportController extends Controller
         ShipmentSettlementReportService $reportService,
         PdfGeneratorService $pdfService
     ) {
+        $this->checkPermission('reports.export_pdf');
+
         // Check if shipment is settled or being settled
         if (!in_array($shipment->status, ['closed', 'settled'])) {
             return response()->json([

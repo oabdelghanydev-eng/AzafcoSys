@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -18,17 +17,17 @@ return new class extends Migration
             $table->string('password')->nullable(); // للمستخدمين بدون Google OAuth
             $table->string('google_id')->nullable()->unique();
             $table->string('avatar')->nullable();
-            
+
             // Permissions
-            $table->json('permissions')->default('[]');
+            $table->json('permissions')->nullable();
             $table->boolean('is_admin')->default(false);
-            
+
             // Security
             $table->tinyInteger('failed_login_attempts')->unsigned()->default(0);
             $table->boolean('is_locked')->default(false);
             $table->timestamp('locked_at')->nullable();
             $table->foreignId('locked_by')->nullable()->constrained('users')->nullOnDelete();
-            
+
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();

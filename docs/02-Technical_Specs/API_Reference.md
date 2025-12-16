@@ -98,6 +98,46 @@
 
 ---
 
+## 🏠 Endpoints إضافية (Additional)
+
+### Health Check
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET` | `/api/health` | فحص حالة الـ API |
+
+### Dashboard
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET` | `/api/dashboard` | ملخص لوحة التحكم |
+| `GET` | `/api/dashboard/activity` | آخر النشاطات |
+
+### Treasury (الخزنة والبنك)
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET` | `/api/cashbox` | رصيد الخزنة |
+| `GET` | `/api/cashbox/transactions` | حركات الخزنة |
+| `POST` | `/api/cashbox/deposit` | إيداع للخزنة |
+| `POST` | `/api/cashbox/withdraw` | سحب من الخزنة |
+| `GET` | `/api/bank` | رصيد البنك |
+| `GET` | `/api/bank/transactions` | حركات البنك |
+| `POST` | `/api/bank/deposit` | إيداع للبنك |
+| `POST` | `/api/bank/withdraw` | سحب من البنك |
+
+### Accounts & Transfers
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET` | `/api/accounts` | قائمة الحسابات |
+| `GET` | `/api/accounts/summary` | ملخص الأرصدة |
+| `GET/POST` | `/api/transfers` | التحويلات |
+
+### Inventory
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| `GET` | `/api/shipments/stock` | المخزون المتاح للبيع |
+| `GET` | `/api/permissions` | قائمة الصلاحيات المتاحة |
+
+---
+
 ## 📊 Rate Limiting
 
 | Endpoint | الحد | النافذة |

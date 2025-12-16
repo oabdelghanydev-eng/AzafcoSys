@@ -106,7 +106,72 @@
 
 ---
 
-## F) Remaining Work
+## F) Updates (2025-12-16)
 
-1. Add permissions for financial operations (Cashbox, Bank)
-2. Add permissions for Reports module
+### Architecture Improvements
+
+1. ✅ **Centralized Permission Checking**: Moved `checkPermission()` and `ensureAdmin()` to `ApiResponse` Trait
+   - Location: `app/Traits/ApiResponse.php`
+   - Used by all Controllers that extend the trait
+   - Benefits: DRY principle, single source of truth
+
+2. ✅ **Financial Permissions**: Enforced via `ApiResponse::checkPermission()`
+   - `cashbox.view`, `cashbox.deposit`, `cashbox.withdraw`
+   - `bank.view`, `bank.deposit`, `bank.withdraw`
+
+3. ✅ **Reports Permissions**: Enforced via `ApiResponse::checkPermission()`
+   - `reports.daily`, `reports.settlement`, `reports.customers`, `reports.export_pdf`
+
+4. ✅ **Admin-Only Endpoints**: Enforced via `ApiResponse::ensureAdmin()`
+   - `AuditLogController` - View audit logs
+
+### Code Pattern
+
+```php
+// ApiResponse.php (Trait)
+protected function checkPermission(string $permission): void
+{
+    if (!auth()->user()->hasPermission($permission)) {
+        throw new BusinessException('AUTH_003', '...', 'Permission denied');
+    }
+}
+
+protected function ensureAdmin(): void
+{
+    if (!auth()->user()->is_admin) {
+        throw new BusinessException('AUTH_004', '...', 'Admin access only');
+    }
+}
+
+// Usage in Controllers
+class ReportController extends Controller
+{
+    use ApiResponse;
+
+    public function daily(Request $request, string $date): JsonResponse
+    {
+        $this->checkPermission('reports.daily');
+        // ...
+    }
+}
+```
+
+---
+
+## G) Status Summary
+
+✅ **All core permissions are now enforced!**
+
+| Category | Enforcement | Status |
+|----------|-------------|--------|
+| Invoices | Policies | ✅ |
+| Collections | Policies | ✅ |
+| Shipments | Policies | ✅ |
+| Users | Policies | ✅ |
+| Financial | ApiResponse Trait | ✅ |
+| Reports | ApiResponse Trait | ✅ |
+| Audit Logs | ApiResponse Trait (Admin) | ✅ |
+
+---
+
+*Last Updated: 2025-12-16*

@@ -10,7 +10,7 @@
 |-------|------------|---------|
 | **Frontend** | Next.js 14 | App Router, SSR |
 | **Styling** | Tailwind CSS + shadcn/ui | RTL support |
-| **Backend** | Laravel 11 | RESTful API |
+| **Backend** | Laravel 12 | RESTful API |
 | **Database** | MySQL (Laragon local → Hostinger prod) | inventory_system |
 | **Auth** | Laravel Sanctum + Google OAuth | SPA authentication |
 | **AI** | Gemini 2.0 Flash | gemini-2.0-flash model |

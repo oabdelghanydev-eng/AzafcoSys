@@ -4,7 +4,7 @@
 
 | Item | Value |
 |------|-------|
-| Framework | Laravel 11 |
+| Framework | Laravel 12 |
 | PHP Version | 8.2+ |
 | Database | MySQL 8.0 |
 | Auth | Laravel Sanctum + Google OAuth |
@@ -19,11 +19,8 @@
 backend/
 ├── app/
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Auth/
-│   │   │   │   ├── LoginController.php
-│   │   │   │   ├── GoogleController.php
-│   │   │   │   └── LogoutController.php
+│   │   ├── Controllers/Api/
+│   │   │   ├── AuthController.php
 │   │   │   ├── CustomerController.php
 │   │   │   ├── SupplierController.php
 │   │   │   ├── ShipmentController.php
@@ -31,32 +28,40 @@ backend/
 │   │   │   ├── CollectionController.php
 │   │   │   ├── ExpenseController.php
 │   │   │   ├── ReportController.php
-│   │   │   └── SettingController.php
-│   │   ├── Requests/
-│   │   │   ├── Invoice/
-│   │   │   │   ├── StoreInvoiceRequest.php
-│   │   │   │   └── UpdateInvoiceRequest.php
+│   │   │   ├── SettingController.php
+│   │   │   ├── DashboardController.php
+│   │   │   ├── CashboxController.php
+│   │   │   ├── BankController.php
+│   │   │   ├── TransferController.php
+│   │   │   ├── UserController.php
+│   │   │   ├── DailyReportController.php
+│   │   │   └── AuditLogController.php (Admin only)
+│   │   ├── Requests/Api/
+│   │   │   ├── StoreInvoiceRequest.php
+│   │   │   ├── StoreCollectionRequest.php
+│   │   │   ├── StoreCustomerRequest.php
+│   │   │   ├── UpdateCustomerRequest.php
+│   │   │   ├── StoreSupplierRequest.php
+│   │   │   ├── UpdateSupplierRequest.php
+│   │   │   ├── StoreExpenseRequest.php
+│   │   │   ├── StoreTransferRequest.php
 │   │   │   └── ...
-│   │   └── Resources/
-│   │       ├── InvoiceResource.php
-│   │       ├── CustomerResource.php
-│   │       └── ...
+│   │   ├── Resources/
+│   │   │   ├── InvoiceResource.php
+│   │   │   ├── CustomerResource.php
+│   │   │   └── ...
+│   │   └── Middleware/
+│   │       └── EnsureWorkingDay.php
 │   ├── Models/
 │   │   ├── User.php
 │   │   ├── Customer.php
 │   │   ├── Supplier.php
 │   │   ├── Product.php
-│   │   ├── Shipment.php
-│   │   ├── ShipmentItem.php
-│   │   ├── Carryover.php
-│   │   ├── Invoice.php
-│   │   ├── InvoiceItem.php
-│   │   ├── Collection.php
-│   │   ├── CollectionAllocation.php
+│   │   ├── Shipment.php / ShipmentItem.php
+│   │   ├── Invoice.php / InvoiceItem.php
+│   │   ├── Collection.php / CollectionAllocation.php
 │   │   ├── Expense.php
-│   │   ├── Account.php
-│   │   ├── CashboxTransaction.php
-│   │   ├── BankTransaction.php
+│   │   ├── Account.php / CashboxTransaction.php / BankTransaction.php
 │   │   ├── Transfer.php
 │   │   ├── DailyReport.php
 │   │   ├── Setting.php
@@ -68,26 +73,35 @@ backend/
 │   │   ├── CollectionAllocationObserver.php
 │   │   ├── ShipmentObserver.php
 │   │   ├── ShipmentItemObserver.php
+│   │   ├── ReturnObserver.php
 │   │   └── ExpenseObserver.php
 │   ├── Services/
 │   │   ├── CollectionService.php (FIFO allocation)
 │   │   ├── FifoAllocatorService.php (Inventory FIFO)
-│   │   ├── InvoiceNumberGenerator.php
-│   │   ├── AccountService.php
-│   │   ├── ReportService.php
-│   │   └── AiAlertService.php
+│   │   ├── NumberGeneratorService.php
+│   │   ├── DailyReportService.php
+│   │   ├── AuditService.php
+│   │   └── Reports/
+│   │       ├── DailyClosingReportService.php
+│   │       ├── ShipmentSettlementReportService.php
+│   │       └── PdfGeneratorService.php
+│   ├── Traits/
+│   │   └── ApiResponse.php (checkPermission, ensureAdmin, success, error)
 │   ├── Policies/
 │   │   ├── InvoicePolicy.php (edit window)
 │   │   ├── CollectionPolicy.php
-│   │   └── ShipmentPolicy.php
+│   │   ├── ShipmentPolicy.php
+│   │   ├── UserPolicy.php
+│   │   └── DailyReportPolicy.php
+│   ├── Exceptions/
+│   │   ├── BusinessException.php
+│   │   └── ErrorCodes.php
 │   └── Providers/
-│       └── AppServiceProvider.php (register observers)
+│       └── AppServiceProvider.php (observers, policies)
 ├── database/
 │   ├── migrations/
 │   └── seeders/
-│       ├── ProductSeeder.php (9 products)
-│       ├── AccountSeeder.php (cashbox, bank)
-│       └── SettingSeeder.php
+│       └── InitialDataSeeder.php (products, accounts, settings)
 └── routes/
     └── api.php
 ```

@@ -97,49 +97,55 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
-### Permissions List (48 Total) <!-- تصحيح 2025-12-13: +2 cancel permissions -->
+### Permissions List (51 Total) <!-- تحديث 2025-12-16: +4 suppliers +1 corrections -->
 ```sql
 -- Permission codes stored in JSON array
 -- Example: ["invoices.create", "invoices.edit", "collections.create"]
 
--- Invoices (الفواتير)
+-- Invoices (الفواتير) - 5 صلاحيات
 'invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete', -- ⚠️ delete مُعطّل (Observer يمنع الحذف)
-'invoices.cancel' -- ✅ جديد: بديل الحذف
+'invoices.cancel' -- ✅ بديل الحذف
 
--- Collections (التحصيل)
+-- Collections (التحصيل) - 5 صلاحيات
 'collections.view', 'collections.create', 'collections.edit', 'collections.delete', -- ⚠️ delete مُعطّل (Observer يمنع الحذف)
-'collections.cancel' -- ✅ جديد: بديل الحذف
+'collections.cancel' -- ✅ بديل الحذف
 
--- Expenses (المصروفات)
+-- Expenses (المصروفات) - 4 صلاحيات
 'expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete'
 
--- Shipments (الشحنات)
+-- Shipments (الشحنات) - 5 صلاحيات
 'shipments.view', 'shipments.create', 'shipments.edit', 'shipments.delete', 'shipments.close'
 
--- Inventory (المخزون)
+-- Inventory (المخزون) - 3 صلاحيات
 'inventory.view', 'inventory.adjust', 'inventory.wastage'
 
--- Cashbox (الخزنة)
+-- Cashbox (الخزنة) - 4 صلاحيات
 'cashbox.view', 'cashbox.deposit', 'cashbox.withdraw', 'cashbox.transfer'
 
--- Bank (البنك)
+-- Bank (البنك) - 4 صلاحيات
 'bank.view', 'bank.deposit', 'bank.withdraw', 'bank.transfer'
 
--- Customers (العملاء)
+-- Customers (العملاء) - 4 صلاحيات
 'customers.view', 'customers.create', 'customers.edit', 'customers.delete'
 
--- Reports (التقارير)
+-- Suppliers (الموردين) - 4 صلاحيات ✅ NEW
+'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete'
+
+-- Reports (التقارير) - 8 صلاحيات
 'reports.daily', 'reports.settlement', 'reports.customers', 'reports.suppliers',
 'reports.inventory', 'reports.export_pdf', 'reports.export_excel', 'reports.share'
 
--- Daily Close (إغلاق اليوم)
+-- Daily Close (إغلاق اليوم) - 2 صلاحيات
 'daily.close', 'daily.reopen'
 
--- Users (المستخدمين)
+-- Users (المستخدمين) - 5 صلاحيات
 'users.view', 'users.create', 'users.edit', 'users.delete', 'users.unlock'
 
--- Settings (الإعدادات)
+-- Settings (الإعدادات) - 2 صلاحيات
 'settings.view', 'settings.edit'
+
+-- Corrections (التصحيحات) - 1 صلاحية ✅ NEW
+'corrections.approve' -- للـ Maker-Checker workflow
 ```
 
 ---
@@ -709,51 +715,52 @@ class AccountService
 
 ## 16. Daily Reports Table (التقارير اليومية)
 
+> **ملاحظة:** الـ Schema المُطبق يستخدم هيكل مبسط مع `daily_report_details` للتفاصيل.
+
 ```sql
 CREATE TABLE daily_reports (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     
     date DATE NOT NULL UNIQUE,
     
-    -- Opening balances
-    cashbox_opening DECIMAL(15,2) NOT NULL,
-    bank_opening DECIMAL(15,2) NOT NULL,
-    
-    -- Day totals
+    -- Totals (calculated)
     total_sales DECIMAL(15,2) DEFAULT 0.00,
-    total_collections_cash DECIMAL(15,2) DEFAULT 0.00,
-    total_collections_bank DECIMAL(15,2) DEFAULT 0.00,
-    total_expenses_cash DECIMAL(15,2) DEFAULT 0.00,
-    total_expenses_bank DECIMAL(15,2) DEFAULT 0.00,
-    total_wastage DECIMAL(15,2) DEFAULT 0.00,
-    total_transfers_in DECIMAL(15,2) DEFAULT 0.00,
-    total_transfers_out DECIMAL(15,2) DEFAULT 0.00,
+    total_collections DECIMAL(15,2) DEFAULT 0.00,
+    total_expenses DECIMAL(15,2) DEFAULT 0.00,
+    cash_balance DECIMAL(15,2) DEFAULT 0.00,
+    bank_balance DECIMAL(15,2) DEFAULT 0.00,
     
-    -- Closing balances
-    cashbox_closing DECIMAL(15,2) NOT NULL,
-    bank_closing DECIMAL(15,2) NOT NULL,
+    -- Counts
+    invoices_count INT DEFAULT 0,
+    collections_count INT DEFAULT 0,
+    expenses_count INT DEFAULT 0,
     
-    -- Differences
-    cashbox_difference DECIMAL(15,2) DEFAULT 0.00,
-    
-    -- Net
-    net_day DECIMAL(15,2) DEFAULT 0.00,
-    
-    -- Status
-    status ENUM('open', 'closed') DEFAULT 'open',
-    closed_at TIMESTAMP NULL,
-    closed_by BIGINT UNSIGNED NULL,
-    
-    -- AI alerts for the day (JSON)
-    ai_alerts JSON NULL,
+    -- Metadata
+    notes TEXT NULL,
+    created_by BIGINT UNSIGNED NULL,
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (closed_by) REFERENCES users(id),
-    INDEX idx_date (date),
-    INDEX idx_status (status)
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Daily Report Details (تفاصيل التقرير اليومي)
+CREATE TABLE daily_report_details (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    
+    daily_report_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('sale', 'collection', 'expense') NOT NULL,
+    reference_id BIGINT UNSIGNED NOT NULL,
+    reference_type VARCHAR(255) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (daily_report_id) REFERENCES daily_reports(id) ON DELETE CASCADE,
+    INDEX idx_reference (reference_type, reference_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 

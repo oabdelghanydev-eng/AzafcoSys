@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Http\Resources\CustomerResource;
+use App\Http\Requests\Api\StoreCustomerRequest;
+use App\Http\Requests\Api\UpdateCustomerRequest;
 use App\Services\NumberGeneratorService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -50,16 +52,9 @@ class CustomerController extends Controller
     /**
      * Create customer
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreCustomerRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Generate unique code
+        $validated = $request->validated();
         $validated['code'] = $this->numberGenerator->generate('customer');
 
         $customer = Customer::create($validated);
@@ -82,17 +77,9 @@ class CustomerController extends Controller
     /**
      * Update customer
      */
-    public function update(Request $request, Customer $customer): JsonResponse
+    public function update(UpdateCustomerRequest $request, Customer $customer): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'notes' => 'nullable|string',
-            'is_active' => 'sometimes|boolean',
-        ]);
-
-        $customer->update($validated);
+        $customer->update($request->validated());
 
         return $this->success(
             new CustomerResource($customer),

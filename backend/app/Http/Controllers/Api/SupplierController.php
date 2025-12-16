@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
 use App\Http\Resources\SupplierResource;
+use App\Http\Requests\Api\StoreSupplierRequest;
+use App\Http\Requests\Api\UpdateSupplierRequest;
 use App\Services\NumberGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -46,16 +48,9 @@ class SupplierController extends Controller
     /**
      * Create new supplier
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreSupplierRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:500',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Generate unique code
+        $validated = $request->validated();
         $validated['code'] = $this->numberGenerator->generate('supplier');
 
         $supplier = Supplier::create($validated);
@@ -80,17 +75,9 @@ class SupplierController extends Controller
     /**
      * Update supplier
      */
-    public function update(Request $request, Supplier $supplier): JsonResponse
+    public function update(UpdateSupplierRequest $request, Supplier $supplier): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:500',
-            'notes' => 'nullable|string',
-            'is_active' => 'sometimes|boolean',
-        ]);
-
-        $supplier->update($validated);
+        $supplier->update($request->validated());
 
         return response()->json([
             'success' => true,

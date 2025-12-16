@@ -23,7 +23,7 @@ trait ApiResponse
     /**
      * Return a success response
      */
-    protected function success(mixed $data = null, string $message = null, int $status = 200): JsonResponse
+    protected function success(mixed $data = null, ?string $message = null, int $status = 200): JsonResponse
     {
         $response = ['success' => true];
 
@@ -107,7 +107,7 @@ trait ApiResponse
     /**
      * Return a forbidden error
      */
-    protected function forbidden(string $reason = null): JsonResponse
+    protected function forbidden(?string $reason = null): JsonResponse
     {
         return $this->error(
             'AUTH_002',
@@ -133,5 +133,34 @@ trait ApiResponse
     protected function shipmentError(string $code, string $message, string $messageEn): JsonResponse
     {
         return $this->error($code, $message, $messageEn, 422);
+    }
+
+    /**
+     * Check if user has permission, throw exception if not
+     * Centralizes permission checking across all controllers
+     */
+    protected function checkPermission(string $permission): void
+    {
+        if (!auth()->user()->hasPermission($permission)) {
+            throw new \App\Exceptions\BusinessException(
+                'AUTH_003',
+                'ليس لديك صلاحية لهذه العملية',
+                'Permission denied'
+            );
+        }
+    }
+
+    /**
+     * Ensure user is admin
+     */
+    protected function ensureAdmin(): void
+    {
+        if (!auth()->user()->is_admin) {
+            throw new \App\Exceptions\BusinessException(
+                'AUTH_004',
+                'هذه العملية متاحة للمديرين فقط',
+                'Admin access only'
+            );
+        }
     }
 }

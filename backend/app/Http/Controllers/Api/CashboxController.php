@@ -163,14 +163,4 @@ class CashboxController extends Controller
 
         return $this->success($transactions);
     }
-
-    /**
-     * Check permission helper
-     */
-    private function checkPermission(string $permission): void
-    {
-        if (!auth()->user()->hasPermission($permission)) {
-            throw new BusinessException('AUTH_003', 'ليس لديك صلاحية لهذه العملية', 'Permission denied');
-        }
-    }
 }

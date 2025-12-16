@@ -7,6 +7,7 @@ use App\Models\Transfer;
 use App\Models\Account;
 use App\Models\CashboxTransaction;
 use App\Models\BankTransaction;
+use App\Http\Requests\Api\StoreTransferRequest;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -37,15 +38,10 @@ class TransferController extends Controller
     /**
      * Create transfer between accounts
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreTransferRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'from_account_id' => 'required|exists:accounts,id',
-            'to_account_id' => 'required|exists:accounts,id|different:from_account_id',
-            'amount' => 'required|numeric|min:0.01',
-            'date' => 'required|date',
-            'notes' => 'nullable|string|max:500',
-        ]);
+        $validated = $request->validated();
+        $validated['date'] = $validated['date'] ?? now()->toDateString();
 
         $fromAccount = Account::findOrFail($validated['from_account_id']);
         $toAccount = Account::findOrFail($validated['to_account_id']);
