@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
-use App\Models\Shipment;
-use App\Models\ShipmentItem;
 use App\Http\Requests\Api\StoreShipmentRequest;
 use App\Http\Requests\Api\UpdateShipmentRequest;
-use App\Http\Resources\ShipmentResource;
 use App\Http\Resources\ShipmentItemResource;
+use App\Http\Resources\ShipmentResource;
+use App\Models\Shipment;
+use App\Models\ShipmentItem;
 use App\Services\NumberGeneratorService;
 use App\Services\ShipmentService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Exceptions\BusinessException;
 
 /**
  * @tags Shipment
@@ -25,6 +25,7 @@ class ShipmentController extends Controller
     use ApiResponse;
 
     private NumberGeneratorService $numberGenerator;
+
     private ShipmentService $shipmentService;
 
     public function __construct(
@@ -44,10 +45,10 @@ class ShipmentController extends Controller
         $this->checkPermission('shipments.view');
 
         $query = Shipment::with(['supplier'])
-            ->when($request->supplier_id, fn($q, $id) => $q->where('supplier_id', $id))
-            ->when($request->status, fn($q, $s) => $q->where('status', $s))
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->supplier_id, fn ($q, $id) => $q->where('supplier_id', $id))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -330,6 +331,7 @@ class ShipmentController extends Controller
 
         try {
             $this->shipmentService->unsettle($shipment);
+
             return $this->success(
                 new ShipmentResource($shipment->fresh()),
                 'تم إلغاء تصفية الشحنة بنجاح'
@@ -354,6 +356,7 @@ class ShipmentController extends Controller
     public function settlementReport(Shipment $shipment): JsonResponse
     {
         $report = $this->shipmentService->generateSettlementReport($shipment);
+
         return $this->success($report);
     }
 
@@ -368,8 +371,8 @@ class ShipmentController extends Controller
     {
         $items = ShipmentItem::with(['product', 'shipment:id,number,date'])
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
-            ->when($request->product_id, fn($q, $id) => $q->where('product_id', $id))
+            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
+            ->when($request->product_id, fn ($q, $id) => $q->where('product_id', $id))
             ->orderBy('product_id')
             ->orderBy('created_at')
             ->get();
@@ -377,6 +380,7 @@ class ShipmentController extends Controller
         // Group by product
         $grouped = $items->groupBy('product_id')->map(function ($productItems) {
             $first = $productItems->first();
+
             return [
                 'product_id' => $first->product_id,
                 'product_name' => $first->product->name,
@@ -388,4 +392,3 @@ class ShipmentController extends Controller
         return $this->success($grouped);
     }
 }
-

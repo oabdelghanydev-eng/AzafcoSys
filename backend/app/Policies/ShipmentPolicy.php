@@ -41,7 +41,7 @@ class ShipmentPolicy
     public function update(User $user, Shipment $shipment): bool
     {
         // Permission check
-        if (!$user->hasPermission('shipments.edit')) {
+        if (! $user->hasPermission('shipments.edit')) {
             return false;
         }
 
@@ -59,7 +59,7 @@ class ShipmentPolicy
     public function delete(User $user, Shipment $shipment): bool
     {
         // Permission check
-        if (!$user->hasPermission('shipments.delete')) {
+        if (! $user->hasPermission('shipments.delete')) {
             return false;
         }
 

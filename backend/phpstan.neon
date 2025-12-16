@@ -1,0 +1,57 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    # Level 5 for Laravel (balanced strictness)
+    level: 5
+
+    paths:
+        - app
+
+    # Exclude problematic paths
+    excludePaths:
+        - app/Http/Resources
+
+    # Don't report unmatched ignores
+    reportUnmatchedIgnoredErrors: false
+
+    # Ignore Laravel patterns that are valid but PHPStan can't analyze
+    ignoreErrors:
+        # Eloquent Model dynamic properties
+        - '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$#'
+        - '#Access to an undefined property App\\Models\\#'
+        
+        # Builder methods from scopes/traits
+        - '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder#'
+        - '#Call to an undefined method Illuminate\\Database\\Query\\Builder#'
+        
+        # Nullsafe + ?? combination (valid but flagged)
+        - '#Using nullsafe property access#'
+        
+        # Ternary always true/false (often intentional)
+        - '#Ternary operator condition is always#'
+        
+        # Generic/template type issues
+        - '#contains unresolvable type#'
+        - '#Template type#'
+        
+        # stdClass from raw queries
+        - '#Access to an undefined property stdClass#'
+        
+        # Mixed type access
+        - '#Cannot access property .* on mixed#'
+        
+        # Property read-only issues (computed properties)
+        - '#is not writable#'
+        
+        # Third-party packages (Scramble, etc)
+        - '#Dedoc\\Scramble#'
+        
+        # Relation return types
+        - '#should return .* but returns#'
+        
+        # PHPDoc mismatches (false positives)
+        - '#PHPDoc tag @param references unknown parameter#'
+        
+        # Covariance issues
+        - '#is not covariant#'

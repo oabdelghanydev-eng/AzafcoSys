@@ -2,10 +2,11 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Add code columns to customers and suppliers tables
      * As per Database_Schema.md requirements
@@ -21,7 +22,7 @@ return new class extends Migration {
         DB::table('customers')->orderBy('id')->each(function ($customer) {
             DB::table('customers')
                 ->where('id', $customer->id)
-                ->update(['code' => 'CUS-' . str_pad($customer->id, 5, '0', STR_PAD_LEFT)]);
+                ->update(['code' => 'CUS-'.str_pad($customer->id, 5, '0', STR_PAD_LEFT)]);
         });
 
         // Make code unique and not nullable
@@ -38,7 +39,7 @@ return new class extends Migration {
         DB::table('suppliers')->orderBy('id')->each(function ($supplier) {
             DB::table('suppliers')
                 ->where('id', $supplier->id)
-                ->update(['code' => 'SUP-' . str_pad($supplier->id, 5, '0', STR_PAD_LEFT)]);
+                ->update(['code' => 'SUP-'.str_pad($supplier->id, 5, '0', STR_PAD_LEFT)]);
         });
 
         // Make code unique and not nullable

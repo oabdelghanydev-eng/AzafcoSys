@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * Correction Model
- * 
+ *
  * Tracks all corrections with full audit trail
  * Implements Maker-Checker approval workflow
  */
@@ -44,12 +44,16 @@ class Correction extends Model
 
     // Correction types
     const TYPE_ADJUSTMENT = 'adjustment';
+
     const TYPE_REVERSAL = 'reversal';
+
     const TYPE_REALLOCATION = 'reallocation';
 
     // Status
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_REJECTED = 'rejected';
 
     // Relationships

@@ -3,8 +3,6 @@
 namespace Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
-use Illuminate\Validation\Validator;
-use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 /**
  * Unit tests for Invoice Validation Logic
@@ -62,12 +60,12 @@ class InvoiceValidationLogicTest extends TestCase
 
         // Zero total for 'sale' should fail
         $typeSale = 'sale';
-        $isValidForSale = !($total <= 0 && $typeSale !== 'wastage');
+        $isValidForSale = ! ($total <= 0 && $typeSale !== 'wastage');
         $this->assertFalse($isValidForSale, 'Zero total sale should be invalid');
 
         // Zero total for 'wastage' should pass
         $typeWastage = 'wastage';
-        $isValidForWastage = !($total <= 0 && $typeWastage !== 'wastage');
+        $isValidForWastage = ! ($total <= 0 && $typeWastage !== 'wastage');
         $this->assertTrue($isValidForWastage, 'Zero total wastage should be valid');
     }
 }

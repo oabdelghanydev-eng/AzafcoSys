@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Expense;
 use App\Models\Account;
-use App\Models\User;
+use App\Models\Expense;
 use App\Models\Supplier;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature Tests for Expense Endpoints
@@ -18,8 +18,11 @@ class ExpenseTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Supplier $supplier;
+
     private Account $cashbox;
+
     private Account $bank;
 
     protected function setUp(): void
@@ -56,7 +59,7 @@ class ExpenseTest extends TestCase
     private function expenseRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 

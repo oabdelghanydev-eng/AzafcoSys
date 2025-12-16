@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Product;
 use App\Models\Account;
+use App\Models\Product;
 use App\Models\Setting;
 use Illuminate\Database\Seeder;
 
@@ -81,6 +81,6 @@ class InitialDataSeeder extends Seeder
         $this->command->info('✅ Initial data seeded successfully!');
         $this->command->info('   - 9 Products');
         $this->command->info('   - 2 Accounts (Cashbox + Bank)');
-        $this->command->info('   - ' . count($settings) . ' Settings');
+        $this->command->info('   - '.count($settings).' Settings');
     }
 }

@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Setting
@@ -27,7 +27,7 @@ class SettingController extends Controller
                         'value' => $this->castValue($setting->value, $setting->type),
                         'type' => $setting->type,
                         'description' => $setting->description,
-                    ]
+                    ],
                 ];
             });
         });
@@ -75,14 +75,14 @@ class SettingController extends Controller
     {
         $setting = Setting::where('key', $key)->first();
 
-        if (!$setting) {
+        if (! $setting) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'SET_001',
                     'message' => 'الإعداد غير موجود',
-                    'message_en' => 'Setting not found'
-                ]
+                    'message_en' => 'Setting not found',
+                ],
             ], 404);
         }
 

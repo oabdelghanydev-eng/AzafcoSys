@@ -2,19 +2,19 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
+use App\Models\Account;
+use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\Supplier;
-use App\Models\Product;
-use App\Models\Account;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 /**
  * Settlement PDF Report Integration Tests - Simplified
- * 
+ *
  * 2025 Best Practices Applied:
  * - AAA Pattern (Arrange-Act-Assert)
  * - RefreshDatabase for isolation
@@ -25,7 +25,9 @@ class SettlementPdfReportTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Supplier $supplier;
+
     private Product $product;
 
     protected function setUp(): void

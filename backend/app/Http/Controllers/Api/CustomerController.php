@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
-use App\Http\Resources\CustomerResource;
 use App\Http\Requests\Api\StoreCustomerRequest;
 use App\Http\Requests\Api\UpdateCustomerRequest;
+use App\Http\Resources\CustomerResource;
+use App\Models\Customer;
 use App\Services\NumberGeneratorService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Customer
@@ -35,13 +35,13 @@ class CustomerController extends Controller
         $this->checkPermission('customers.view');
 
         $query = Customer::query()
-            ->when($request->search, fn($q, $s) => $q->where(function ($query) use ($s) {
+            ->when($request->search, fn ($q, $s) => $q->where(function ($query) use ($s) {
                 $query->where('name', 'like', "%{$s}%")
                     ->orWhere('code', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%");
             }))
-            ->when($request->has('active'), fn($q) => $q->where('is_active', $request->active))
-            ->when($request->with_debt, fn($q) => $q->where('balance', '>', 0))
+            ->when($request->has('active'), fn ($q) => $q->where('is_active', $request->active))
+            ->when($request->with_debt, fn ($q) => $q->where('balance', '>', 0))
             ->withCount('invoices')
             ->orderBy('name');
 

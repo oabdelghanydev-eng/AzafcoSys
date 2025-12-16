@@ -2,23 +2,20 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
 use App\Models\InventoryAdjustment;
 use App\Models\ShipmentItem;
 use App\Models\User;
-use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 /**
  * InventoryAdjustmentService
- * 
+ *
  * Handles inventory corrections with Maker-Checker approval
  * All adjustments require approval before being applied
  */
 class InventoryAdjustmentService
 {
-    public function __construct(private AuditService $auditService)
-    {
-    }
 
     /**
      * Create inventory adjustment request (pending approval)
@@ -76,7 +73,7 @@ class InventoryAdjustmentService
                 'created_by' => auth()->id(),
             ]);
 
-            $this->auditService->log(
+            AuditService::logAdjustment(
                 'inventory_adjustment_created',
                 $item,
                 ['adjustment_id' => $adjustment->id, 'change' => $quantityChange]
@@ -136,7 +133,7 @@ class InventoryAdjustmentService
                 'approved_at' => now(),
             ]);
 
-            $this->auditService->log(
+            AuditService::logAdjustment(
                 'inventory_adjustment_approved',
                 $item,
                 [
@@ -169,7 +166,7 @@ class InventoryAdjustmentService
             'rejection_reason' => $reason,
         ]);
 
-        $this->auditService->log(
+        AuditService::logAdjustment(
             'inventory_adjustment_rejected',
             $adjustment->shipmentItem,
             ['adjustment_id' => $adjustment->id, 'reason' => $reason]
@@ -207,6 +204,6 @@ class InventoryAdjustmentService
         $date = now()->format('Ymd');
         $count = InventoryAdjustment::whereDate('created_at', today())->count() + 1;
 
-        return "ADJ-{$date}-" . str_pad($count, 4, '0', STR_PAD_LEFT);
+        return "ADJ-{$date}-" . str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 }

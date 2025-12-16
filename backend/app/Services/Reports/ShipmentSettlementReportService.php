@@ -2,9 +2,9 @@
 
 namespace App\Services\Reports;
 
-use App\Models\Shipment;
 use App\Models\Carryover;
 use App\Models\Expense;
+use App\Models\Shipment;
 use Illuminate\Support\Facades\DB;
 
 class ShipmentSettlementReportService
@@ -164,11 +164,13 @@ class ShipmentSettlementReportService
         // Get weight_per_unit from fromShipmentItem relationship
         $carryoverInWeight = $data['carryoverIn']->sum(function ($co) {
             $weightPerUnit = $co->fromShipmentItem?->weight_per_unit ?? 0;
+
             return $co->quantity * $weightPerUnit;
         });
 
         $returnsInWeight = $data['returnsIn']->sum(function ($ret) {
             $weightPerUnit = $ret->fromShipmentItem?->weight_per_unit ?? 0;
+
             return $ret->quantity * $weightPerUnit;
         });
 
@@ -184,6 +186,7 @@ class ShipmentSettlementReportService
 
         $carryoverOutWeight = $data['carryoverOut']->sum(function ($co) {
             $weightPerUnit = $co->fromShipmentItem?->weight_per_unit ?? 0;
+
             return $co->quantity * $weightPerUnit;
         });
 

@@ -1,23 +1,23 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CustomerController;
-use App\Http\Controllers\Api\SupplierController;
-use App\Http\Controllers\Api\ProductController;
-use App\Http\Controllers\Api\InvoiceController;
-use App\Http\Controllers\Api\CollectionController;
-use App\Http\Controllers\Api\ShipmentController;
-use App\Http\Controllers\Api\ReturnController;
-use App\Http\Controllers\Api\ExpenseController;
-use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\SettingController;
-use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BankController;
+use App\Http\Controllers\Api\CashboxController;
+use App\Http\Controllers\Api\CollectionController;
+use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\DailyReportController;
+use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ReturnController;
+use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\ShipmentController;
+use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\TransferController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\CashboxController;
-use App\Http\Controllers\Api\BankController;
-use App\Http\Controllers\Api\DailyReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,7 +37,7 @@ Route::get('/health', function () {
 
 // Auth Routes (Public)
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/google', [AuthController::class, 'googleRedirect']);
     Route::get('/google/callback', [AuthController::class, 'googleCallback']);
 });

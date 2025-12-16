@@ -2,15 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\User;
 use App\Models\Customer;
 use App\Models\Supplier;
-use App\Models\Invoice;
-use App\Models\Collection;
-use App\Models\Shipment;
-use App\Models\Expense;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Customer/Supplier Balance Tests

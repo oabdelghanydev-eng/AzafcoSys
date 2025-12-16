@@ -2,15 +2,15 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\DailyReportService;
 use App\Exceptions\BusinessException;
+use App\Services\DailyReportService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * EnsureWorkingDay Middleware
- * 
+ *
  * Ensures there's an open daily report before allowing operations.
  * Apply to routes that require a working day (invoices, collections, expenses).
  */
@@ -32,7 +32,7 @@ class EnsureWorkingDay
         if (in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'])) {
             $report = $this->dailyReportService->getCurrentOpenReport();
 
-            if (!$report) {
+            if (! $report) {
                 throw new BusinessException(
                     'DAY_004',
                     'يجب فتح يومية أولاً قبل إجراء أي عمليات',

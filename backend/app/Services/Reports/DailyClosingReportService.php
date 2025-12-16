@@ -2,16 +2,15 @@
 
 namespace App\Services\Reports;
 
+use App\Models\Account;
+use App\Models\Collection;
+use App\Models\Customer;
+use App\Models\Expense;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Collection;
-use App\Models\Expense;
-use App\Models\Transfer;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\Customer;
-use App\Models\Account;
-use Illuminate\Support\Collection as LaravelCollection;
+use App\Models\Transfer;
 
 class DailyClosingReportService
 {
@@ -32,6 +31,7 @@ class DailyClosingReportService
             ->get()
             ->map(function ($item) {
                 $weightPerUnit = $item->shipmentItem?->weight_per_unit ?? 0;
+
                 return [
                     'invoice_number' => $item->invoice->invoice_number,
                     'customer_name' => $item->invoice->customer->name,
@@ -102,6 +102,7 @@ class DailyClosingReportService
 
         $data['remainingStock'] = $remainingStockRaw->map(function ($item) use ($products) {
             $item->product = $products->get($item->product_id);
+
             return $item;
         });
 

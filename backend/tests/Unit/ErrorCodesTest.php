@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use App\Exceptions\ErrorCodes;
 use App\Exceptions\BusinessException;
+use App\Exceptions\ErrorCodes;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for Error Codes and Business Exception

@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\ShipmentItem;
 use App\Models\Shipment;
+use App\Models\ShipmentItem;
 
 class ShipmentItemObserver
 {
@@ -35,7 +35,7 @@ class ShipmentItemObserver
             ->where('remaining_quantity', '>', 0)
             ->exists();
 
-        if (!$hasStock) {
+        if (! $hasStock) {
             $shipment->status = 'closed';
             $shipment->saveQuietly();
         }

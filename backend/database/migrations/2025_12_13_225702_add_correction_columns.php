@@ -6,10 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Soft-Correction Flow - Add correction columns to existing tables
- * 
+ *
  * Allows negative collections (for refunds) - User approved: Y
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // Invoices: Add correction support

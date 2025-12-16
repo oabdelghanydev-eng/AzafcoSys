@@ -13,7 +13,7 @@ class ShipmentFactory extends Factory
     public function definition(): array
     {
         return [
-            'number' => 'SHP-' . $this->faker->unique()->numberBetween(10000, 99999),
+            'number' => 'SHP-'.$this->faker->unique()->numberBetween(10000, 99999),
             'supplier_id' => Supplier::factory(),
             'date' => $this->faker->date(),
             'status' => 'open',
@@ -24,14 +24,14 @@ class ShipmentFactory extends Factory
 
     public function closed(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => 'closed',
         ]);
     }
 
     public function settled(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => 'settled',
             'settled_at' => now(),
         ]);

@@ -2,16 +2,16 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\User;
+use App\Models\AiAlert;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Shipment;
 use App\Models\Product;
-use App\Models\AiAlert;
+use App\Models\Shipment;
+use App\Models\User;
 use App\Services\AlertDetectionService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature Tests for Alert Detection
@@ -22,6 +22,7 @@ class AlertDetectionTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private AlertDetectionService $service;
 
     protected function setUp(): void
@@ -42,7 +43,7 @@ class AlertDetectionTest extends TestCase
     private function alertRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 

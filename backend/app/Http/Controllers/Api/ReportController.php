@@ -3,19 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Invoice;
 use App\Models\Collection;
-use App\Models\Expense;
-use App\Models\Shipment;
 use App\Models\Customer;
+use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\Shipment;
 use App\Models\Supplier;
 use App\Services\Reports\DailyClosingReportService;
-use App\Services\Reports\ShipmentSettlementReportService;
 use App\Services\Reports\PdfGeneratorService;
+use App\Services\Reports\ShipmentSettlementReportService;
 use App\Traits\ApiResponse;
-use App\Exceptions\BusinessException;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -33,14 +32,14 @@ class ReportController extends Controller
     {
         $this->checkPermission('reports.daily');
         // Validate date format
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_001',
                     'message' => 'صيغة التاريخ غير صحيحة',
-                    'message_en' => 'Invalid date format'
-                ]
+                    'message_en' => 'Invalid date format',
+                ],
             ], 422);
         }
 
@@ -108,7 +107,7 @@ class ReportController extends Controller
                     'cash' => $netCash,
                     'sales_vs_collections' => (float) $sales->total - (float) $collections->total,
                 ],
-            ]
+            ],
         ]);
     }
 
@@ -166,7 +165,7 @@ class ReportController extends Controller
                     'net_profit' => (float) $salesData->total_sales - (float) $expensesTotal,
                 ],
                 'items' => $itemsBreakdown,
-            ]
+            ],
         ]);
     }
 
@@ -183,15 +182,15 @@ class ReportController extends Controller
         // Get invoices
         $invoicesQuery = $customer->invoices()
             ->where('status', 'active')
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'invoice_number', 'date', 'total', 'paid_amount', 'balance']);
 
         // Get collections
         $collectionsQuery = $customer->collections()
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'receipt_number', 'date', 'amount', 'payment_method']);
 
@@ -216,7 +215,7 @@ class ReportController extends Controller
                 'reference' => $collection->receipt_number,
                 'debit' => 0,
                 'credit' => (float) $collection->amount,
-                'description' => 'تحصيل ' . ($collection->payment_method === 'cash' ? 'نقدي' : 'بنكي'),
+                'description' => 'تحصيل '.($collection->payment_method === 'cash' ? 'نقدي' : 'بنكي'),
             ]);
         }
 
@@ -228,6 +227,7 @@ class ReportController extends Controller
         $timeline = $timeline->map(function ($item) use (&$runningBalance) {
             $runningBalance += $item['debit'] - $item['credit'];
             $item['balance'] = $runningBalance;
+
             return $item;
         });
 
@@ -251,7 +251,7 @@ class ReportController extends Controller
                     'collections_count' => $collectionsQuery->count(),
                 ],
                 'transactions' => $timeline,
-            ]
+            ],
         ]);
     }
 
@@ -267,15 +267,15 @@ class ReportController extends Controller
 
         // Get shipments (debit - له)
         $shipmentsQuery = $supplier->shipments()
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'number', 'date', 'total_amount']);
 
         // Get expenses (credit - عليه/دفعنا له)
         $expensesQuery = $supplier->expenses()
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'expense_number', 'date', 'amount', 'description']);
 
@@ -312,6 +312,7 @@ class ReportController extends Controller
         $timeline = $timeline->map(function ($item) use (&$runningBalance) {
             $runningBalance += $item['debit'] - $item['credit'];
             $item['balance'] = $runningBalance;
+
             return $item;
         });
 
@@ -335,7 +336,7 @@ class ReportController extends Controller
                     'expenses_count' => $expensesQuery->count(),
                 ],
                 'transactions' => $timeline,
-            ]
+            ],
         ]);
     }
 
@@ -351,13 +352,13 @@ class ReportController extends Controller
         $this->checkPermission('reports.export_pdf');
 
         // Validate date format
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_001',
-                    'message' => 'Invalid date format'
-                ]
+                    'message' => 'Invalid date format',
+                ],
             ], 422);
         }
 
@@ -367,16 +368,16 @@ class ReportController extends Controller
             return $pdfService->download(
                 'reports.daily-closing',
                 $data,
-                'daily-report-' . $date
+                'daily-report-'.$date
             );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_003',
-                    'message' => 'PDF generation failed: ' . $e->getMessage(),
-                    'trace' => config('app.debug') ? $e->getTraceAsString() : null
-                ]
+                    'message' => 'PDF generation failed: '.$e->getMessage(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : null,
+                ],
             ], 500);
         }
     }
@@ -393,13 +394,13 @@ class ReportController extends Controller
         $this->checkPermission('reports.export_pdf');
 
         // Check if shipment is settled or being settled
-        if (!in_array($shipment->status, ['closed', 'settled'])) {
+        if (! in_array($shipment->status, ['closed', 'settled'])) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_002',
-                    'message' => 'Shipment must be closed or settled to generate report'
-                ]
+                    'message' => 'Shipment must be closed or settled to generate report',
+                ],
             ], 422);
         }
 
@@ -409,16 +410,16 @@ class ReportController extends Controller
             return $pdfService->download(
                 'reports.shipment-settlement',
                 $data,
-                'settlement-' . $shipment->number
+                'settlement-'.$shipment->number
             );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_003',
-                    'message' => 'PDF generation failed: ' . $e->getMessage(),
-                    'trace' => config('app.debug') ? $e->getTraceAsString() : null
-                ]
+                    'message' => 'PDF generation failed: '.$e->getMessage(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : null,
+                ],
             ], 500);
         }
     }

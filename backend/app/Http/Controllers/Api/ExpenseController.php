@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Expense;
 use App\Http\Resources\ExpenseResource;
+use App\Models\Expense;
 use App\Services\NumberGeneratorService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -33,12 +33,12 @@ class ExpenseController extends Controller
         $this->checkPermission('expenses.view');
 
         $query = Expense::with(['supplier', 'shipment', 'createdBy'])
-            ->when($request->type, fn($q, $t) => $q->where('type', $t))
-            ->when($request->supplier_id, fn($q, $id) => $q->where('supplier_id', $id))
-            ->when($request->shipment_id, fn($q, $id) => $q->where('shipment_id', $id))
-            ->when($request->payment_method, fn($q, $m) => $q->where('payment_method', $m))
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
+            ->when($request->supplier_id, fn ($q, $id) => $q->where('supplier_id', $id))
+            ->when($request->shipment_id, fn ($q, $id) => $q->where('shipment_id', $id))
+            ->when($request->payment_method, fn ($q, $m) => $q->where('payment_method', $m))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -76,8 +76,8 @@ class ExpenseController extends Controller
                 'error' => [
                     'code' => 'EXP_001',
                     'message' => 'يجب تحديد المورد لمصروفات الموردين',
-                    'message_en' => 'Supplier is required for supplier expenses'
-                ]
+                    'message_en' => 'Supplier is required for supplier expenses',
+                ],
             ], 422);
         }
 
@@ -90,7 +90,7 @@ class ExpenseController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'تم إنشاء المصروف بنجاح',
-                'data' => new ExpenseResource($expense->load(['supplier', 'shipment']))
+                'data' => new ExpenseResource($expense->load(['supplier', 'shipment'])),
             ], 201);
         });
     }
@@ -133,7 +133,7 @@ class ExpenseController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث المصروف بنجاح',
-            'data' => new ExpenseResource($expense->fresh(['supplier', 'shipment']))
+            'data' => new ExpenseResource($expense->fresh(['supplier', 'shipment'])),
         ]);
     }
 
@@ -149,7 +149,7 @@ class ExpenseController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'تم حذف المصروف بنجاح'
+            'message' => 'تم حذف المصروف بنجاح',
         ]);
     }
 }

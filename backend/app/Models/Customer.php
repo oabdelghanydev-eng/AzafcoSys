@@ -57,6 +57,7 @@ class Customer extends Model
     {
         $balance = (float) $this->balance;
         $prefix = $balance >= 0 ? 'مديون' : 'دائن';
-        return number_format(abs($balance), 2) . ' ج.م (' . $prefix . ')';
+
+        return number_format(abs($balance), 2).' ج.م ('.$prefix.')';
     }
 }

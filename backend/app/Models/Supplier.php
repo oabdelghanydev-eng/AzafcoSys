@@ -47,6 +47,7 @@ class Supplier extends Model
     {
         $balance = (float) $this->balance;
         $prefix = $balance >= 0 ? 'له' : 'عليه';
-        return number_format(abs($balance), 2) . ' ج.م (' . $prefix . ')';
+
+        return number_format(abs($balance), 2).' ج.م ('.$prefix.')';
     }
 }

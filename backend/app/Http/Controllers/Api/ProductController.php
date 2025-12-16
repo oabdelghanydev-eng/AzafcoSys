@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Product
@@ -21,16 +21,16 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Product::query()
-            ->when($request->search, fn($q, $s) => $q->where(function ($query) use ($s) {
+            ->when($request->search, fn ($q, $s) => $q->where(function ($query) use ($s) {
                 $query->where('name', 'like', "%{$s}%")
                     ->orWhere('name_en', 'like', "%{$s}%");
             }))
-            ->when($request->has('active'), fn($q) => $q->where('is_active', $request->active))
-            ->when($request->category, fn($q, $c) => $q->where('category', $c))
+            ->when($request->has('active'), fn ($q) => $q->where('is_active', $request->active))
+            ->when($request->category, fn ($q, $c) => $q->where('category', $c))
             ->orderBy('name');
 
         // By default only show active products
-        if (!$request->has('active')) {
+        if (! $request->has('active')) {
             $query->where('is_active', true);
         }
 
@@ -78,7 +78,7 @@ class ProductController extends Controller
         $this->checkPermission('products.edit');
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:255|unique:products,name,' . $product->id,
+            'name' => 'sometimes|string|max:255|unique:products,name,'.$product->id,
             'name_en' => 'nullable|string|max:255',
             'category' => 'nullable|string|max:100',
             'is_active' => 'boolean',

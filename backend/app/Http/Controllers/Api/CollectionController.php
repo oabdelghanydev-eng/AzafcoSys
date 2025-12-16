@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Collection;
 use App\Http\Requests\Api\StoreCollectionRequest;
 use App\Http\Resources\CollectionResource;
-use App\Services\NumberGeneratorService;
+use App\Models\Collection;
 use App\Services\CollectionDistributorService;
+use App\Services\NumberGeneratorService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +20,7 @@ class CollectionController extends Controller
     use ApiResponse;
 
     private NumberGeneratorService $numberGenerator;
+
     private CollectionDistributorService $distributorService;
 
     public function __construct(
@@ -39,10 +40,10 @@ class CollectionController extends Controller
         $this->checkPermission('collections.view');
 
         $query = Collection::with(['customer'])
-            ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
-            ->when($request->payment_method, fn($q, $m) => $q->where('payment_method', $m))
+            ->when($request->customer_id, fn ($q, $id) => $q->where('customer_id', $id))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->payment_method, fn ($q, $m) => $q->where('payment_method', $m))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -76,7 +77,7 @@ class CollectionController extends Controller
             ]);
 
             // Manual distribution if provided
-            if (!empty($validated['allocations'])) {
+            if (! empty($validated['allocations'])) {
                 $allocations = collect($validated['allocations'])
                     ->pluck('amount', 'invoice_id')
                     ->toArray();

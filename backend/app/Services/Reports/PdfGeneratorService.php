@@ -2,11 +2,11 @@
 
 namespace App\Services\Reports;
 
-use Mpdf\Mpdf;
-use Mpdf\Config\ConfigVariables;
-use Mpdf\Config\FontVariables;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\View;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
+use Mpdf\Mpdf;
 
 class PdfGeneratorService
 {
@@ -15,10 +15,10 @@ class PdfGeneratorService
      */
     protected function createMpdf(string $orientation = 'P'): Mpdf
     {
-        $defaultConfig = (new ConfigVariables())->getDefaults();
+        $defaultConfig = (new ConfigVariables)->getDefaults();
         $fontDirs = $defaultConfig['fontDir'];
 
-        $defaultFontConfig = (new FontVariables())->getDefaults();
+        $defaultFontConfig = (new FontVariables)->getDefaults();
         $fontData = $defaultFontConfig['fontdata'];
 
         $mpdf = new Mpdf([
@@ -84,7 +84,7 @@ class PdfGeneratorService
 
         return new Response($pdfContent, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '.pdf"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'.pdf"',
             'Content-Length' => strlen($pdfContent),
         ]);
     }
@@ -103,7 +103,7 @@ class PdfGeneratorService
 
         return new Response($pdfContent, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $filename . '.pdf"',
+            'Content-Disposition' => 'inline; filename="'.$filename.'.pdf"',
             'Content-Length' => strlen($pdfContent),
         ]);
     }
@@ -122,7 +122,7 @@ class PdfGeneratorService
 
         return new Response($pdfContent, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '.pdf"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'.pdf"',
             'Content-Length' => strlen($pdfContent),
         ]);
     }
@@ -137,11 +137,11 @@ class PdfGeneratorService
         $mpdf = $this->createMpdf();
         $mpdf->WriteHTML($html);
 
-        $fullPath = storage_path('app/' . $path);
+        $fullPath = storage_path('app/'.$path);
 
         // Ensure directory exists
         $dir = dirname($fullPath);
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
@@ -150,4 +150,3 @@ class PdfGeneratorService
         return $fullPath;
     }
 }
-

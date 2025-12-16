@@ -43,7 +43,7 @@ class Product extends Model
     public function getCurrentStockAttribute(): float
     {
         return $this->shipmentItems()
-            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
             ->sum('remaining_quantity');
     }
 }

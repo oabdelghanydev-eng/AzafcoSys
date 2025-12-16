@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Shipment;
-use App\Models\Supplier;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ErrorCodes;
+use App\Models\Shipment;
+use App\Models\Supplier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature tests for Settled Shipment Protection

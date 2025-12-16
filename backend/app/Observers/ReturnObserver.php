@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\ReturnModel;
 use App\Models\Customer;
+use App\Models\ReturnModel;
 use App\Services\AuditService;
 
 class ReturnObserver

@@ -3,8 +3,8 @@
 namespace App\Policies;
 
 use App\Models\Invoice;
-use App\Models\User;
 use App\Models\Setting;
+use App\Models\User;
 
 /**
  * Invoice Policy
@@ -38,14 +38,14 @@ class InvoicePolicy
 
     /**
      * Determine if the user can update the invoice.
-     * 
+     *
      * Edit window rule (BR-INV-006):
      * Invoice can only be edited within the configured edit window
      */
     public function update(User $user, Invoice $invoice): bool
     {
         // Permission check
-        if (!$user->hasPermission('invoices.edit')) {
+        if (! $user->hasPermission('invoices.edit')) {
             return false;
         }
 
@@ -68,7 +68,7 @@ class InvoicePolicy
     public function cancel(User $user, Invoice $invoice): bool
     {
         // Permission check
-        if (!$user->hasPermission('invoices.cancel')) {
+        if (! $user->hasPermission('invoices.cancel')) {
             return false;
         }
 

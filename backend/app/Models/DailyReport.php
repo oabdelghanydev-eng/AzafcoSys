@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * DailyReport Model
- * 
+ *
  * Represents a daily financial report.
  * All users work on the same daily report.
  */
@@ -62,6 +62,7 @@ class DailyReport extends Model
 
     // Status constants
     public const STATUS_OPEN = 'open';
+
     public const STATUS_CLOSED = 'closed';
 
     // Relationships

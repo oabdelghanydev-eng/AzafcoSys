@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\User;
 use App\Models\Customer;
-use App\Models\Supplier;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Permission Authorization Tests
@@ -18,7 +18,9 @@ class PermissionAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $userWithPermissions;
+
     private User $userWithoutPermissions;
 
     protected function setUp(): void
@@ -92,7 +94,7 @@ class PermissionAuthorizationTest extends TestCase
                 'success' => false,
                 'error' => [
                     'code' => 'AUTH_003',
-                ]
+                ],
             ]);
     }
 
@@ -141,7 +143,7 @@ class PermissionAuthorizationTest extends TestCase
                 'customer_id' => $customer->id,
                 'date' => now()->format('Y-m-d'),
                 'items' => [
-                    ['product_id' => 1, 'quantity' => 10, 'unit_price' => 100]
+                    ['product_id' => 1, 'quantity' => 10, 'unit_price' => 100],
                 ],
             ]);
 

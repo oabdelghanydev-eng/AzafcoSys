@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Collection;
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\Collection;
 use App\Services\CollectionDistributorService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature tests for Collection Distribution

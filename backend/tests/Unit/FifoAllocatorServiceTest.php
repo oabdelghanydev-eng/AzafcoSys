@@ -2,13 +2,13 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Product;
-use App\Models\Supplier;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
+use App\Models\Supplier;
 use App\Services\FifoAllocatorService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * FIFO Allocation Service Tests
@@ -19,7 +19,9 @@ class FifoAllocatorServiceTest extends TestCase
     use RefreshDatabase;
 
     private FifoAllocatorService $fifoService;
+
     private Product $product;
+
     private Supplier $supplier;
 
     protected function setUp(): void

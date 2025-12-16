@@ -9,7 +9,9 @@ namespace App\Exceptions;
 class BusinessException extends \Exception
 {
     protected string $errorCode;
+
     protected string $messageAr;
+
     protected string $messageEn;
 
     public function __construct(

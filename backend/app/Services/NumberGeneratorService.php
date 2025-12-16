@@ -9,8 +9,8 @@ class NumberGeneratorService
 {
     /**
      * Generate next sequential number for a model
-     * 
-     * @param string $type Type: invoice, collection, shipment, return, expense
+     *
+     * @param  string  $type  Type: invoice, collection, shipment, return, expense
      * @return string Generated number like "INV-00001"
      */
     public function generate(string $type): string
@@ -39,7 +39,7 @@ class NumberGeneratorService
             $nextNumber = 1;
         }
 
-        return $prefix . str_pad($nextNumber, $digits, '0', STR_PAD_LEFT);
+        return $prefix . str_pad((string) $nextNumber, $digits, '0', STR_PAD_LEFT);
     }
 
     /**

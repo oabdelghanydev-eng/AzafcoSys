@@ -3,8 +3,8 @@
 namespace App\Policies;
 
 use App\Models\Collection;
-use App\Models\User;
 use App\Models\Setting;
+use App\Models\User;
 
 /**
  * Collection Policy
@@ -38,14 +38,14 @@ class CollectionPolicy
 
     /**
      * Determine if the user can update the collection.
-     * 
+     *
      * Edit window rule:
      * Collection can only be edited within the configured edit window
      */
     public function update(User $user, Collection $collection): bool
     {
         // Permission check
-        if (!$user->hasPermission('collections.edit')) {
+        if (! $user->hasPermission('collections.edit')) {
             return false;
         }
 
@@ -68,7 +68,7 @@ class CollectionPolicy
     public function cancel(User $user, Collection $collection): bool
     {
         // Permission check
-        if (!$user->hasPermission('collections.cancel')) {
+        if (! $user->hasPermission('collections.cancel')) {
             return false;
         }
 

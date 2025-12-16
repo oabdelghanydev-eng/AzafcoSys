@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\BankTransaction;
 use App\Traits\ApiResponse;
-use App\Exceptions\BusinessException;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
  * BankController
- * 
+ *
  * Handles bank deposit/withdraw operations with permission checks
  */
 /**
@@ -33,7 +33,7 @@ class BankController extends Controller
 
         $bank = Account::bank()->active()->first();
 
-        if (!$bank) {
+        if (! $bank) {
             return $this->error('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found', 404);
         }
 
@@ -67,7 +67,7 @@ class BankController extends Controller
         return DB::transaction(function () use ($validated) {
             $bank = Account::bank()->active()->lockForUpdate()->first();
 
-            if (!$bank) {
+            if (! $bank) {
                 throw new BusinessException('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found');
             }
 
@@ -110,7 +110,7 @@ class BankController extends Controller
         return DB::transaction(function () use ($validated) {
             $bank = Account::bank()->active()->lockForUpdate()->first();
 
-            if (!$bank) {
+            if (! $bank) {
                 throw new BusinessException('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found');
             }
 
@@ -149,15 +149,15 @@ class BankController extends Controller
 
         $bank = Account::bank()->active()->first();
 
-        if (!$bank) {
+        if (! $bank) {
             return $this->error('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found', 404);
         }
 
         $transactions = $bank->bankTransactions()
             ->with('createdBy:id,name')
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->type, fn($q, $t) => $q->where('type', $t))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
             ->orderByDesc('created_at')
             ->paginate($request->per_page ?? 50);
 

@@ -58,6 +58,14 @@ class AuditService
     }
 
     /**
+     * Log an adjustment action (for inventory adjustments)
+     */
+    public static function logAdjustment(string $action, Model $model, array $details): void
+    {
+        self::log($action, $model, null, $details);
+    }
+
+    /**
      * Core logging method
      */
     private static function log(

@@ -2,19 +2,20 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
+use App\Models\Carryover;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\Carryover;
-use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class ShipmentService
 {
     /**
      * تصفية الشحنة وترحيل المتبقي
-     * 
-     * @param Shipment $shipment الشحنة المراد تصفيتها
-     * @param Shipment $nextShipment الشحنة المفتوحة لاستقبال المتبقي
+     *
+     * @param  Shipment  $shipment  الشحنة المراد تصفيتها
+     * @param  Shipment  $nextShipment  الشحنة المفتوحة لاستقبال المتبقي
+     *
      * @throws \Exception
      */
     public function settle(Shipment $shipment, Shipment $nextShipment): void

@@ -37,7 +37,7 @@ class AiAlertFactory extends Factory
      */
     public function critical(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'severity' => 'critical',
         ]);
     }
@@ -47,7 +47,7 @@ class AiAlertFactory extends Factory
      */
     public function resolved(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'is_resolved' => true,
             'resolved_at' => now(),
         ]);
@@ -58,7 +58,7 @@ class AiAlertFactory extends Factory
      */
     public function read(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'is_read' => true,
         ]);
     }

@@ -2,11 +2,11 @@
 
 namespace App\Observers;
 
+use App\Models\Account;
+use App\Models\BankTransaction;
+use App\Models\CashboxTransaction;
 use App\Models\Expense;
 use App\Models\Supplier;
-use App\Models\Account;
-use App\Models\CashboxTransaction;
-use App\Models\BankTransaction;
 use App\Services\AuditService;
 use Illuminate\Support\Facades\DB;
 
@@ -38,8 +38,8 @@ class ExpenseObserver
                 if ($expense->payment_method === 'cash' && $account->balance < $expense->amount) {
                     throw new \App\Exceptions\BusinessException(
                         'TRS_001',
-                        'رصيد الخزنة غير كافي. المتاح: ' . $account->balance,
-                        'Insufficient cashbox balance. Available: ' . $account->balance
+                        'رصيد الخزنة غير كافي. المتاح: '.$account->balance,
+                        'Insufficient cashbox balance. Available: '.$account->balance
                     );
                 }
 

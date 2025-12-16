@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature Tests for Shipment Update Endpoint
@@ -19,7 +19,9 @@ class ShipmentUpdateTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Supplier $supplier;
+
     private Product $product;
 
     protected function setUp(): void

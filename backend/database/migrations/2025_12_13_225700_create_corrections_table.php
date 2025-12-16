@@ -6,13 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Soft-Correction Flow - Corrections Reference Table
- * 
+ *
  * Best Practice: Track all corrections with full audit trail
  * - Never delete original records
  * - Create correction entries that offset
  * - Maintain complete history
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('corrections', function (Blueprint $table) {

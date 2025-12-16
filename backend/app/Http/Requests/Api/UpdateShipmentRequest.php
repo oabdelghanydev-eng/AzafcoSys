@@ -6,7 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Update Shipment Request
- * 
+ *
  * Validates shipment update data.
  * Rules:
  * - Only open shipments can be updated (validated in controller)

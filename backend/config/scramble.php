@@ -101,7 +101,7 @@ MARKDOWN,
      */
     'servers' => [
         'Local' => 'http://localhost:8000/api',
-        'Production' => env('APP_URL', 'https://api.example.com') . '/api',
+        'Production' => env('APP_URL', 'https://api.example.com').'/api',
     ],
 
     /**

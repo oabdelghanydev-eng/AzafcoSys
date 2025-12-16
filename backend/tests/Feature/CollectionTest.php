@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Collection;
-use App\Models\CollectionAllocation;
 use App\Models\Customer;
-use App\Models\User;
 use App\Models\Invoice;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature Tests for Collection Endpoints
@@ -19,8 +18,11 @@ class CollectionTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Customer $customer;
+
     private Invoice $invoice1;
+
     private Invoice $invoice2;
 
     protected function setUp(): void
@@ -63,7 +65,7 @@ class CollectionTest extends TestCase
     private function collectionRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 
@@ -105,7 +107,7 @@ class CollectionTest extends TestCase
     {
         $response = $this->collectionRequest(
             'getJson',
-            '/api/collections/unpaid-invoices?customer_id=' . $this->customer->id
+            '/api/collections/unpaid-invoices?customer_id='.$this->customer->id
         );
 
         $response->assertStatus(200);

@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\CashboxTransaction;
 use App\Traits\ApiResponse;
-use App\Exceptions\BusinessException;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
  * CashboxController
- * 
+ *
  * Handles cashbox deposit/withdraw operations with permission checks
  */
 /**
@@ -33,7 +33,7 @@ class CashboxController extends Controller
 
         $cashbox = Account::cashbox()->active()->first();
 
-        if (!$cashbox) {
+        if (! $cashbox) {
             return $this->error('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found', 404);
         }
 
@@ -67,7 +67,7 @@ class CashboxController extends Controller
         return DB::transaction(function () use ($validated) {
             $cashbox = Account::cashbox()->active()->lockForUpdate()->first();
 
-            if (!$cashbox) {
+            if (! $cashbox) {
                 throw new BusinessException('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found');
             }
 
@@ -110,7 +110,7 @@ class CashboxController extends Controller
         return DB::transaction(function () use ($validated) {
             $cashbox = Account::cashbox()->active()->lockForUpdate()->first();
 
-            if (!$cashbox) {
+            if (! $cashbox) {
                 throw new BusinessException('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found');
             }
 
@@ -149,15 +149,15 @@ class CashboxController extends Controller
 
         $cashbox = Account::cashbox()->active()->first();
 
-        if (!$cashbox) {
+        if (! $cashbox) {
             return $this->error('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found', 404);
         }
 
         $transactions = $cashbox->cashboxTransactions()
             ->with('createdBy:id,name')
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->type, fn($q, $t) => $q->where('type', $t))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
             ->orderByDesc('created_at')
             ->paginate($request->per_page ?? 50);
 

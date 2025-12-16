@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Transfer;
-use App\Models\Account;
-use App\Models\CashboxTransaction;
-use App\Models\BankTransaction;
 use App\Http\Requests\Api\StoreTransferRequest;
+use App\Models\Account;
+use App\Models\BankTransaction;
+use App\Models\CashboxTransaction;
+use App\Models\Transfer;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,8 +26,8 @@ class TransferController extends Controller
     public function index(Request $request): JsonResponse
     {
         $transfers = Transfer::with(['fromAccount:id,name,type', 'toAccount:id,name,type', 'createdBy:id,name'])
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate($request->per_page ?? 20);

@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
 use App\Models\Collection;
 use App\Models\CollectionAllocation;
-use App\Models\Invoice;
 use App\Models\Customer;
-use App\Exceptions\BusinessException;
+use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 
 class CollectionDistributorService
@@ -15,9 +15,6 @@ class CollectionDistributorService
      * Distribute collection amount to unpaid invoices
      * Supports FIFO (oldest_first) and LIFO (newest_first)
      * تصحيح 2025-12-13: إضافة دعم newest_first
-     * 
-     * @param Collection $collection
-     * @return void
      */
     public function distributeAuto(Collection $collection): void
     {
@@ -44,8 +41,9 @@ class CollectionDistributorService
                 ->get();
 
             foreach ($unpaidInvoices as $invoice) {
-                if ($remaining <= 0)
+                if ($remaining <= 0) {
                     break;
+                }
 
                 $allocateAmount = min($remaining, $invoice->balance);
 
@@ -68,9 +66,9 @@ class CollectionDistributorService
 
     /**
      * Distribute collection manually to specific invoices
-     * 
-     * @param Collection $collection
-     * @param array<int, float> $allocations [invoice_id => amount]
+     *
+     * @param  array<int, float>  $allocations  [invoice_id => amount]
+     *
      * @throws \Exception If allocation exceeds collection amount
      */
     public function distributeManual(Collection $collection, array $allocations): void
@@ -91,8 +89,9 @@ class CollectionDistributorService
 
             // Create new allocations
             foreach ($allocations as $invoiceId => $amount) {
-                if ($amount <= 0)
+                if ($amount <= 0) {
                     continue;
+                }
 
                 $invoice = Invoice::where('id', $invoiceId)
                     ->where('customer_id', $collection->customer_id)
@@ -124,8 +123,6 @@ class CollectionDistributorService
     /**
      * Reverse all allocations for a collection
      * Called when collection is deleted
-     * 
-     * @param Collection $collection
      */
     public function reverseAllocations(Collection $collection): void
     {
@@ -141,10 +138,43 @@ class CollectionDistributorService
     }
 
     /**
+     * Allocate specific amount from collection to single invoice
+     * Used by CorrectionService for reallocation
+     */
+    public function allocateToInvoice(Collection $collection, Invoice $invoice, float $amount): void
+    {
+        if ($amount > $collection->unallocated_amount) {
+            throw new BusinessException(
+                'COL_007',
+                'المبلغ أكبر من الرصيد غير الموزع',
+                'Amount exceeds unallocated balance'
+            );
+        }
+
+        if ($amount > $invoice->balance) {
+            throw new BusinessException(
+                'COL_006',
+                'المبلغ أكبر من رصيد الفاتورة',
+                'Amount exceeds invoice balance'
+            );
+        }
+
+        DB::transaction(function () use ($collection, $invoice, $amount) {
+            CollectionAllocation::create([
+                'collection_id' => $collection->id,
+                'invoice_id' => $invoice->id,
+                'amount' => $amount,
+            ]);
+
+            // Update collection totals
+            $collection->allocated_amount += $amount;
+            $collection->unallocated_amount -= $amount;
+            $collection->saveQuietly();
+        });
+    }
+
+    /**
      * Get customer's unpaid invoices for manual allocation UI
-     * 
-     * @param int $customerId
-     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getUnpaidInvoices(int $customerId): \Illuminate\Database\Eloquent\Collection
     {

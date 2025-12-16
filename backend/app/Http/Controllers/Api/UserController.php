@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Traits\ApiResponse;
-use App\Exceptions\BusinessException;
-use App\Exceptions\ErrorCodes;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 /**
  * UserController
- * 
+ *
  * Handles user management with permission enforcement
  */
 /**
@@ -22,6 +22,7 @@ use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
     use ApiResponse;
+    use AuthorizesRequests;
 
     /**
      * List all users

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * InventoryAdjustment Model
- * 
+ *
  * Tracks inventory corrections with Maker-Checker approval
  * - Physical count differences
  * - Damage/wastage
@@ -47,15 +47,22 @@ class InventoryAdjustment extends Model
 
     // Adjustment types
     const TYPE_PHYSICAL_COUNT = 'physical_count';
+
     const TYPE_DAMAGE = 'damage';
+
     const TYPE_THEFT = 'theft';
+
     const TYPE_ERROR = 'error';
+
     const TYPE_TRANSFER = 'transfer';
+
     const TYPE_EXPIRY = 'expiry';
 
     // Status
     const STATUS_PENDING = 'pending';
+
     const STATUS_APPROVED = 'approved';
+
     const STATUS_REJECTED = 'rejected';
 
     // Relationships

@@ -3,9 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\Expense;
-use App\Models\User;
 use App\Models\Supplier;
-use App\Models\Shipment;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,7 +20,7 @@ class ExpenseFactory extends Factory
     public function definition(): array
     {
         return [
-            'expense_number' => 'EXP-' . fake()->unique()->numberBetween(10000, 99999),
+            'expense_number' => 'EXP-'.fake()->unique()->numberBetween(10000, 99999),
             'type' => 'company', // Default to company to avoid needing supplier_id
             'supplier_id' => null,
             'date' => fake()->dateTimeBetween('-1 month', 'now'),
@@ -39,7 +38,7 @@ class ExpenseFactory extends Factory
      */
     public function company(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'type' => 'company',
             'supplier_id' => null,
         ]);
@@ -50,7 +49,7 @@ class ExpenseFactory extends Factory
      */
     public function supplier(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'type' => 'supplier',
             'supplier_id' => Supplier::factory(),
         ]);
@@ -61,7 +60,7 @@ class ExpenseFactory extends Factory
      */
     public function cash(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'payment_method' => 'cash',
         ]);
     }
@@ -71,7 +70,7 @@ class ExpenseFactory extends Factory
      */
     public function bank(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'payment_method' => 'bank',
         ]);
     }

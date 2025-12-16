@@ -48,6 +48,7 @@ class User extends Authenticatable
         if ($this->is_admin) {
             return true;
         }
+
         return in_array($permission, $this->permissions ?? []);
     }
 
@@ -57,7 +58,8 @@ class User extends Authenticatable
         if ($this->is_admin) {
             return true;
         }
-        return !empty(array_intersect($permissions, $this->permissions ?? []));
+
+        return ! empty(array_intersect($permissions, $this->permissions ?? []));
     }
 
     // Lock the account

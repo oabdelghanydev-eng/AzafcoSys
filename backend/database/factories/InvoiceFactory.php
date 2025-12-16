@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Invoice;
 use App\Models\Customer;
+use App\Models\Invoice;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class InvoiceFactory extends Factory
@@ -16,7 +16,7 @@ class InvoiceFactory extends Factory
         $discount = $this->faker->randomFloat(2, 0, $total * 0.1);
 
         return [
-            'invoice_number' => 'INV-' . $this->faker->unique()->numberBetween(10000, 99999),
+            'invoice_number' => 'INV-'.$this->faker->unique()->numberBetween(10000, 99999),
             'customer_id' => Customer::factory(),
             'date' => $this->faker->date(),
             'type' => 'sale',
@@ -32,14 +32,14 @@ class InvoiceFactory extends Factory
 
     public function cancelled(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => 'cancelled',
         ]);
     }
 
     public function paid(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'paid_amount' => $attributes['total'],
             'balance' => 0,
         ]);

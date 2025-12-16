@@ -2,24 +2,23 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Customer;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
+use App\Models\Account;
 use App\Models\Collection;
+use App\Models\Customer;
 use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\Product;
 use App\Models\Supplier;
-use App\Models\Account;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 /**
  * PDF Report Generation Tests
- * 
+ *
  * 2025 Best Practices:
  * - Uses RefreshDatabase for isolation
  * - Uses Sanctum::actingAs for authentication
@@ -31,6 +30,7 @@ class DailyPdfReportTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private string $testDate;
 
     protected function setUp(): void
@@ -62,7 +62,7 @@ class DailyPdfReportTest extends TestCase
                 'success' => false,
                 'error' => [
                     'code' => 'AUTH_001',
-                ]
+                ],
             ]);
     }
 
@@ -135,7 +135,7 @@ class DailyPdfReportTest extends TestCase
 
         // Create expense directly to avoid factory constraints
         \DB::table('expenses')->insert([
-            'expense_number' => 'EXP-' . rand(1000, 9999),
+            'expense_number' => 'EXP-'.rand(1000, 9999),
             'type' => 'company',
             'category' => 'other',
             'date' => $this->testDate,

@@ -6,8 +6,8 @@ use App\Models\AiAlert;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Shipment;
 use App\Models\Setting;
+use App\Models\Shipment;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -61,7 +61,7 @@ class AlertDetectionService
                         'type' => 'price_anomaly',
                         'severity' => $deviation > 0.5 ? 'critical' : 'warning',
                         'title' => 'سعر شاذ',
-                        'message' => "السعر {$item->unit_price} يختلف عن المتوسط {$avgPrice} بنسبة " . round($deviation * 100) . "%",
+                        'message' => "السعر {$item->unit_price} يختلف عن المتوسط {$avgPrice} بنسبة ".round($deviation * 100).'%',
                         'data' => [
                             'product_id' => $item->product_id,
                             'product_name' => $item->product?->name,
@@ -105,7 +105,7 @@ class AlertDetectionService
                 ->where('is_resolved', false)
                 ->first();
 
-            if (!$existingAlert) {
+            if (! $existingAlert) {
                 $alert = AiAlert::create([
                     'type' => 'shipment_delay',
                     'severity' => $openDays > ($expectedDays * 2) ? 'critical' : 'warning',
@@ -164,7 +164,7 @@ class AlertDetectionService
                 ->where('is_resolved', false)
                 ->first();
 
-            if (!$existingAlert) {
+            if (! $existingAlert) {
                 $alert = AiAlert::create([
                     'type' => 'overdue_customer',
                     'severity' => $overdueSince > ($overdueDays * 2) ? 'critical' : 'warning',

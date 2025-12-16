@@ -2,10 +2,10 @@
 
 namespace App\Observers;
 
-use App\Models\Shipment;
-use App\Services\AuditService;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ErrorCodes;
+use App\Models\Shipment;
+use App\Services\AuditService;
 
 class ShipmentObserver
 {
@@ -36,10 +36,10 @@ class ShipmentObserver
             );
 
             // If any field other than status/timestamps changed, block it
-            if (!empty($changedFields)) {
+            if (! empty($changedFields)) {
                 throw new BusinessException(
                     ErrorCodes::SHP_001,
-                    ErrorCodes::getMessage(ErrorCodes::SHP_001) . '. الحقول: ' . implode(', ', $changedFields),
+                    ErrorCodes::getMessage(ErrorCodes::SHP_001).'. الحقول: '.implode(', ', $changedFields),
                     ErrorCodes::getMessageEn(ErrorCodes::SHP_001)
                 );
             }

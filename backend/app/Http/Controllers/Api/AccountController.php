@@ -4,11 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Account;
-use App\Models\CashboxTransaction;
-use App\Models\BankTransaction;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Account
@@ -23,8 +21,8 @@ class AccountController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Account::query()
-            ->when($request->type, fn($q, $t) => $q->where('type', $t))
-            ->when($request->has('active'), fn($q) => $q->where('is_active', $request->active))
+            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
+            ->when($request->has('active'), fn ($q) => $q->where('is_active', $request->active))
             ->orderBy('type')
             ->orderBy('name');
 
@@ -76,9 +74,9 @@ class AccountController extends Controller
         }
 
         $transactions = $query
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->type, fn($q, $t) => $q->where('type', $t))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
+            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
             ->orderByDesc('created_at')
             ->paginate($request->per_page ?? 50);
 

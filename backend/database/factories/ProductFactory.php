@@ -12,12 +12,10 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->unique()->word() . ' ' . $this->faker->word(),
-            'name_en' => $this->faker->word() . ' ' . $this->faker->word(),
+            'name' => $this->faker->unique()->word().' '.$this->faker->word(),
+            'name_en' => $this->faker->word().' '.$this->faker->word(),
             'category' => $this->faker->randomElement(['category_a', 'category_b', 'category_c']),
             'is_active' => true,
         ];
     }
 }
-
-

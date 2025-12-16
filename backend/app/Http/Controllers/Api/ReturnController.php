@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ReturnModel;
 use App\Http\Requests\Api\StoreReturnRequest;
+use App\Models\ReturnModel;
 use App\Services\ReturnService;
 use App\Traits\ApiResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Return
@@ -30,10 +30,10 @@ class ReturnController extends Controller
     public function index(Request $request)
     {
         $returns = ReturnModel::with(['customer'])
-            ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
-            ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->when($request->customer_id, fn ($q, $id) => $q->where('customer_id', $id))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate($request->per_page ?? 15);
@@ -93,6 +93,7 @@ class ReturnController extends Controller
 
         try {
             $this->returnService->cancelReturn($return);
+
             return $this->success($return->fresh(), 'تم إلغاء المرتجع بنجاح');
         } catch (\Exception $e) {
             return $this->error(

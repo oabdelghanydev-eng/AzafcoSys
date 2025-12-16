@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
-use App\Models\Supplier;
-use App\Models\Shipment;
-use App\Models\Invoice;
 use App\Models\Collection;
+use App\Models\Customer;
 use App\Models\Expense;
+use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Shipment;
+use App\Models\Supplier;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 

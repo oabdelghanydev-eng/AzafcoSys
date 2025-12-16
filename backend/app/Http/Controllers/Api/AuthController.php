@@ -32,7 +32,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             throw ValidationException::withMessages([
                 'email' => ['البريد الإلكتروني غير مسجل'],
             ]);
@@ -46,7 +46,7 @@ class AuthController extends Controller
         }
 
         // Check password
-        if (!$user->password || !Hash::check($request->password, $user->password)) {
+        if (! $user->password || ! Hash::check($request->password, $user->password)) {
             $user->incrementFailedAttempts();
 
             throw ValidationException::withMessages([
@@ -84,6 +84,7 @@ class AuthController extends Controller
     {
         /** @var \Laravel\Socialite\Two\GoogleProvider $driver */
         $driver = Socialite::driver('google');
+
         return $driver->stateless()->redirect();
     }
 
@@ -108,16 +109,16 @@ class AuthController extends Controller
                 ->orWhere('email', $googleUser->getEmail())
                 ->first();
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
-                    'message' => 'هذا الحساب غير مسجل في النظام'
+                    'message' => 'هذا الحساب غير مسجل في النظام',
                 ], 403);
             }
 
             // Check if locked
             if ($user->is_locked) {
                 return response()->json([
-                    'message' => 'الحساب مُغلق'
+                    'message' => 'الحساب مُغلق',
                 ], 403);
             }
 
@@ -141,7 +142,7 @@ class AuthController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'فشل تسجيل الدخول بـ Google'
+                'message' => 'فشل تسجيل الدخول بـ Google',
             ], 500);
         }
     }

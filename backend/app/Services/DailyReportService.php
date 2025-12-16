@@ -2,16 +2,15 @@
 
 namespace App\Services;
 
-use App\Models\DailyReport;
-use App\Models\Account;
-use App\Models\Setting;
-use App\Models\UserSession;
 use App\Exceptions\BusinessException;
+use App\Models\Account;
+use App\Models\DailyReport;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 
 /**
  * DailyReportService
- * 
+ *
  * Handles daily report operations with database-based session tracking.
  * All users work on the same daily report.
  */
@@ -79,6 +78,7 @@ class DailyReportService
                         'This day is closed. Use reopen.'
                     );
                 }
+
                 // Already open - just return it
                 return $report;
             }
@@ -162,6 +162,7 @@ class DailyReportService
     public function getWorkingDate(): ?string
     {
         $report = $this->getCurrentOpenReport();
+
         return $report?->date;
     }
 
@@ -214,11 +215,13 @@ class DailyReportService
             ->first();
 
         if ($lastReport) {
-            return (float) $lastReport->{"{$type}_closing"} ?? 0;
+            // @phpstan-ignore nullCoalesce.expr (dynamic property access may be null)
+            return (float) ($lastReport->{"{$type}_closing"} ?? 0);
         }
 
         // First day - use current account balance
         $account = Account::{$type}()->first();
+
         return (float) ($account?->balance ?? 0);
     }
 

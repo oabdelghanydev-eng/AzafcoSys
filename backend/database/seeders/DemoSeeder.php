@@ -2,29 +2,28 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use App\Models\User;
-use App\Models\Customer;
-use App\Models\Supplier;
-use App\Models\Product;
 use App\Models\Account;
+use App\Models\Collection;
+use App\Models\Customer;
+use App\Models\Expense;
+use App\Models\Invoice;
+use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
-use App\Models\Collection;
-use App\Models\Expense;
+use App\Models\Supplier;
 use App\Models\Transfer;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Demo Data Seeder - 2025 Best Practices
- * 
+ *
  * Creates realistic sample data for:
  * - PDF Report testing
  * - API endpoint testing
  * - Development environment
- * 
+ *
  * Usage: php artisan db:seed --class=DemoSeeder
  */
 class DemoSeeder extends Seeder
@@ -37,6 +36,7 @@ class DemoSeeder extends Seeder
         // Only run in non-production environments
         if (app()->environment('production')) {
             $this->command->error('Cannot run DemoSeeder in production!');
+
             return;
         }
 
@@ -93,7 +93,7 @@ class DemoSeeder extends Seeder
     {
         $this->command->info('  → Seeding Accounts...');
 
-        if (!Account::where('type', 'cashbox')->exists()) {
+        if (! Account::where('type', 'cashbox')->exists()) {
             Account::create([
                 'type' => 'cashbox',
                 'name' => 'الخزنة الرئيسية',
@@ -102,7 +102,7 @@ class DemoSeeder extends Seeder
             ]);
         }
 
-        if (!Account::where('type', 'bank')->exists()) {
+        if (! Account::where('type', 'bank')->exists()) {
             Account::create([
                 'type' => 'bank',
                 'name' => 'البنك الرئيسي',
@@ -208,7 +208,7 @@ class DemoSeeder extends Seeder
                 ],
                 [
                     'weight_per_unit' => fake()->randomFloat(2, 0.5, 2),
-                    'weight_label' => 'A' . ($index + 1),
+                    'weight_label' => 'A'.($index + 1),
                     'cartons' => fake()->numberBetween(10, 50),
                     'initial_quantity' => 200,
                     'remaining_quantity' => 150, // Some sold
@@ -230,7 +230,7 @@ class DemoSeeder extends Seeder
         $today = now()->toDateString();
 
         foreach ($customers->take(2) as $index => $customer) {
-            $invoiceNumber = 'INV-DEMO-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+            $invoiceNumber = 'INV-DEMO-'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
 
             $invoice = Invoice::firstOrCreate(
                 ['invoice_number' => $invoiceNumber],
@@ -285,7 +285,7 @@ class DemoSeeder extends Seeder
         $today = now()->toDateString();
 
         foreach ($customers->take(2) as $index => $customer) {
-            $receiptNumber = 'REC-DEMO-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+            $receiptNumber = 'REC-DEMO-'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
 
             Collection::firstOrCreate(
                 ['receipt_number' => $receiptNumber],

@@ -2,12 +2,11 @@
 
 namespace App\Policies;
 
-use App\Models\DailyReport;
 use App\Models\User;
 
 /**
  * DailyReportPolicy
- * 
+ *
  * Authorization for daily report operations
  */
 class DailyReportPolicy

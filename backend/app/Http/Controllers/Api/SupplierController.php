@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Supplier;
-use App\Http\Resources\SupplierResource;
 use App\Http\Requests\Api\StoreSupplierRequest;
 use App\Http\Requests\Api\UpdateSupplierRequest;
+use App\Http\Resources\SupplierResource;
+use App\Models\Supplier;
 use App\Services\NumberGeneratorService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Supplier
@@ -34,13 +34,13 @@ class SupplierController extends Controller
         $this->checkPermission('suppliers.view');
 
         $query = Supplier::query()
-            ->when($request->search, fn($q, $s) => $q->where(function ($query) use ($s) {
+            ->when($request->search, fn ($q, $s) => $q->where(function ($query) use ($s) {
                 $query->where('name', 'like', "%{$s}%")
                     ->orWhere('code', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%");
             }))
-            ->when($request->has('is_active'), fn($q) => $q->where('is_active', $request->boolean('is_active')))
-            ->when($request->has('with_balance'), fn($q) => $q->where('balance', '!=', 0))
+            ->when($request->has('is_active'), fn ($q) => $q->where('is_active', $request->boolean('is_active')))
+            ->when($request->has('with_balance'), fn ($q) => $q->where('balance', '!=', 0))
             ->orderBy('name');
 
         $suppliers = $request->per_page
@@ -66,7 +66,7 @@ class SupplierController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم إنشاء المورد بنجاح',
-            'data' => new SupplierResource($supplier)
+            'data' => new SupplierResource($supplier),
         ], 201);
     }
 
@@ -96,7 +96,7 @@ class SupplierController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث المورد بنجاح',
-            'data' => new SupplierResource($supplier->fresh())
+            'data' => new SupplierResource($supplier->fresh()),
         ]);
     }
 
@@ -115,8 +115,8 @@ class SupplierController extends Controller
                 'error' => [
                     'code' => 'SUP_001',
                     'message' => 'لا يمكن حذف مورد له شحنات مرتبطة',
-                    'message_en' => 'Cannot delete supplier with related shipments'
-                ]
+                    'message_en' => 'Cannot delete supplier with related shipments',
+                ],
             ], 422);
         }
 
@@ -127,8 +127,8 @@ class SupplierController extends Controller
                 'error' => [
                     'code' => 'SUP_002',
                     'message' => 'لا يمكن حذف مورد له مصروفات مرتبطة',
-                    'message_en' => 'Cannot delete supplier with related expenses'
-                ]
+                    'message_en' => 'Cannot delete supplier with related expenses',
+                ],
             ], 422);
         }
 
@@ -139,8 +139,8 @@ class SupplierController extends Controller
                 'error' => [
                     'code' => 'SUP_003',
                     'message' => 'لا يمكن حذف مورد له رصيد غير صفري',
-                    'message_en' => 'Cannot delete supplier with non-zero balance'
-                ]
+                    'message_en' => 'Cannot delete supplier with non-zero balance',
+                ],
             ], 422);
         }
 
@@ -148,7 +148,7 @@ class SupplierController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'تم حذف المورد بنجاح'
+            'message' => 'تم حذف المورد بنجاح',
         ]);
     }
 }

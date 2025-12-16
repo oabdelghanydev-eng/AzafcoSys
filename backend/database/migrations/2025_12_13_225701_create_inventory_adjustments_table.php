@@ -6,13 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Soft-Correction Flow - Inventory Adjustments Table
- * 
+ *
  * Best Practice: Track inventory corrections with approval
  * - Physical count differences
  * - Damage/wastage
  * - Error corrections
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('inventory_adjustments', function (Blueprint $table) {

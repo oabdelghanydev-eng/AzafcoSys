@@ -4,7 +4,7 @@ namespace App\Helpers;
 
 /**
  * Arabic PDF Helper
- * 
+ *
  * Comprehensive helper for bilingual Arabic/English PDF generation
  * Provides labels, currency formatting, and RTL support
  */
@@ -24,7 +24,8 @@ class ArabicPdfHelper
     public static function formatCurrency(float $amount, bool $showSymbol = true): string
     {
         $formatted = number_format($amount, 2);
-        return $showSymbol ? $formatted . ' ج.م' : $formatted;
+
+        return $showSymbol ? $formatted.' ج.م' : $formatted;
     }
 
     /**
@@ -45,7 +46,7 @@ class ArabicPdfHelper
             'daily_closing_report' => ['ar' => 'تقرير الإغلاق اليومي', 'en' => 'Daily Closing Report'],
             'shipment_settlement_report' => ['ar' => 'تقرير تسوية الشحنة', 'en' => 'Shipment Settlement Report'],
             'customer_statement' => ['ar' => 'كشف حساب العميل', 'en' => 'Customer Statement'],
-            
+
             // Section Headers - Daily Report
             'sales_invoices' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales Invoices'],
             'collections' => ['ar' => 'التحصيلات', 'en' => 'Collections'],
@@ -55,7 +56,7 @@ class ArabicPdfHelper
             'daily_summary' => ['ar' => 'ملخص اليوم', 'en' => 'Daily Summary'],
             'balances' => ['ar' => 'الأرصدة', 'en' => 'Balances'],
             'remaining_inventory' => ['ar' => 'المخزون المتبقي', 'en' => 'Remaining Inventory'],
-            
+
             // Section Headers - Settlement Report
             'shipment_info' => ['ar' => 'بيانات الشحنة', 'en' => 'Shipment Information'],
             'sales_by_product' => ['ar' => 'المبيعات حسب المنتج', 'en' => 'Sales by Product'],
@@ -64,7 +65,7 @@ class ArabicPdfHelper
             'weight_analysis' => ['ar' => 'تحليل الوزن', 'en' => 'Weight Analysis'],
             'supplier_expenses' => ['ar' => 'مصروفات المورد', 'en' => 'Supplier Expenses'],
             'financial_summary' => ['ar' => 'الملخص المالي للمورد', 'en' => 'Supplier Financial Summary'],
-            
+
             // Table Headers
             'invoice_number' => ['ar' => 'رقم الفاتورة', 'en' => 'Invoice #'],
             'receipt_number' => ['ar' => 'رقم الإيصال', 'en' => 'Receipt #'],
@@ -85,7 +86,7 @@ class ArabicPdfHelper
             'date' => ['ar' => 'التاريخ', 'en' => 'Date'],
             'total' => ['ar' => 'الإجمالي', 'en' => 'Total'],
             'avg_price' => ['ar' => 'متوسط السعر', 'en' => 'Avg Price'],
-            
+
             // Summary Labels
             'total_sales' => ['ar' => 'إجمالي المبيعات', 'en' => 'Total Sales'],
             'total_collections' => ['ar' => 'إجمالي التحصيلات', 'en' => 'Total Collections'],
@@ -96,7 +97,7 @@ class ArabicPdfHelper
             'market_balance' => ['ar' => 'رصيد السوق (ديون العملاء)', 'en' => 'Market Balance (Customer Debts)'],
             'cashbox_balance' => ['ar' => 'رصيد الخزينة', 'en' => 'Cashbox Balance'],
             'bank_balance' => ['ar' => 'رصيد البنك', 'en' => 'Bank Balance'],
-            
+
             // Settlement Specific
             'shipment_number' => ['ar' => 'رقم الشحنة', 'en' => 'Shipment Number'],
             'arrival_date' => ['ar' => 'تاريخ الوصول', 'en' => 'Arrival Date'],
@@ -118,7 +119,7 @@ class ArabicPdfHelper
             'payments_to_supplier' => ['ar' => 'مدفوعات للمورد', 'en' => 'Payments to Supplier'],
             'final_balance' => ['ar' => 'الرصيد النهائي للمورد', 'en' => 'FINAL SUPPLIER BALANCE'],
             'returns_deduction' => ['ar' => 'خصم مرتجعات الشحنة السابقة', 'en' => 'Returns from Previous Shipment'],
-            
+
             // Status & Notes
             'no_data' => ['ar' => 'لا توجد بيانات', 'en' => 'No data available'],
             'no_sales' => ['ar' => 'لا توجد فواتير مبيعات لهذا اليوم', 'en' => 'No sales invoices for this day'],
@@ -135,17 +136,17 @@ class ArabicPdfHelper
     public static function label(string $key, string $lang = 'both'): string
     {
         $labels = self::getLabels();
-        
-        if (!isset($labels[$key])) {
+
+        if (! isset($labels[$key])) {
             return $key;
         }
 
         $label = $labels[$key];
 
-        return match($lang) {
+        return match ($lang) {
             'ar' => $label['ar'],
             'en' => $label['en'],
-            'both' => $label['ar'] . ' / ' . $label['en'],
+            'both' => $label['ar'].' / '.$label['en'],
             default => $label['ar']
         };
     }
@@ -155,11 +156,11 @@ class ArabicPdfHelper
      */
     public static function wrapRtl(string $text): string
     {
-        if (!self::isArabic($text)) {
+        if (! self::isArabic($text)) {
             return $text;
         }
 
-        return '<span style="direction: rtl; unicode-bidi: bidi-override;">' . $text . '</span>';
+        return '<span style="direction: rtl; unicode-bidi: bidi-override;">'.$text.'</span>';
     }
 
     /**
@@ -167,7 +168,7 @@ class ArabicPdfHelper
      */
     public static function paymentMethod(string $method): string
     {
-        return match($method) {
+        return match ($method) {
             'cash' => 'نقدي / Cash',
             'bank' => 'بنك / Bank',
             'check' => 'شيك / Check',
@@ -180,7 +181,7 @@ class ArabicPdfHelper
      */
     public static function expenseType(string $type): string
     {
-        return match($type) {
+        return match ($type) {
             'company' => 'شركة / Company',
             'supplier' => 'مورد / Supplier',
             default => $type

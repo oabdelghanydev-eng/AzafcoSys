@@ -15,7 +15,7 @@ class CollectionFactory extends Factory
         $amount = $this->faker->randomFloat(2, 100, 5000);
 
         return [
-            'receipt_number' => 'REC-' . $this->faker->unique()->numberBetween(10000, 99999),
+            'receipt_number' => 'REC-'.$this->faker->unique()->numberBetween(10000, 99999),
             'customer_id' => Customer::factory(),
             'date' => $this->faker->date(),
             'amount' => $amount,
@@ -30,7 +30,7 @@ class CollectionFactory extends Factory
 
     public function manual(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'distribution_method' => 'manual',
         ]);
     }

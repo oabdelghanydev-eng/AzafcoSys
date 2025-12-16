@@ -70,7 +70,7 @@ class ShipmentItem extends Model
     {
         return $query->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
             ->orderBy('created_at', 'asc');
     }
 

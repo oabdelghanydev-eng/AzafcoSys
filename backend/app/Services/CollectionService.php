@@ -2,18 +2,18 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessException;
 use App\Models\Collection;
 use App\Models\CollectionAllocation;
 use App\Models\Invoice;
-use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class CollectionService
 {
     /**
      * توزيع مبلغ التحصيل على الفواتير
-     * 
-     * @param Collection $collection التحصيل المراد توزيعه
+     *
+     * @param  Collection  $collection  التحصيل المراد توزيعه
      */
     public function allocatePayment(Collection $collection): void
     {
@@ -34,8 +34,9 @@ class CollectionService
                 ->get();
 
             foreach ($unpaidInvoices as $invoice) {
-                if ($remaining <= 0)
+                if ($remaining <= 0) {
                     break;
+                }
 
                 $allocateAmount = min($remaining, (float) $invoice->balance);
 

@@ -2,19 +2,20 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Add immutable fifo_sequence for proper FIFO ordering
- * 
+ *
  * Best Practice:
  * - fifo_sequence: للقرارات المحاسبية (FIFO)
  * - date: للتقارير فقط
- * 
+ *
  * السبب: التسلسل غير قابل للتعديل ومضمون الترتيب
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::table('shipments', function (Blueprint $table) {

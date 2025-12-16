@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\ShipmentItem;
-use App\Models\InvoiceItem;
 use App\Exceptions\BusinessException;
+use App\Models\InvoiceItem;
+use App\Models\ShipmentItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -12,10 +12,11 @@ class FifoAllocatorService
 {
     /**
      * Allocate quantity from available shipment items using FIFO
-     * 
-     * @param int $productId Product to allocate
-     * @param float $quantity Quantity needed
+     *
+     * @param  int  $productId  Product to allocate
+     * @param  float  $quantity  Quantity needed
      * @return Collection<int, array{shipment_item_id: int, quantity: float, shipment_number: string}>
+     *
      * @throws \Exception If insufficient stock
      */
     public function allocate(int $productId, float $quantity): Collection
@@ -30,7 +31,7 @@ class FifoAllocatorService
         $availableItems = ShipmentItem::query()
             ->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
             ->orderBy('shipments.fifo_sequence', 'asc')
             ->orderBy('shipment_items.id', 'asc')
@@ -40,8 +41,9 @@ class FifoAllocatorService
             ->get();
 
         foreach ($availableItems as $item) {
-            if ($remaining <= 0)
+            if ($remaining <= 0) {
                 break;
+            }
 
             $take = min($remaining, $item->remaining_quantity);
 
@@ -71,12 +73,12 @@ class FifoAllocatorService
     /**
      * Execute FIFO allocation and update inventory
      * Returns created invoice items
-     * 
-     * @param int $invoiceId Invoice to allocate for
-     * @param int $productId Product to allocate
-     * @param float $quantity Total quantity
-     * @param float $unitPrice Selling price per unit
-     * @param int $cartons Number of cartons
+     *
+     * @param  int  $invoiceId  Invoice to allocate for
+     * @param  int  $productId  Product to allocate
+     * @param  float  $quantity  Total quantity
+     * @param  float  $unitPrice  Selling price per unit
+     * @param  int  $cartons  Number of cartons
      * @return Collection<int, InvoiceItem>
      */
     public function allocateAndCreate(
@@ -118,8 +120,8 @@ class FifoAllocatorService
 
     /**
      * Reverse allocation (for invoice cancellation)
-     * 
-     * @param int $invoiceItemId Invoice item to reverse
+     *
+     * @param  int  $invoiceItemId  Invoice item to reverse
      */
     public function reverseAllocation(int $invoiceItemId): void
     {
@@ -134,24 +136,18 @@ class FifoAllocatorService
 
     /**
      * Check available stock for a product
-     * 
-     * @param int $productId
-     * @return float
      */
     public function getAvailableStock(int $productId): float
     {
         return ShipmentItem::query()
             ->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
             ->sum('remaining_quantity');
     }
 
     /**
      * Get FIFO breakdown for a product
-     * 
-     * @param int $productId
-     * @return Collection
      */
     public function getFifoBreakdown(int $productId): Collection
     {
@@ -159,7 +155,7 @@ class FifoAllocatorService
         return ShipmentItem::query()
             ->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
             ->orderBy('shipments.fifo_sequence', 'asc')
             ->orderBy('shipment_items.id', 'asc')

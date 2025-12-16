@@ -30,7 +30,7 @@ class AccountFactory extends Factory
      */
     public function cashbox(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'name' => 'Cashbox',
             'type' => 'cashbox',
         ]);
@@ -41,7 +41,7 @@ class AccountFactory extends Factory
      */
     public function bank(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'name' => 'Bank',
             'type' => 'bank',
         ]);

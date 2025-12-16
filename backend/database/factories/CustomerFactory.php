@@ -12,7 +12,7 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'code' => 'C-' . $this->faker->unique()->numberBetween(1000, 9999),
+            'code' => 'C-'.$this->faker->unique()->numberBetween(1000, 9999),
             'name' => $this->faker->company(),
             'phone' => $this->faker->phoneNumber(),
             'address' => $this->faker->address(),

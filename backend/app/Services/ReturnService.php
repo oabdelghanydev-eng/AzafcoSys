@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\ReturnModel;
-use App\Models\ReturnItem;
+use App\Exceptions\BusinessException;
 use App\Models\Customer;
+use App\Models\ReturnItem;
+use App\Models\ReturnModel;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\Carryover;
-use App\Models\Invoice;
-use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class ReturnService
@@ -23,12 +21,8 @@ class ReturnService
 
     /**
      * Create a return and update inventory + customer balance
-     * 
-     * @param int $customerId
-     * @param array $items [{product_id, quantity, unit_price, shipment_item_id?, original_invoice_item_id?}]
-     * @param int|null $originalInvoiceId
-     * @param string|null $notes
-     * @return ReturnModel
+     *
+     * @param  array  $items  [{product_id, quantity, unit_price, shipment_item_id?, original_invoice_item_id?}]
      */
     public function createReturn(
         int $customerId,
@@ -38,7 +32,7 @@ class ReturnService
     ): ReturnModel {
         return DB::transaction(function () use ($customerId, $items, $originalInvoiceId, $notes) {
             // Calculate total
-            $totalAmount = collect($items)->sum(fn($item) => $item['quantity'] * $item['unit_price']);
+            $totalAmount = collect($items)->sum(fn ($item) => $item['quantity'] * $item['unit_price']);
 
             // Create return
             $return = ReturnModel::create([
@@ -101,7 +95,7 @@ class ReturnService
         }
 
         // Find any open shipment item for this product
-        $openItem = ShipmentItem::whereHas('shipment', fn($q) => $q->where('status', 'open'))
+        $openItem = ShipmentItem::whereHas('shipment', fn ($q) => $q->where('status', 'open'))
             ->where('product_id', $productId)
             ->first();
 
@@ -121,7 +115,7 @@ class ReturnService
         // Find or create open shipment
         $openShipment = Shipment::where('status', 'open')->first();
 
-        if (!$openShipment) {
+        if (! $openShipment) {
             throw new BusinessException(
                 'RET_001',
                 'لا توجد شحنة مفتوحة لاستقبال المرتجع',
@@ -135,7 +129,7 @@ class ReturnService
             ->where('weight_per_unit', $originalItem->weight_per_unit)
             ->first();
 
-        if (!$targetItem) {
+        if (! $targetItem) {
             $targetItem = ShipmentItem::create([
                 'shipment_id' => $openShipment->id,
                 'product_id' => $productId,

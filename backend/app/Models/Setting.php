@@ -32,6 +32,7 @@ class Setting extends Model
     public static function getValue(string $key, $default = null)
     {
         $setting = static::where('key', $key)->first();
+
         return $setting ? $setting->typed_value : $default;
     }
 

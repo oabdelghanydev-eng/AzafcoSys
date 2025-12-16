@@ -28,16 +28,16 @@ class ExpenseResource extends JsonResource
             'notes' => $this->notes,
 
             // Relations
-            'supplier' => $this->whenLoaded('supplier', fn() => [
+            'supplier' => $this->whenLoaded('supplier', fn () => [
                 'id' => $this->supplier->id,
                 'name' => $this->supplier->name,
                 'code' => $this->supplier->code,
             ]),
-            'shipment' => $this->whenLoaded('shipment', fn() => [
+            'shipment' => $this->whenLoaded('shipment', fn () => [
                 'id' => $this->shipment->id,
                 'number' => $this->shipment->number,
             ]),
-            'created_by' => $this->whenLoaded('createdBy', fn() => [
+            'created_by' => $this->whenLoaded('createdBy', fn () => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,
             ]),

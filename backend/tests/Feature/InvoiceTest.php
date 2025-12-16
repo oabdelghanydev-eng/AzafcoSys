@@ -2,18 +2,15 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\Customer;
-use App\Models\User;
+use App\Models\Invoice;
 use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\Supplier;
-use App\Models\Collection;
-use App\Models\CollectionAllocation;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Feature Tests for Invoice Endpoints
@@ -24,9 +21,13 @@ class InvoiceTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Customer $customer;
+
     private Product $product;
+
     private Shipment $shipment;
+
     private ShipmentItem $shipmentItem;
 
     protected function setUp(): void
@@ -61,7 +62,7 @@ class InvoiceTest extends TestCase
     private function invoiceRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 

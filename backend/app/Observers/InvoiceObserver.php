@@ -2,12 +2,12 @@
 
 namespace App\Observers;
 
-use App\Models\Invoice;
-use App\Models\Customer;
-use App\Services\AuditService;
-use App\Services\FifoAllocatorService;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ErrorCodes;
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Services\AuditService;
+use App\Services\FifoAllocatorService;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceObserver

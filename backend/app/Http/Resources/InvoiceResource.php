@@ -26,7 +26,7 @@ class InvoiceResource extends JsonResource
             'balance' => (float) $this->balance,
             'notes' => $this->notes,
             'items' => InvoiceItemResource::collection($this->whenLoaded('items')),
-            'created_by' => $this->whenLoaded('createdBy', fn() => [
+            'created_by' => $this->whenLoaded('createdBy', fn () => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,
             ]),

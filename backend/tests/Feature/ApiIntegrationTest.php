@@ -2,15 +2,14 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Models\User;
 use App\Models\Customer;
-use App\Models\Supplier;
 use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
-use App\Models\DailyReport;
+use App\Models\Supplier;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * API Integration Tests
@@ -45,8 +44,8 @@ class ApiIntegrationTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'code', 'name', 'phone', 'balance']
-                ]
+                    '*' => ['id', 'code', 'name', 'phone', 'balance'],
+                ],
             ]);
     }
 
@@ -212,8 +211,8 @@ class ApiIntegrationTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['product_id', 'product_name', 'total_quantity']
-                ]
+                    '*' => ['product_id', 'product_name', 'total_quantity'],
+                ],
             ]);
     }
 

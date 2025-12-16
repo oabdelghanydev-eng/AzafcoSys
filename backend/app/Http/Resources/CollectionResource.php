@@ -25,8 +25,7 @@ class CollectionResource extends JsonResource
             'notes' => $this->notes,
             'allocations' => $this->whenLoaded(
                 'allocations',
-                fn() =>
-                $this->allocations->map(fn($a) => [
+                fn () => $this->allocations->map(fn ($a) => [
                     'invoice_id' => $a->invoice_id,
                     'invoice_number' => $a->invoice->invoice_number,
                     'amount' => (float) $a->amount,

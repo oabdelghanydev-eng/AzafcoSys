@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AiAlert;
 use App\Services\AlertDetectionService;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * @tags Alerts
@@ -31,10 +31,10 @@ class AlertController extends Controller
         $this->checkPermission('alerts.view');
 
         $query = AiAlert::query()
-            ->when($request->type, fn($q, $t) => $q->where('type', $t))
-            ->when($request->severity, fn($q, $s) => $q->where('severity', $s))
-            ->when($request->boolean('unread_only'), fn($q) => $q->unread())
-            ->when($request->boolean('unresolved_only'), fn($q) => $q->unresolved())
+            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
+            ->when($request->severity, fn ($q, $s) => $q->where('severity', $s))
+            ->when($request->boolean('unread_only'), fn ($q) => $q->unread())
+            ->when($request->boolean('unresolved_only'), fn ($q) => $q->unresolved())
             ->orderByDesc('created_at');
 
         $alerts = $request->per_page

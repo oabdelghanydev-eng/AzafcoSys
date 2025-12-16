@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
 use App\Models\DailyReport;
 use App\Services\DailyReportService;
 use App\Traits\ApiResponse;
-use App\Exceptions\BusinessException;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 /**
  * DailyReportController
- * 
+ *
  * Handles daily report operations - open, close, reopen
  */
 /**
@@ -52,7 +52,7 @@ class DailyReportController extends Controller
     {
         $report = $this->dailyReportService->getCurrentOpenReport();
 
-        if (!$report) {
+        if (! $report) {
             return $this->success([
                 'report' => null,
                 'message' => 'لا توجد يومية مفتوحة',
@@ -91,7 +91,7 @@ class DailyReportController extends Controller
     {
         $report = DailyReport::where('date', $date)->first();
 
-        if (!$report) {
+        if (! $report) {
             return $this->error('DAY_006', 'اليومية غير موجودة', 'Daily report not found', 404);
         }
 
@@ -104,13 +104,13 @@ class DailyReportController extends Controller
      */
     public function close(Request $request): JsonResponse
     {
-        if (!Gate::allows('close', DailyReport::class)) {
+        if (! Gate::allows('close', DailyReport::class)) {
             throw new BusinessException('AUTH_003', 'ليس لديك صلاحية إغلاق اليومية', 'Permission denied');
         }
 
         $report = $this->dailyReportService->getCurrentOpenReport();
 
-        if (!$report) {
+        if (! $report) {
             return $this->error('DAY_004', 'لا توجد يومية مفتوحة', 'No open daily report', 422);
         }
 
@@ -125,13 +125,13 @@ class DailyReportController extends Controller
      */
     public function reopen(string $date): JsonResponse
     {
-        if (!Gate::allows('reopen', DailyReport::class)) {
+        if (! Gate::allows('reopen', DailyReport::class)) {
             throw new BusinessException('AUTH_003', 'ليس لديك صلاحية إعادة فتح اليومية', 'Permission denied');
         }
 
         $report = DailyReport::where('date', $date)->first();
 
-        if (!$report) {
+        if (! $report) {
             return $this->error('DAY_006', 'اليومية غير موجودة', 'Daily report not found', 404);
         }
 

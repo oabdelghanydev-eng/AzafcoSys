@@ -6,7 +6,7 @@ use Illuminate\Http\JsonResponse;
 
 /**
  * Standardized API Response Trait
- * 
+ *
  * Implements the error response format from API_Error_Codes.md:
  * {
  *     "success": false,
@@ -54,7 +54,7 @@ trait ApiResponse
             'message_en' => $messageEn,
         ];
 
-        if (!empty($details)) {
+        if (! empty($details)) {
             $error['details'] = $details;
         }
 
@@ -86,7 +86,7 @@ trait ApiResponse
         return $this->error(
             'NOT_FOUND',
             "{$resource} غير موجود",
-            "Resource not found",
+            'Resource not found',
             404
         );
     }
@@ -141,7 +141,7 @@ trait ApiResponse
      */
     protected function checkPermission(string $permission): void
     {
-        if (!auth()->user()->hasPermission($permission)) {
+        if (! auth()->user()->hasPermission($permission)) {
             throw new \App\Exceptions\BusinessException(
                 'AUTH_003',
                 'ليس لديك صلاحية لهذه العملية',
@@ -155,7 +155,7 @@ trait ApiResponse
      */
     protected function ensureAdmin(): void
     {
-        if (!auth()->user()->is_admin) {
+        if (! auth()->user()->is_admin) {
             throw new \App\Exceptions\BusinessException(
                 'AUTH_004',
                 'هذه العملية متاحة للمديرين فقط',

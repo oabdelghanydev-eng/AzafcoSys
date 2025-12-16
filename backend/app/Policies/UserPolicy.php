@@ -6,7 +6,7 @@ use App\Models\User;
 
 /**
  * UserPolicy
- * 
+ *
  * Authorization rules for user management
  */
 class UserPolicy

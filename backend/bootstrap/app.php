@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Foundation\Configuration\Middleware;
 use App\Exceptions\BusinessException;
 use App\Exceptions\ErrorCodes;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -18,9 +18,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Pure bearer token authentication - no session/CSRF needed
     
+        // Apply Security Headers to all responses
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Apply rate limiting to API routes
+        $middleware->api([
+            'throttle:api',
+        ]);
+
         // Register route middleware aliases
         $middleware->alias([
             'working.day' => \App\Http\Middleware\EnsureWorkingDay::class,
+            'throttle.login' => 'throttle:login',
+            'throttle.collections' => 'throttle:collections',
+            'throttle.sensitive' => 'throttle:sensitive',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -33,7 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
                         'code' => ErrorCodes::AUTH_001,
                         'message' => ErrorCodes::getMessageEn(ErrorCodes::AUTH_001),
                         'message_ar' => ErrorCodes::getMessage(ErrorCodes::AUTH_001),
-                    ]
+                    ],
                 ], 401);
             }
         });
@@ -46,8 +57,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'code' => $e->getErrorCode(),
                     'message' => $e->getMessageAr(),
                     'message_en' => $e->getMessageEn(),
-                ]
+                ],
             ], 422);
         });
     })->create();
-

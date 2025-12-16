@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Invoice;
-use App\Models\Customer;
 use App\Http\Requests\Api\StoreInvoiceRequest;
 use App\Http\Resources\InvoiceResource;
-use App\Services\NumberGeneratorService;
+use App\Models\Customer;
+use App\Models\Invoice;
 use App\Services\FifoAllocatorService;
+use App\Services\NumberGeneratorService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +22,7 @@ class InvoiceController extends Controller
     use ApiResponse;
 
     private NumberGeneratorService $numberGenerator;
+
     private FifoAllocatorService $fifoService;
 
     public function __construct(
@@ -45,11 +46,11 @@ class InvoiceController extends Controller
         $this->checkPermission('invoices.view');
 
         $query = Invoice::with(['customer', 'createdBy'])
-            ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
-            ->when($request->status, fn($q, $s) => $q->where('status', $s))
-            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
-            ->when($request->unpaid_only, fn($q) => $q->where('balance', '>', 0))
+            ->when($request->customer_id, fn ($q, $id) => $q->where('customer_id', $id))
+            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->unpaid_only, fn ($q) => $q->where('balance', '>', 0))
             ->orderByDesc('date')
             ->orderByDesc('id');
 

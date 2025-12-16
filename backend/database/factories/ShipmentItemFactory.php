@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\ShipmentItem;
-use App\Models\Shipment;
 use App\Models\Product;
+use App\Models\Shipment;
+use App\Models\ShipmentItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ShipmentItemFactory extends Factory
@@ -33,7 +33,7 @@ class ShipmentItemFactory extends Factory
 
     public function withSales(int $soldQuantity): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'sold_quantity' => $soldQuantity,
             'remaining_quantity' => $attributes['initial_quantity'] - $soldQuantity,
         ]);

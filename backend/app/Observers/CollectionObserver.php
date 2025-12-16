@@ -2,12 +2,12 @@
 
 namespace App\Observers;
 
+use App\Exceptions\BusinessException;
+use App\Exceptions\ErrorCodes;
 use App\Models\Collection;
 use App\Models\Customer;
 use App\Services\AuditService;
 use App\Services\CollectionDistributorService;
-use App\Exceptions\BusinessException;
-use App\Exceptions\ErrorCodes;
 
 class CollectionObserver
 {
