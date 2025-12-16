@@ -4,135 +4,216 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>@yield('title', 'Report')</title>
+    <title>@yield('title', 'تقرير / Report')</title>
     <style>
-        /* Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* ═══════════════════════════════════════════════════════════════════
+           Professional Arabic/English PDF Styles
+           Optimized for mPDF with proper RTL support
+           ═══════════════════════════════════════════════════════════════════ */
 
+        /* Body - RTL Primary */
         body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #333;
+            font-family: dejavusans, sans-serif;
+            font-size: 10pt;
+            line-height: 1.5;
+            color: #2d3748;
             direction: rtl;
             text-align: right;
         }
 
-        /* RTL Support for Arabic */
-        .rtl-text {
-            direction: rtl;
-            unicode-bidi: bidi-override;
-            text-align: right;
-        }
-
-        .ltr-text {
-            direction: ltr;
-            unicode-bidi: embed;
-            text-align: left;
-        }
-
-        /* Page Setup */
-        @page {
-            margin: 20mm 15mm 25mm 15mm;
-        }
-
-        /* Header */
+        /* ═══════════════════════════════════════════════════════════════════
+           HEADER SECTION
+           ═══════════════════════════════════════════════════════════════════ */
         .header {
             text-align: center;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #333;
+            padding: 15px 20px;
             margin-bottom: 20px;
+            background-color: #1a365d;
+            color: #fff;
+            border-radius: 0 0 8px 8px;
         }
 
-        .header h1 {
-            font-size: 18px;
+        .header .company-name {
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .header .report-title {
+            font-size: 14pt;
             font-weight: bold;
             margin-bottom: 5px;
+            color: #e2e8f0;
         }
 
-        .header .subtitle {
-            font-size: 14px;
-            color: #666;
-        }
-
-        .header .date {
-            font-size: 12px;
+        .header .report-date {
+            font-size: 11pt;
+            color: #cbd5e0;
+            background-color: rgba(255, 255, 255, 0.15);
+            display: inline-block;
+            padding: 4px 15px;
+            border-radius: 15px;
             margin-top: 5px;
         }
 
-        /* Section */
+        /* ═══════════════════════════════════════════════════════════════════
+           BILINGUAL LABELS
+           ═══════════════════════════════════════════════════════════════════ */
+        .ar {
+            font-weight: bold;
+        }
+
+        .en {
+            color: #718096;
+            font-size: 0.85em;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           SECTION STYLES
+           ═══════════════════════════════════════════════════════════════════ */
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
+            page-break-inside: avoid;
         }
 
         .section-title {
-            font-size: 13px;
+            font-size: 11pt;
             font-weight: bold;
-            background-color: #f0f0f0;
-            padding: 8px 10px;
-            margin-bottom: 10px;
-            border-left: 4px solid #333;
+            background-color: #edf2f7;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            border-right: 4px solid #3182ce;
+            color: #2d3748;
         }
 
-        /* Tables */
+        .section-title .number {
+            display: inline-block;
+            background-color: #3182ce;
+            color: #fff;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            border-radius: 50%;
+            margin-left: 8px;
+            font-size: 10pt;
+        }
+
+        .section-title .en {
+            color: #718096;
+            font-weight: normal;
+            font-size: 0.9em;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           TABLE STYLES
+           ═══════════════════════════════════════════════════════════════════ */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         th,
         td {
-            border: 1px solid #ddd;
-            padding: 6px 8px;
-            text-align: left;
+            border: 1px solid #e2e8f0;
+            padding: 7px 10px;
+            text-align: right;
+            vertical-align: middle;
         }
 
         th {
-            background-color: #f5f5f5;
+            background-color: #f7fafc;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9pt;
+            color: #4a5568;
+        }
+
+        th .ar {
+            display: block;
+            font-size: 9pt;
+            color: #2d3748;
+        }
+
+        th .en {
+            display: block;
+            font-size: 7pt;
+            color: #a0aec0;
+            font-weight: normal;
         }
 
         td {
-            font-size: 10px;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-center {
-            text-align: center;
+            font-size: 9pt;
+            color: #2d3748;
         }
 
         .total-row {
-            background-color: #f9f9f9;
+            background-color: #ebf8ff;
             font-weight: bold;
         }
 
-        /* Summary Box */
+        .total-row td {
+            border-top: 2px solid #3182ce;
+            color: #1a365d;
+        }
+
+        /* Text alignment */
+        .text-right {
+            text-align: right !important;
+        }
+
+        .text-left {
+            text-align: left !important;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           MONEY / CURRENCY STYLES
+           ═══════════════════════════════════════════════════════════════════ */
+        .money {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .positive {
+            color: #38a169;
+        }
+
+        .negative {
+            color: #e53e3e;
+        }
+
+        .highlight {
+            background-color: #fefcbf !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           SUMMARY BOX
+           ═══════════════════════════════════════════════════════════════════ */
         .summary-box {
-            border: 2px solid #333;
-            padding: 15px;
+            border: 2px solid #3182ce;
+            border-radius: 8px;
+            padding: 15px 18px;
             margin-top: 20px;
+            background-color: #f0fff4;
+            page-break-inside: avoid;
         }
 
         .summary-box h3 {
-            font-size: 14px;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
+            font-size: 12pt;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #3182ce;
+            color: #1a365d;
         }
 
         .summary-row {
-            display: block;
-            padding: 5px 0;
-            border-bottom: 1px dotted #ddd;
+            padding: 8px 0;
+            border-bottom: 1px dotted #cbd5e0;
+            overflow: hidden;
         }
 
         .summary-row:last-child {
@@ -141,74 +222,151 @@
 
         .summary-label {
             display: inline-block;
-            width: 60%;
+            width: 55%;
+            color: #4a5568;
         }
 
         .summary-value {
             display: inline-block;
-            width: 35%;
-            text-align: right;
+            width: 40%;
+            text-align: left;
             font-weight: bold;
+            font-size: 11pt;
         }
 
         .final-total {
-            font-size: 14px;
-            background-color: #f0f0f0;
-            padding: 10px;
-            margin-top: 10px;
+            font-size: 12pt;
+            background-color: #1a365d;
+            color: #fff;
+            padding: 12px 15px;
+            margin-top: 12px;
+            border-radius: 5px;
         }
 
-        /* Footer */
+        .final-total .summary-label {
+            color: #e2e8f0;
+        }
+
+        .final-total .summary-value {
+            color: #48bb78;
+            font-size: 14pt;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           INFO BOX
+           ═══════════════════════════════════════════════════════════════════ */
+        .info-box {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: inline-block;
+            width: 48%;
+            margin-bottom: 8px;
+            vertical-align: top;
+        }
+
+        .info-label {
+            color: #718096;
+            font-size: 8pt;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #2d3748;
+            font-size: 10pt;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           FOOTER
+           ═══════════════════════════════════════════════════════════════════ */
         .footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 9px;
-            color: #999;
-            padding: 10px;
-            border-top: 1px solid #ddd;
+            font-size: 8pt;
+            color: #a0aec0;
+            padding: 8px 15px;
+            border-top: 1px solid #e2e8f0;
+            background-color: #f7fafc;
         }
 
-        /* Utility Classes */
-        .positive {
-            color: #28a745;
-        }
-
-        .negative {
-            color: #dc3545;
-        }
-
-        .highlight {
-            background-color: #fff3cd;
+        /* ═══════════════════════════════════════════════════════════════════
+           UTILITY CLASSES
+           ═══════════════════════════════════════════════════════════════════ */
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #a0aec0;
+            font-style: italic;
+            background-color: #f7fafc;
+            border-radius: 5px;
         }
 
         .page-break {
             page-break-after: always;
         }
 
-        /* Number formatting */
-        .money {
-            font-family: DejaVu Sans Mono, monospace;
+        hr {
+            border: none;
+            border-top: 1px solid #e2e8f0;
+            margin: 12px 0;
+        }
+
+        /* Badge styles */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+
+        .badge-success {
+            background-color: #c6f6d5;
+            color: #276749;
+        }
+
+        .badge-warning {
+            background-color: #fefcbf;
+            color: #975a16;
+        }
+
+        .badge-danger {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+
+        .badge-info {
+            background-color: #bee3f8;
+            color: #2b6cb0;
         }
     </style>
     @yield('styles')
 </head>
 
 <body>
+    {{-- Header --}}
     <div class="header">
-        <h1>{{ config('app.name', 'Company Name') }}</h1>
-        <div class="subtitle">@yield('report-title')</div>
-        <div class="date">@yield('report-date')</div>
+        <div class="company-name">{{ config('app.name', 'نظام إدارة المخزون') }}</div>
+        <div class="report-title">@yield('report-title')</div>
+        <div class="report-date">@yield('report-date')</div>
     </div>
 
+    {{-- Main Content --}}
     <div class="content">
         @yield('content')
     </div>
 
+    {{-- Footer --}}
     <div class="footer">
-        Generated: {{ now()->format('d/m/Y H:i') }} | Page <span class="page-num"></span>
+        <span class="ar">تم الإنشاء:</span> {{ now()->format('d/m/Y H:i') }}
     </div>
 </body>
 

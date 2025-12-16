@@ -5,8 +5,8 @@ namespace App\Helpers;
 /**
  * Arabic PDF Helper
  * 
- * Helps render Arabic text correctly in DomPDF
- * Uses simple text processing without external dependencies
+ * Comprehensive helper for bilingual Arabic/English PDF generation
+ * Provides labels, currency formatting, and RTL support
  */
 class ArabicPdfHelper
 {
@@ -19,21 +19,135 @@ class ArabicPdfHelper
     }
 
     /**
-     * Reverse Arabic text for proper DomPDF rendering
-     * DomPDF renders RTL text in reverse, so we pre-reverse it
+     * Format currency with Egyptian Pound symbol
      */
-    public static function fixArabicText(string $text): string
+    public static function formatCurrency(float $amount, bool $showSymbol = true): string
     {
-        if (!self::isArabic($text)) {
-            return $text;
+        $formatted = number_format($amount, 2);
+        return $showSymbol ? $formatted . ' ج.م' : $formatted;
+    }
+
+    /**
+     * Format number with Arabic numerals option
+     */
+    public static function formatNumber(float $number, int $decimals = 2): string
+    {
+        return number_format($number, $decimals);
+    }
+
+    /**
+     * Get all bilingual labels for PDF reports
+     */
+    public static function getLabels(): array
+    {
+        return [
+            // Report Titles
+            'daily_closing_report' => ['ar' => 'تقرير الإغلاق اليومي', 'en' => 'Daily Closing Report'],
+            'shipment_settlement_report' => ['ar' => 'تقرير تسوية الشحنة', 'en' => 'Shipment Settlement Report'],
+            'customer_statement' => ['ar' => 'كشف حساب العميل', 'en' => 'Customer Statement'],
+            
+            // Section Headers - Daily Report
+            'sales_invoices' => ['ar' => 'فواتير المبيعات', 'en' => 'Sales Invoices'],
+            'collections' => ['ar' => 'التحصيلات', 'en' => 'Collections'],
+            'expenses' => ['ar' => 'المصروفات', 'en' => 'Expenses'],
+            'transfers' => ['ar' => 'التحويلات', 'en' => 'Transfers'],
+            'new_shipments' => ['ar' => 'شحنات جديدة', 'en' => 'New Shipments'],
+            'daily_summary' => ['ar' => 'ملخص اليوم', 'en' => 'Daily Summary'],
+            'balances' => ['ar' => 'الأرصدة', 'en' => 'Balances'],
+            'remaining_inventory' => ['ar' => 'المخزون المتبقي', 'en' => 'Remaining Inventory'],
+            
+            // Section Headers - Settlement Report
+            'shipment_info' => ['ar' => 'بيانات الشحنة', 'en' => 'Shipment Information'],
+            'sales_by_product' => ['ar' => 'المبيعات حسب المنتج', 'en' => 'Sales by Product'],
+            'returns_previous' => ['ar' => 'مرتجعات الشحنة السابقة', 'en' => 'Returns from Previous Shipment'],
+            'inventory_movement' => ['ar' => 'حركة المخزون', 'en' => 'Inventory Movement'],
+            'weight_analysis' => ['ar' => 'تحليل الوزن', 'en' => 'Weight Analysis'],
+            'supplier_expenses' => ['ar' => 'مصروفات المورد', 'en' => 'Supplier Expenses'],
+            'financial_summary' => ['ar' => 'الملخص المالي للمورد', 'en' => 'Supplier Financial Summary'],
+            
+            // Table Headers
+            'invoice_number' => ['ar' => 'رقم الفاتورة', 'en' => 'Invoice #'],
+            'receipt_number' => ['ar' => 'رقم الإيصال', 'en' => 'Receipt #'],
+            'customer' => ['ar' => 'العميل', 'en' => 'Customer'],
+            'product' => ['ar' => 'المنتج', 'en' => 'Product'],
+            'quantity' => ['ar' => 'الكمية', 'en' => 'Qty'],
+            'unit_weight' => ['ar' => 'وزن الوحدة', 'en' => 'Unit Wt.'],
+            'total_weight' => ['ar' => 'الوزن الكلي', 'en' => 'Total Wt.'],
+            'weight' => ['ar' => 'الوزن', 'en' => 'Weight'],
+            'amount' => ['ar' => 'المبلغ', 'en' => 'Amount'],
+            'method' => ['ar' => 'طريقة الدفع', 'en' => 'Method'],
+            'description' => ['ar' => 'الوصف', 'en' => 'Description'],
+            'type' => ['ar' => 'النوع', 'en' => 'Type'],
+            'from' => ['ar' => 'من', 'en' => 'From'],
+            'to' => ['ar' => 'إلى', 'en' => 'To'],
+            'supplier' => ['ar' => 'المورد', 'en' => 'Supplier'],
+            'items' => ['ar' => 'الأصناف', 'en' => 'Items'],
+            'date' => ['ar' => 'التاريخ', 'en' => 'Date'],
+            'total' => ['ar' => 'الإجمالي', 'en' => 'Total'],
+            'avg_price' => ['ar' => 'متوسط السعر', 'en' => 'Avg Price'],
+            
+            // Summary Labels
+            'total_sales' => ['ar' => 'إجمالي المبيعات', 'en' => 'Total Sales'],
+            'total_collections' => ['ar' => 'إجمالي التحصيلات', 'en' => 'Total Collections'],
+            'total_expenses' => ['ar' => 'إجمالي المصروفات', 'en' => 'Total Expenses'],
+            'cash' => ['ar' => 'نقدي', 'en' => 'Cash'],
+            'bank' => ['ar' => 'بنك', 'en' => 'Bank'],
+            'company' => ['ar' => 'شركة', 'en' => 'Company'],
+            'market_balance' => ['ar' => 'رصيد السوق (ديون العملاء)', 'en' => 'Market Balance (Customer Debts)'],
+            'cashbox_balance' => ['ar' => 'رصيد الخزينة', 'en' => 'Cashbox Balance'],
+            'bank_balance' => ['ar' => 'رصيد البنك', 'en' => 'Bank Balance'],
+            
+            // Settlement Specific
+            'shipment_number' => ['ar' => 'رقم الشحنة', 'en' => 'Shipment Number'],
+            'arrival_date' => ['ar' => 'تاريخ الوصول', 'en' => 'Arrival Date'],
+            'settlement_date' => ['ar' => 'تاريخ التسوية', 'en' => 'Settlement Date'],
+            'duration' => ['ar' => 'المدة', 'en' => 'Duration'],
+            'days' => ['ar' => 'يوم', 'en' => 'days'],
+            'qty_sold' => ['ar' => 'الكمية المباعة', 'en' => 'Qty Sold'],
+            'weight_sold' => ['ar' => 'الوزن المباع', 'en' => 'Weight Sold'],
+            'incoming' => ['ar' => 'الوارد', 'en' => 'Incoming'],
+            'carryover_next' => ['ar' => 'محوّل للشحنة التالية', 'en' => 'Carried Over to Next Shipment'],
+            'total_weight_in' => ['ar' => 'إجمالي الوزن الوارد', 'en' => 'Total Weight In'],
+            'total_weight_out' => ['ar' => 'إجمالي الوزن الصادر', 'en' => 'Total Weight Out'],
+            'difference' => ['ar' => 'الفرق', 'en' => 'Difference'],
+            'total_returns' => ['ar' => 'إجمالي المرتجعات', 'en' => 'Total Returns'],
+            'total_supplier_expenses' => ['ar' => 'إجمالي مصروفات المورد', 'en' => 'Total Supplier Expenses'],
+            'net_sales' => ['ar' => 'صافي المبيعات', 'en' => 'Net Sales'],
+            'company_commission' => ['ar' => 'عمولة الشركة', 'en' => 'Company Commission'],
+            'previous_balance' => ['ar' => 'الرصيد السابق', 'en' => 'Previous Balance'],
+            'payments_to_supplier' => ['ar' => 'مدفوعات للمورد', 'en' => 'Payments to Supplier'],
+            'final_balance' => ['ar' => 'الرصيد النهائي للمورد', 'en' => 'FINAL SUPPLIER BALANCE'],
+            'returns_deduction' => ['ar' => 'خصم مرتجعات الشحنة السابقة', 'en' => 'Returns from Previous Shipment'],
+            
+            // Status & Notes
+            'no_data' => ['ar' => 'لا توجد بيانات', 'en' => 'No data available'],
+            'no_sales' => ['ar' => 'لا توجد فواتير مبيعات لهذا اليوم', 'en' => 'No sales invoices for this day'],
+            'no_collections' => ['ar' => 'لا توجد تحصيلات لهذا اليوم', 'en' => 'No collections for this day'],
+            'no_expenses' => ['ar' => 'لا توجد مصروفات لهذا اليوم', 'en' => 'No expenses for this day'],
+            'generated' => ['ar' => 'تم الإنشاء', 'en' => 'Generated'],
+            'page' => ['ar' => 'صفحة', 'en' => 'Page'],
+        ];
+    }
+
+    /**
+     * Get a specific label
+     */
+    public static function label(string $key, string $lang = 'both'): string
+    {
+        $labels = self::getLabels();
+        
+        if (!isset($labels[$key])) {
+            return $key;
         }
 
-        // For DomPDF, we need to reverse the text and use RTL direction
-        // This is a simple workaround for DomPDF's RTL issues
-        $words = explode(' ', $text);
-        $reversedWords = array_reverse($words);
+        $label = $labels[$key];
 
-        return implode(' ', $reversedWords);
+        return match($lang) {
+            'ar' => $label['ar'],
+            'en' => $label['en'],
+            'both' => $label['ar'] . ' / ' . $label['en'],
+            default => $label['ar']
+        };
     }
 
     /**
@@ -49,13 +163,27 @@ class ArabicPdfHelper
     }
 
     /**
-     * Process HTML content to fix all Arabic text
+     * Get payment method label
      */
-    public static function processHtml(string $html): string
+    public static function paymentMethod(string $method): string
     {
-        // Add RTL direction to body
-        $html = str_replace('<body>', '<body style="direction: rtl;">', $html);
+        return match($method) {
+            'cash' => 'نقدي / Cash',
+            'bank' => 'بنك / Bank',
+            'check' => 'شيك / Check',
+            default => $method
+        };
+    }
 
-        return $html;
+    /**
+     * Get expense type label
+     */
+    public static function expenseType(string $type): string
+    {
+        return match($type) {
+            'company' => 'شركة / Company',
+            'supplier' => 'مورد / Supplier',
+            default => $type
+        };
     }
 }

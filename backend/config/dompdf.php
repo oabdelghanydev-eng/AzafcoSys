@@ -109,8 +109,9 @@ return [
 
         /**
          * Whether to enable font subsetting or not.
+         * Enabled for better Arabic/Unicode support and smaller file sizes.
          */
-        'enable_font_subsetting' => false,
+        'enable_font_subsetting' => true,
 
         /**
          * The PDF rendering backend to use

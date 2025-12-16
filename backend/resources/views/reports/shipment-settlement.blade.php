@@ -1,140 +1,241 @@
 @extends('reports.layouts.pdf-layout')
 
-@section('title', 'Shipment Settlement Report - ' . $shipment->number)
-@section('report-title', 'Shipment Settlement Report')
-@section('report-date', 'Shipment #' . $shipment->number)
+@php
+    use App\Helpers\ArabicPdfHelper;
+    $L = fn($key) => ArabicPdfHelper::label($key);
+    $currency = fn($amount) => ArabicPdfHelper::formatCurrency($amount);
+@endphp
+
+@section('title', $L('shipment_settlement_report') . ' - ' . $shipment->number)
+@section('report-title')
+    <span class="ar">تقرير تسوية الشحنة</span>
+    <span class="en" style="font-size: 0.8em; color: #cbd5e0;">Shipment Settlement Report</span>
+@endsection
+@section('report-date')
+    <span class="ar">شحنة رقم</span> {{ $shipment->number }}
+@endsection
 
 @section('content')
 
-    {{-- 1. Basic Info --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    1. SHIPMENT INFORMATION / بيانات الشحنة
+    ═══════════════════════════════════════════════════════════════════ --}}
     <div class="section">
-        <div class="section-title">1. Shipment Information</div>
-        <table>
-            <tr>
-                <td><strong>Shipment Number:</strong></td>
-                <td>{{ $shipment->number }}</td>
-                <td><strong>Supplier:</strong></td>
-                <td>{{ $supplier->name }}</td>
-            </tr>
-            <tr>
-                <td><strong>Arrival Date:</strong></td>
-                <td>{{ \Carbon\Carbon::parse($arrivalDate)->format('d/m/Y') }}</td>
-                <td><strong>Settlement Date:</strong></td>
-                <td>{{ \Carbon\Carbon::parse($settlementDate)->format('d/m/Y') }}</td>
-            </tr>
-            <tr>
-                <td><strong>Duration:</strong></td>
-                <td colspan="3">{{ $durationDays }} days</td>
-            </tr>
-        </table>
+        <div class="section-title">
+            <span class="number">1</span>
+            <span class="ar">بيانات الشحنة</span>
+            <span class="en">Shipment Information</span>
+        </div>
+
+        <div class="info-box">
+            <div class="info-row">
+                <div class="info-label">رقم الشحنة / Shipment Number</div>
+                <div class="info-value">{{ $shipment->number }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">المورد / Supplier</div>
+                <div class="info-value">{{ $supplier->name }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">تاريخ الوصول / Arrival Date</div>
+                <div class="info-value">{{ \Carbon\Carbon::parse($arrivalDate)->format('d/m/Y') }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">تاريخ التسوية / Settlement Date</div>
+                <div class="info-value">{{ \Carbon\Carbon::parse($settlementDate)->format('d/m/Y') }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">المدة / Duration</div>
+                <div class="info-value">{{ $durationDays }} <span class="ar">يوم</span> <span class="en">days</span></div>
+            </div>
+        </div>
     </div>
 
-    {{-- 2. Sales by Product --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    2. SALES BY PRODUCT / المبيعات حسب المنتج
+    ═══════════════════════════════════════════════════════════════════ --}}
     <div class="section">
-        <div class="section-title">2. Sales by Product</div>
+        <div class="section-title">
+            <span class="number">2</span>
+            <span class="ar">المبيعات حسب المنتج</span>
+            <span class="en">Sales by Product</span>
+        </div>
         <table>
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th class="text-right">Qty Sold</th>
-                    <th class="text-right">Weight Sold</th>
-                    <th class="text-right">Total Sales</th>
-                    <th class="text-right">Avg Price</th>
+                    <th>
+                        <span class="ar">المنتج</span>
+                        <span class="en">Product</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الكمية المباعة</span>
+                        <span class="en">Qty Sold</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الوزن المباع</span>
+                        <span class="en">Weight Sold</span>
+                    </th>
+                    <th class="text-left">
+                        <span class="ar">إجمالي المبيعات</span>
+                        <span class="en">Total Sales</span>
+                    </th>
+                    <th class="text-left">
+                        <span class="ar">متوسط السعر</span>
+                        <span class="en">Avg Price</span>
+                    </th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($salesByProduct as $sale)
                     <tr>
                         <td>{{ $sale->product_name }}</td>
-                        <td class="text-right">{{ number_format($sale->quantity, 2) }}</td>
-                        <td class="text-right">{{ number_format($sale->weight, 2) }} kg</td>
-                        <td class="text-right money">{{ number_format($sale->total, 2) }}</td>
-                        <td class="text-right">{{ number_format($sale->avg_price, 2) }}</td>
+                        <td class="text-center">{{ number_format($sale->quantity, 2) }}</td>
+                        <td class="text-center">{{ number_format($sale->weight, 2) }} kg</td>
+                        <td class="text-left money">{{ $currency($sale->total) }}</td>
+                        <td class="text-left">{{ $currency($sale->avg_price) }}</td>
                     </tr>
                 @endforeach
                 <tr class="total-row">
-                    <td><strong>Total</strong></td>
-                    <td class="text-right"><strong>{{ number_format($totalSoldQuantity, 2) }}</strong></td>
-                    <td class="text-right"><strong>{{ number_format($totalSoldWeight, 2) }} kg</strong></td>
-                    <td class="text-right money"><strong>{{ number_format($totalSalesAmount, 2) }}</strong></td>
+                    <td>
+                        <strong>
+                            <span class="ar">الإجمالي</span>
+                            <span class="en" style="color: #718096;">Total</span>
+                        </strong>
+                    </td>
+                    <td class="text-center"><strong>{{ number_format($totalSoldQuantity, 2) }}</strong></td>
+                    <td class="text-center"><strong>{{ number_format($totalSoldWeight, 2) }} kg</strong></td>
+                    <td class="text-left money"><strong>{{ $currency($totalSalesAmount) }}</strong></td>
                     <td></td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    {{-- 3. Returns from Previous Shipment --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    3. RETURNS FROM PREVIOUS SHIPMENT / مرتجعات الشحنة السابقة
+    ═══════════════════════════════════════════════════════════════════ --}}
     @if(isset($previousShipmentReturns) && $previousShipmentReturns->count() > 0)
         <div class="section">
-            <div class="section-title">3. Returns from Previous Shipment</div>
-            <p><em>(Returns that occurred after the previous shipment was closed)</em></p>
+            <div class="section-title">
+                <span class="number">3</span>
+                <span class="ar">مرتجعات الشحنة السابقة</span>
+                <span class="en">Returns from Previous Shipment</span>
+            </div>
+            <p style="color: #718096; font-style: italic; margin-bottom: 10px;">
+                <span class="ar">(المرتجعات التي حدثت بعد إغلاق الشحنة السابقة)</span>
+                <span class="en">(Returns that occurred after the previous shipment was closed)</span>
+            </p>
             <table>
                 <thead>
                     <tr>
-                        <th>Product</th>
-                        <th class="text-right">Quantity</th>
-                        <th class="text-right">Weight</th>
+                        <th>
+                            <span class="ar">المنتج</span>
+                            <span class="en">Product</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">الكمية</span>
+                            <span class="en">Quantity</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">الوزن</span>
+                            <span class="en">Weight</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($previousShipmentReturns as $return)
                         <tr>
                             <td>{{ $return->product->name_ar ?? 'N/A' }}</td>
-                            <td class="text-right">{{ number_format($return->quantity, 2) }}</td>
-                            <td class="text-right">{{ number_format($return->quantity * ($return->weight_per_unit ?? 0), 2) }} kg
+                            <td class="text-center">{{ number_format($return->quantity, 2) }}</td>
+                            <td class="text-center">{{ number_format($return->quantity * ($return->weight_per_unit ?? 0), 2) }} kg
                             </td>
                         </tr>
                     @endforeach
                     <tr class="total-row">
-                        <td><strong>Total Returns</strong></td>
-                        <td class="text-right"><strong>{{ number_format($totalReturnsQuantity, 2) }}</strong></td>
-                        <td class="text-right"><strong>{{ number_format($totalReturnsWeight ?? 0, 2) }} kg</strong></td>
+                        <td>
+                            <strong>
+                                <span class="ar">إجمالي المرتجعات</span>
+                                <span class="en" style="color: #718096;">Total Returns</span>
+                            </strong>
+                        </td>
+                        <td class="text-center"><strong>{{ number_format($totalReturnsQuantity, 2) }}</strong></td>
+                        <td class="text-center"><strong>{{ number_format($totalReturnsWeight ?? 0, 2) }} kg</strong></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     @endif
 
-    {{-- 4. Inventory Movement --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    4. INVENTORY MOVEMENT / حركة المخزون
+    ═══════════════════════════════════════════════════════════════════ --}}
     <div class="section">
-        <div class="section-title">4. Inventory Movement</div>
+        <div class="section-title">
+            <span class="number">4</span>
+            <span class="ar">حركة المخزون</span>
+            <span class="en">Inventory Movement</span>
+        </div>
 
-        <strong>Incoming:</strong>
+        <p style="font-weight: bold; margin-bottom: 8px;">
+            <span class="ar">الوارد:</span>
+            <span class="en" style="color: #718096;">Incoming:</span>
+        </p>
         <table>
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th class="text-right">Qty</th>
-                    <th class="text-right">Weight</th>
+                    <th>
+                        <span class="ar">المنتج</span>
+                        <span class="en">Product</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الكمية</span>
+                        <span class="en">Qty</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الوزن</span>
+                        <span class="en">Weight</span>
+                    </th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($shipment->items as $item)
                     <tr>
                         <td>{{ $item->product->name_ar ?? $item->product->name_en }}</td>
-                        <td class="text-right">{{ number_format($item->initial_quantity, 2) }}</td>
-                        <td class="text-right">{{ number_format($item->initial_quantity * $item->weight_per_unit, 2) }} kg</td>
+                        <td class="text-center">{{ number_format($item->initial_quantity, 2) }}</td>
+                        <td class="text-center">{{ number_format($item->initial_quantity * $item->weight_per_unit, 2) }} kg</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
         @if(isset($carryoverOut) && $carryoverOut->count() > 0)
-            <strong>Carried Over to Next Shipment:</strong>
+            <p style="font-weight: bold; margin: 15px 0 8px 0;">
+                <span class="ar">محوّل للشحنة التالية:</span>
+                <span class="en" style="color: #718096;">Carried Over to Next Shipment:</span>
+            </p>
             <table>
                 <thead>
                     <tr>
-                        <th>Product</th>
-                        <th class="text-right">Qty</th>
-                        <th class="text-right">Weight</th>
+                        <th>
+                            <span class="ar">المنتج</span>
+                            <span class="en">Product</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">الكمية</span>
+                            <span class="en">Qty</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">الوزن</span>
+                            <span class="en">Weight</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($carryoverOut as $co)
                         <tr>
                             <td>{{ $co->product->name_ar ?? 'N/A' }}</td>
-                            <td class="text-right">{{ number_format($co->quantity, 2) }}</td>
-                            <td class="text-right">{{ number_format($co->quantity * ($co->weight_per_unit ?? 0), 2) }} kg</td>
+                            <td class="text-center">{{ number_format($co->quantity, 2) }}</td>
+                            <td class="text-center">{{ number_format($co->quantity * ($co->weight_per_unit ?? 0), 2) }} kg</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -142,97 +243,179 @@
         @endif
     </div>
 
-    {{-- 5. Weight Difference --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    5. WEIGHT ANALYSIS / تحليل الوزن
+    ═══════════════════════════════════════════════════════════════════ --}}
     <div class="section">
-        <div class="section-title">5. Weight Analysis</div>
+        <div class="section-title">
+            <span class="number">5</span>
+            <span class="ar">تحليل الوزن</span>
+            <span class="en">Weight Analysis</span>
+        </div>
         <table>
             <tr>
-                <td><strong>Total Weight In:</strong></td>
-                <td class="text-right">{{ number_format($totalWeightIn, 2) }} kg</td>
+                <td style="width: 60%;">
+                    <strong>
+                        <span class="ar">إجمالي الوزن الوارد</span>
+                        <span class="en" style="color: #718096;">Total Weight In</span>
+                    </strong>
+                </td>
+                <td class="text-left">{{ number_format($totalWeightIn, 2) }} kg</td>
             </tr>
             <tr>
-                <td><strong>Total Weight Out:</strong></td>
-                <td class="text-right">{{ number_format($totalWeightOut, 2) }} kg</td>
+                <td>
+                    <strong>
+                        <span class="ar">إجمالي الوزن الصادر</span>
+                        <span class="en" style="color: #718096;">Total Weight Out</span>
+                    </strong>
+                </td>
+                <td class="text-left">{{ number_format($totalWeightOut, 2) }} kg</td>
             </tr>
             <tr class="{{ $weightDifference != 0 ? 'highlight' : '' }}">
-                <td><strong>Difference:</strong></td>
-                <td class="text-right {{ $weightDifference > 0 ? 'positive' : ($weightDifference < 0 ? 'negative' : '') }}">
+                <td>
+                    <strong>
+                        <span class="ar">الفرق</span>
+                        <span class="en" style="color: #718096;">Difference</span>
+                    </strong>
+                </td>
+                <td class="text-left {{ $weightDifference > 0 ? 'positive' : ($weightDifference < 0 ? 'negative' : '') }}">
                     {{ number_format($weightDifference, 2) }} kg
-                    @if($weightDifference == 0) ✓ @endif
+                    @if($weightDifference == 0)
+                        <span class="badge badge-success">✓</span>
+                    @endif
                 </td>
             </tr>
         </table>
     </div>
 
-    {{-- 6. Supplier Expenses --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    6. SUPPLIER EXPENSES / مصروفات المورد
+    ═══════════════════════════════════════════════════════════════════ --}}
     @if($supplierExpenses->count() > 0)
         <div class="section">
-            <div class="section-title">6. Supplier Expenses</div>
+            <div class="section-title">
+                <span class="number">6</span>
+                <span class="ar">مصروفات المورد</span>
+                <span class="en">Supplier Expenses</span>
+            </div>
             <table>
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>Description</th>
-                        <th class="text-right">Amount</th>
+                        <th style="width: 30px;">#</th>
+                        <th>
+                            <span class="ar">التاريخ</span>
+                            <span class="en">Date</span>
+                        </th>
+                        <th>
+                            <span class="ar">الوصف</span>
+                            <span class="en">Description</span>
+                        </th>
+                        <th class="text-left">
+                            <span class="ar">المبلغ</span>
+                            <span class="en">Amount</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($supplierExpenses as $index => $expense)
                         <tr>
-                            <td>{{ $index + 1 }}</td>
+                            <td class="text-center">{{ $index + 1 }}</td>
                             <td>{{ \Carbon\Carbon::parse($expense->date)->format('d/m') }}</td>
                             <td>{{ $expense->description }}</td>
-                            <td class="text-right money">{{ number_format($expense->amount, 2) }}</td>
+                            <td class="text-left money negative">{{ $currency($expense->amount) }}</td>
                         </tr>
                     @endforeach
                     <tr class="total-row">
-                        <td colspan="3"><strong>Total Supplier Expenses</strong></td>
-                        <td class="text-right money"><strong>{{ number_format($totalSupplierExpenses, 2) }}</strong></td>
+                        <td colspan="3">
+                            <strong>
+                                <span class="ar">إجمالي مصروفات المورد</span>
+                                <span class="en" style="color: #718096;">Total Supplier Expenses</span>
+                            </strong>
+                        </td>
+                        <td class="text-left money negative"><strong>{{ $currency($totalSupplierExpenses) }}</strong></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     @endif
 
-    {{-- 7. Financial Summary --}}
+    {{-- ═══════════════════════════════════════════════════════════════════
+    7. FINANCIAL SUMMARY / الملخص المالي للمورد
+    ═══════════════════════════════════════════════════════════════════ --}}
     <div class="summary-box">
-        <h3>7. Supplier Financial Summary</h3>
+        <h3>
+            <span class="ar">7. الملخص المالي للمورد</span>
+            <span class="en">Supplier Financial Summary</span>
+        </h3>
 
         <div class="summary-row">
-            <span class="summary-label">Total Sales:</span>
-            <span class="summary-value money">{{ number_format($totalSales, 2) }}</span>
+            <span class="summary-label">
+                <span class="ar">إجمالي المبيعات</span>
+                <span class="en">Total Sales</span>
+            </span>
+            <span class="summary-value money">{{ $currency($totalSales) }}</span>
         </div>
+
         <div class="summary-row">
-            <span class="summary-label">(-) Returns from Previous Shipment:</span>
-            <span class="summary-value money negative">-{{ number_format($previousReturnsDeduction, 2) }}</span>
+            <span class="summary-label">
+                <span class="ar">(-) خصم مرتجعات الشحنة السابقة</span>
+                <span class="en">(-) Returns from Previous Shipment</span>
+            </span>
+            <span class="summary-value money negative">-{{ $currency($previousReturnsDeduction) }}</span>
         </div>
-        <div class="summary-row" style="border-top: 2px solid #333; padding-top: 10px;">
-            <span class="summary-label"><strong>Net Sales:</strong></span>
-            <span class="summary-value money"><strong>{{ number_format($netSales, 2) }}</strong></span>
+
+        <div class="summary-row" style="border-top: 2px solid #3182ce; padding-top: 10px;">
+            <span class="summary-label">
+                <strong>
+                    <span class="ar">صافي المبيعات</span>
+                    <span class="en">Net Sales</span>
+                </strong>
+            </span>
+            <span class="summary-value money"><strong>{{ $currency($netSales) }}</strong></span>
         </div>
+
         <div class="summary-row">
-            <span class="summary-label">(-) Company Commission
-                ({{ config('settings.company_commission_rate', 6) }}%):</span>
-            <span class="summary-value money negative">-{{ number_format($companyCommission, 2) }}</span>
+            <span class="summary-label">
+                <span class="ar">(-) عمولة الشركة ({{ config('settings.company_commission_rate', 6) }}%)</span>
+                <span class="en">(-) Company Commission</span>
+            </span>
+            <span class="summary-value money negative">-{{ $currency($companyCommission) }}</span>
         </div>
+
         <div class="summary-row">
-            <span class="summary-label">(-) Supplier Expenses:</span>
-            <span class="summary-value money negative">-{{ number_format($supplierExpensesDeduction, 2) }}</span>
+            <span class="summary-label">
+                <span class="ar">(-) مصروفات المورد</span>
+                <span class="en">(-) Supplier Expenses</span>
+            </span>
+            <span class="summary-value money negative">-{{ $currency($supplierExpensesDeduction) }}</span>
         </div>
+
         <div class="summary-row">
-            <span class="summary-label">(+) Previous Balance:</span>
-            <span class="summary-value money positive">+{{ number_format($previousBalance, 2) }}</span>
+            <span class="summary-label">
+                <span class="ar">(+) الرصيد السابق</span>
+                <span class="en">(+) Previous Balance</span>
+            </span>
+            <span class="summary-value money positive">+{{ $currency($previousBalance) }}</span>
         </div>
+
         <div class="summary-row">
-            <span class="summary-label">(-) Payments to Supplier:</span>
-            <span class="summary-value money negative">-{{ number_format($supplierPayments, 2) }}</span>
+            <span class="summary-label">
+                <span class="ar">(-) مدفوعات للمورد</span>
+                <span class="en">(-) Payments to Supplier</span>
+            </span>
+            <span class="summary-value money negative">-{{ $currency($supplierPayments) }}</span>
         </div>
 
         <div class="final-total">
-            <span class="summary-label"><strong>FINAL SUPPLIER BALANCE:</strong></span>
-            <span class="summary-value money"
-                style="font-size: 16px;"><strong>{{ number_format($finalSupplierBalance, 2) }}</strong></span>
+            <span class="summary-label">
+                <strong>
+                    <span class="ar">الرصيد النهائي للمورد</span>
+                    <span class="en">FINAL SUPPLIER BALANCE</span>
+                </strong>
+            </span>
+            <span class="summary-value money" style="font-size: 16px;">
+                <strong>{{ $currency($finalSupplierBalance) }}</strong>
+            </span>
         </div>
     </div>
 
