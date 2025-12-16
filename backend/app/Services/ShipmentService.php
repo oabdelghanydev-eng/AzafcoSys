@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\Carryover;
+use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class ShipmentService
@@ -19,15 +20,27 @@ class ShipmentService
     public function settle(Shipment $shipment, Shipment $nextShipment): void
     {
         if ($shipment->status === 'settled') {
-            throw new \Exception("الشحنة مُصفاة بالفعل");
+            throw new BusinessException(
+                'SHP_003',
+                'الشحنة مُصفاة بالفعل',
+                'Shipment is already settled'
+            );
         }
 
         if ($nextShipment->status !== 'open') {
-            throw new \Exception("الشحنة التالية يجب أن تكون مفتوحة");
+            throw new BusinessException(
+                'SHP_004',
+                'الشحنة التالية يجب أن تكون مفتوحة',
+                'Target shipment must be open'
+            );
         }
 
         if ($shipment->id === $nextShipment->id) {
-            throw new \Exception("لا يمكن ترحيل الشحنة لنفسها");
+            throw new BusinessException(
+                'SHP_006',
+                'لا يمكن ترحيل الشحنة لنفسها',
+                'Cannot carryover to same shipment'
+            );
         }
 
         DB::transaction(function () use ($shipment, $nextShipment) {
@@ -98,7 +111,11 @@ class ShipmentService
     public function unsettle(Shipment $shipment): void
     {
         if ($shipment->status !== 'settled') {
-            throw new \Exception("الشحنة ليست مُصفاة");
+            throw new BusinessException(
+                'SHP_007',
+                'الشحنة ليست مُصفاة',
+                'Shipment is not settled'
+            );
         }
 
         DB::transaction(function () use ($shipment) {
@@ -112,8 +129,10 @@ class ShipmentService
 
                 // Safety Check - لا يمكن إلغاء التصفية إذا تم بيع المرحل
                 if ($nextItem && $nextItem->remaining_quantity < $carryover->quantity) {
-                    throw new \Exception(
-                        "لا يمكن إلغاء التصفية - الكمية المرحلة تم بيعها جزئياً"
+                    throw new BusinessException(
+                        'SHP_005',
+                        'لا يمكن إلغاء التصفية - الكمية المرحلة تم بيعها جزئياً',
+                        'Cannot unsettle - carried quantity has been partially sold'
                     );
                 }
 

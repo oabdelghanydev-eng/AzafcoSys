@@ -222,8 +222,9 @@
 | الحقل | القيمة |
 |-------|--------|
 | **الوصف** | البيع من أقدم شحنة أولاً |
-| **القاعدة** | `ORDER BY shipment.date ASC WHERE remaining_quantity > 0` |
-| **المُحفز** | FifoAllocatorService::allocateQuantity |
+| **القاعدة** | `ORDER BY shipment.fifo_sequence ASC WHERE remaining_quantity > 0` |
+| **المُحفز** | FifoAllocatorService::allocate |
+| **ملاحظة** | `fifo_sequence` غير قابل للتعديل (Best Practice 2025) |
 
 ### BR-FIFO-002: تتبع المصدر
 | الحقل | القيمة |

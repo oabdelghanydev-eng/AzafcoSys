@@ -100,11 +100,18 @@ class InvoiceController extends Controller
             }
 
             // Update totals
+            $total = $subtotal - ($validated['discount'] ?? 0);
             $invoice->update([
                 'subtotal' => $subtotal,
-                'total' => $subtotal - ($validated['discount'] ?? 0),
-                'balance' => $subtotal - ($validated['discount'] ?? 0),
+                'total' => $total,
+                'balance' => $total,
             ]);
+
+            // Update customer balance (moved here from Observer since total is set after create)
+            if ($invoice->type !== 'wastage') {
+                \App\Models\Customer::where('id', $invoice->customer_id)
+                    ->increment('balance', (float) $total);
+            }
 
             return $this->success(
                 new InvoiceResource($invoice->load('items.product', 'customer')),
@@ -152,6 +159,16 @@ class InvoiceController extends Controller
                 'INV_003',
                 'الفاتورة ملغاة بالفعل',
                 'Invoice is already cancelled',
+                422
+            );
+        }
+
+        // EC-INV-003: Cannot cancel paid invoice
+        if ($invoice->paid_amount > 0) {
+            return $this->error(
+                'INV_008',
+                "لا يمكن إلغاء فاتورة مدفوعة. المدفوع: {$invoice->paid_amount}",
+                "Cannot cancel a paid invoice. Paid amount: {$invoice->paid_amount}",
                 422
             );
         }

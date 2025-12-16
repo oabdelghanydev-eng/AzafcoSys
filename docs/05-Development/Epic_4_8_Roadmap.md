@@ -1,16 +1,16 @@
 # 📋 Epic 4-8: Development Roadmap & Edge Cases
 
-**التاريخ:** 2025-12-16
-**الإصدار:** 2.0
-**الحالة:** للتطوير المستقبلي
+**التاريخ:** 2025-12-16  
+**الإصدار:** 3.0  
+**الحالة:** Epic 4 ✅ مكتمل | Epic 5-8 للتطوير
 
 ---
 
 ## 📊 الملخص التنفيذي
 
-| Epic | المجال | الأولوية | التعقيد | الوقت المُقدر |
+| Epic | المجال | الأولوية | التعقيد | الحالة |
 |------|--------|---------|---------|---------------|
-| Epic 4 | Inventory & FIFO | 🔴 Critical | High | 2 أسابيع |
+| Epic 4 | Inventory & FIFO | 🟢 Done | High | ✅ مكتمل |
 | Epic 5 | Sales & Invoicing | 🔴 Critical | High | 2 أسابيع |
 | Epic 6 | Collections | 🔴 Critical | Medium | 1 أسبوع |
 | Epic 7 | Treasury & Reports | 🟡 High | Medium | 1 أسبوع |
@@ -27,7 +27,7 @@
 POST   /api/shipments              → إنشاء شحنة جديدة
 GET    /api/shipments              → قائمة الشحنات
 GET    /api/shipments/{id}         → تفاصيل شحنة
-PUT    /api/shipments/{id}         → تعديل شحنة (open only)
+PUT    /api/shipments/{id}         → تعديل شحنة (open فقط) ✅ NEW
 DELETE /api/shipments/{id}         → حذف شحنة (conditions apply)
 POST   /api/shipments/{id}/close   → إغلاق شحنة
 POST   /api/shipments/{id}/settle  → تصفية شحنة

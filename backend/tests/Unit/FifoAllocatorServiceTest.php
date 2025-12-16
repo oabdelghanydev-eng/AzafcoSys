@@ -62,19 +62,46 @@ class FifoAllocatorServiceTest extends TestCase
 
     public function test_fifo_order_by_sequence_not_date(): void
     {
-        // TODO: This test needs investigation - the FIFO service may sort differently
-        $this->markTestSkipped('FIFO sequence ordering needs investigation');
+        // Create shipment 2 first (will get fifo_sequence=1 from boot)
+        $shipment2 = Shipment::factory()->create([
+            'supplier_id' => $this->supplier->id,
+            'status' => 'open',
+        ]);
+        ShipmentItem::factory()->create([
+            'shipment_id' => $shipment2->id,
+            'product_id' => $this->product->id,
+            'initial_quantity' => 100,
+            'remaining_quantity' => 100,
+            'sold_quantity' => 0,
+        ]);
 
-        // Shipment 2 created first but with higher sequence
-        $shipment2 = $this->createShipmentWithItem(100, 12.00, 2);
-        // Shipment 1 created second but with lower sequence (should be allocated first)
-        $shipment1 = $this->createShipmentWithItem(100, 10.00, 1);
+        // Create shipment 1 second (will get fifo_sequence=2 from boot)
+        $shipment1 = Shipment::factory()->create([
+            'supplier_id' => $this->supplier->id,
+            'status' => 'open',
+        ]);
+        ShipmentItem::factory()->create([
+            'shipment_id' => $shipment1->id,
+            'product_id' => $this->product->id,
+            'initial_quantity' => 100,
+            'remaining_quantity' => 100,
+            'sold_quantity' => 0,
+        ]);
 
+        // Force fifo_sequence via DB update (bypass model events)
+        // Make shipment1 have lower sequence (should be first in FIFO)
+        \DB::table('shipments')->where('id', $shipment1->id)->update(['fifo_sequence' => 1]);
+        \DB::table('shipments')->where('id', $shipment2->id)->update(['fifo_sequence' => 2]);
+
+        // Allocate 50 - should come from shipment1 (fifo_sequence=1)
         $allocations = $this->fifoService->allocate($this->product->id, 50);
 
-        // Should allocate from shipment with fifo_sequence=1 first
+        $this->assertCount(1, $allocations);
         $firstAllocation = $allocations->first();
-        $this->assertEquals(10.00, (float) $firstAllocation['unit_cost']);
+
+        // Should allocate from shipment1's item (the one with lower fifo_sequence)
+        $shipment1ItemId = $shipment1->fresh()->items->first()->id;
+        $this->assertEquals($shipment1ItemId, $firstAllocation['shipment_item_id']);
     }
 
     // ============================================

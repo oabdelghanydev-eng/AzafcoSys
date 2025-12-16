@@ -27,12 +27,22 @@ class ExpenseObserver
                     ->decrement('balance', (float) $expense->amount);
             }
 
-            // Get account based on payment method
+            // Get account based on payment method with lock (EC-TRS-001)
             $account = Account::where('type', $expense->payment_method === 'cash' ? 'cashbox' : 'bank')
                 ->where('is_active', true)
+                ->lockForUpdate()
                 ->first();
 
             if ($account) {
+                // EC-TRS-001: Check sufficient balance (only for cashbox)
+                if ($expense->payment_method === 'cash' && $account->balance < $expense->amount) {
+                    throw new \App\Exceptions\BusinessException(
+                        'TRS_001',
+                        'رصيد الخزنة غير كافي. المتاح: ' . $account->balance,
+                        'Insufficient cashbox balance. Available: ' . $account->balance
+                    );
+                }
+
                 // Decrease account balance
                 $account->decrement('balance', (float) $expense->amount);
 

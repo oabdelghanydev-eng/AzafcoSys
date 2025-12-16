@@ -81,15 +81,9 @@ class CollectionDistributionTest extends TestCase
 
     /**
      * Test LIFO (newest_first) distribution allocates to newest invoices first
-     * Note: This test requires MySQL (SQLite doesn't support modified ENUM)
      */
     public function test_lifo_distribution_allocates_newest_first(): void
     {
-        // Skip if using SQLite (doesn't support new enum values)
-        if (config('database.default') === 'sqlite') {
-            $this->markTestSkipped('LIFO test requires MySQL database');
-        }
-
         $customer = Customer::factory()->create(['balance' => 300]);
 
         // Create 3 invoices with different dates

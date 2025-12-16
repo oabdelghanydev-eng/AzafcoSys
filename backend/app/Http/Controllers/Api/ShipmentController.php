@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Http\Requests\Api\StoreShipmentRequest;
+use App\Http\Requests\Api\UpdateShipmentRequest;
 use App\Http\Resources\ShipmentResource;
 use App\Http\Resources\ShipmentItemResource;
 use App\Services\NumberGeneratorService;
@@ -14,6 +15,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\BusinessException;
 
 /**
  * @tags Shipment
@@ -115,6 +117,71 @@ class ShipmentController extends Controller
         $this->checkPermission('shipments.view');
 
         return new ShipmentResource($shipment->load(['items.product', 'supplier']));
+    }
+
+    /**
+     * Update shipment.
+     * Permission: shipments.edit
+     * Only open shipments can be updated.
+     */
+    public function update(UpdateShipmentRequest $request, Shipment $shipment): JsonResponse
+    {
+        $this->checkPermission('shipments.edit');
+
+        // Only open shipments can be updated
+        if ($shipment->status !== 'open') {
+            return $this->error(
+                'SHP_009',
+                'لا يمكن تعديل شحنة غير مفتوحة',
+                'Can only update open shipments',
+                422
+            );
+        }
+
+        return DB::transaction(function () use ($request, $shipment) {
+            $validated = $request->validated();
+
+            // Update shipment fields
+            $shipment->update([
+                'date' => $validated['date'] ?? $shipment->date,
+                'notes' => $validated['notes'] ?? $shipment->notes,
+            ]);
+
+            // Update items if provided
+            if (isset($validated['items'])) {
+                foreach ($validated['items'] as $itemData) {
+                    $item = ShipmentItem::where('id', $itemData['id'])
+                        ->where('shipment_id', $shipment->id)
+                        ->firstOrFail();
+
+                    if (isset($itemData['initial_quantity'])) {
+                        if ($itemData['initial_quantity'] < $item->sold_quantity) {
+                            throw new BusinessException(
+                                'SHP_010',
+                                "لا يمكن تقليل الكمية أقل من المباع ({$item->sold_quantity})",
+                                "Cannot reduce quantity below sold amount ({$item->sold_quantity})"
+                            );
+                        }
+
+                        // Adjust remaining_quantity proportionally
+                        $diff = $itemData['initial_quantity'] - $item->initial_quantity;
+                        $item->initial_quantity = $itemData['initial_quantity'];
+                        $item->remaining_quantity += $diff;
+                    }
+
+                    if (isset($itemData['weight_per_unit'])) {
+                        $item->weight_per_unit = $itemData['weight_per_unit'];
+                    }
+
+                    $item->save();
+                }
+            }
+
+            return $this->success(
+                new ShipmentResource($shipment->fresh(['items.product'])),
+                'تم تحديث الشحنة بنجاح'
+            );
+        });
     }
 
     /**

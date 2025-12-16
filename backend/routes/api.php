@@ -86,7 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Shipments (not tied to daily report - has own lifecycle)
     Route::get('/shipments/stock', [ShipmentController::class, 'stock']);
-    Route::apiResource('shipments', ShipmentController::class)->except(['update']);
+    Route::apiResource('shipments', ShipmentController::class);
     Route::post('/shipments/{shipment}/close', [ShipmentController::class, 'close']);
     Route::post('/shipments/{shipment}/settle', [ShipmentController::class, 'settle']);
     Route::post('/shipments/{shipment}/unsettle', [ShipmentController::class, 'unsettle']);
@@ -148,5 +148,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('audit')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\AuditLogController::class, 'index']);
         Route::get('/trail', [\App\Http\Controllers\Api\AuditLogController::class, 'trail']);
+    });
+
+    // Alerts (AI Smart Rules)
+    Route::prefix('alerts')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\AlertController::class, 'index']);
+        Route::get('/summary', [\App\Http\Controllers\Api\AlertController::class, 'summary']);
+        Route::post('/run-detection', [\App\Http\Controllers\Api\AlertController::class, 'runDetection']);
+        Route::post('/{alert}/read', [\App\Http\Controllers\Api\AlertController::class, 'markAsRead']);
+        Route::post('/{alert}/resolve', [\App\Http\Controllers\Api\AlertController::class, 'resolve']);
+        Route::delete('/{alert}', [\App\Http\Controllers\Api\AlertController::class, 'destroy']);
     });
 });

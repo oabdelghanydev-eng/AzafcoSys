@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ShipmentItem;
 use App\Models\InvoiceItem;
+use App\Exceptions\BusinessException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,7 @@ class FifoAllocatorService
             ->orderBy('shipment_items.id', 'asc')
             ->select('shipment_items.*')
             ->with('shipment:id,number')
+            ->lockForUpdate()
             ->get();
 
         foreach ($availableItems as $item) {
@@ -54,11 +56,12 @@ class FifoAllocatorService
             $remaining -= $take;
         }
 
-        // Check if we have enough stock
         if ($remaining > 0) {
             $available = $quantity - $remaining;
-            throw new \Exception(
-                "المخزون غير كافي. المطلوب: {$quantity}، المتاح: {$available}"
+            throw new BusinessException(
+                'INV_005',
+                "المخزون غير كافي. المطلوب: {$quantity}، المتاح: {$available}",
+                "Insufficient stock. Required: {$quantity}, Available: {$available}"
             );
         }
 
@@ -158,7 +161,8 @@ class FifoAllocatorService
             ->where('remaining_quantity', '>', 0)
             ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
-            ->orderBy('shipments.date', 'asc')
+            ->orderBy('shipments.fifo_sequence', 'asc')
+            ->orderBy('shipment_items.id', 'asc')
             ->select('shipment_items.*')
             ->with('shipment:id,number,date')
             ->get(['shipment_items.id', 'shipment_items.shipment_id', 'shipment_items.weight_per_unit', 'shipment_items.remaining_quantity', 'shipment_items.unit_cost', 'shipment_items.created_at']);

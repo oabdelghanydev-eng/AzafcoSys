@@ -27,7 +27,6 @@ class InvoiceItemFactory extends Factory
             'invoice_id' => Invoice::factory(),
             'product_id' => Product::factory(),
             'shipment_item_id' => ShipmentItem::factory(),
-            'cartons' => fake()->optional()->numberBetween(1, 10),
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
             'subtotal' => $quantity * $unitPrice,

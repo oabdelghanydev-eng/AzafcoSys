@@ -9,6 +9,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\Carryover;
 use App\Models\Invoice;
+use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class ReturnService
@@ -121,7 +122,11 @@ class ReturnService
         $openShipment = Shipment::where('status', 'open')->first();
 
         if (!$openShipment) {
-            throw new \Exception('لا توجد شحنة مفتوحة لاستقبال المرتجع');
+            throw new BusinessException(
+                'RET_001',
+                'لا توجد شحنة مفتوحة لاستقبال المرتجع',
+                'No open shipment available for return'
+            );
         }
 
         // Find existing item or create new one

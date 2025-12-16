@@ -71,6 +71,10 @@ class ErrorCodes
     public const FIN_002 = 'FIN_002'; // Insufficient balance
     public const FIN_003 = 'FIN_003'; // Bank account not found
 
+    // === Treasury Errors (TRS_xxx) ===
+    public const TRS_001 = 'TRS_001'; // Insufficient cashbox balance
+    public const TRS_002 = 'TRS_002'; // Transfer failed
+
     /**
      * Get Arabic message for error code
      */
@@ -139,6 +143,10 @@ class ErrorCodes
             self::FIN_001 => 'الخزنة غير موجودة',
             self::FIN_002 => 'الرصيد غير كافي',
             self::FIN_003 => 'الحساب البنكي غير موجود',
+
+                // Treasury
+            self::TRS_001 => 'رصيد الخزنة غير كافي',
+            self::TRS_002 => 'فشل التحويل',
 
             default => 'حدث خطأ غير متوقع',
         };
@@ -212,6 +220,10 @@ class ErrorCodes
             self::FIN_001 => 'Cashbox not found',
             self::FIN_002 => 'Insufficient balance',
             self::FIN_003 => 'Bank account not found',
+
+                // Treasury
+            self::TRS_001 => 'Insufficient cashbox balance',
+            self::TRS_002 => 'Transfer failed',
 
             default => 'An unexpected error occurred',
         };

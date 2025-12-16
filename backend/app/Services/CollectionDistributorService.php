@@ -6,6 +6,7 @@ use App\Models\Collection;
 use App\Models\CollectionAllocation;
 use App\Models\Invoice;
 use App\Models\Customer;
+use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class CollectionDistributorService
@@ -78,8 +79,10 @@ class CollectionDistributorService
             $totalAllocated = array_sum($allocations);
 
             if ($totalAllocated > $collection->amount) {
-                throw new \Exception(
-                    "إجمالي التوزيع ({$totalAllocated}) أكبر من مبلغ التحصيل ({$collection->amount})"
+                throw new BusinessException(
+                    'COL_005',
+                    "إجمالي التوزيع ({$totalAllocated}) أكبر من مبلغ التحصيل ({$collection->amount})",
+                    "Total allocation ({$totalAllocated}) exceeds collection amount ({$collection->amount})"
                 );
             }
 
@@ -97,8 +100,10 @@ class CollectionDistributorService
                     ->firstOrFail();
 
                 if ($amount > $invoice->balance) {
-                    throw new \Exception(
-                        "المبلغ ({$amount}) أكبر من رصيد الفاتورة ({$invoice->balance})"
+                    throw new BusinessException(
+                        'COL_006',
+                        "المبلغ ({$amount}) أكبر من رصيد الفاتورة ({$invoice->balance})",
+                        "Amount ({$amount}) exceeds invoice balance ({$invoice->balance})"
                     );
                 }
 

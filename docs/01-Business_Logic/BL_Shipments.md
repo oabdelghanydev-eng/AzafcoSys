@@ -131,6 +131,27 @@ FOR EACH item WITH remaining > 0:
 ]
 ```
 
+### UpdateShipmentRequest (2025-12-16)
+
+```php
+// ✅ قواعد التحديث:
+// - فقط الشحنات المفتوحة يمكن تعديلها
+// - لا يمكن تقليل الكمية أقل من المباع
+
+[
+    'date' => 'sometimes|date',
+    'notes' => 'nullable|string|max:1000',
+    'items' => 'sometimes|array',
+    'items.*.id' => 'required|exists:shipment_items,id',
+    'items.*.weight_per_unit' => 'sometimes|numeric|min:0.001',
+    'items.*.initial_quantity' => 'sometimes|numeric|min:0.001',
+]
+
+// Controller Validation:
+// - status !== 'open' → SHP_009
+// - initial_quantity < sold_quantity → SHP_010
+```
+
 ---
 
 ## 🔐 Authorization Rules (Policies)

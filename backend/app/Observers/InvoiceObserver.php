@@ -21,13 +21,16 @@ class InvoiceObserver
 
     /**
      * Handle the Invoice "created" event.
-     * Increases customer balance by invoice total
+     * Note: Customer balance update is handled in Controller after totals are set
+     * (Observer fires before total is calculated)
      */
     public function created(Invoice $invoice): void
     {
-        // Increase customer balance
-        Customer::where('id', $invoice->customer_id)
-            ->increment('balance', (float) $invoice->total);
+        // Wastage: set balance to 0 (no receivable)
+        if ($invoice->type === 'wastage') {
+            $invoice->balance = 0;
+            $invoice->saveQuietly();
+        }
 
         AuditService::logCreate($invoice);
     }
@@ -79,9 +82,11 @@ class InvoiceObserver
             $allocatedAmount = $invoice->allocations()->sum('amount');
             $invoice->allocations()->delete();
 
-            // 3. Decrease customer balance by total (not just remaining balance)
-            Customer::where('id', $invoice->customer_id)
-                ->decrement('balance', (float) $invoice->total);
+            // 3. Decrease customer balance by total (except for wastage)
+            if ($invoice->type !== 'wastage') {
+                Customer::where('id', $invoice->customer_id)
+                    ->decrement('balance', (float) $invoice->total);
+            }
 
             // 4. If there was allocated amount, it becomes unallocated in collections
             // The collection's unallocated amount will be updated by collection recalculation

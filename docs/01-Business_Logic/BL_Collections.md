@@ -220,7 +220,7 @@ class CollectionObserver
             
             // منع إعادة التفعيل
             if ($oldStatus === 'cancelled' && $newStatus === 'confirmed') {
-                throw new \Exception('لا يمكن إعادة تفعيل تحصيل ملغى');
+                throw new BusinessException('COL_002', 'لا يمكن إعادة تفعيل تحصيل ملغى');
             }
         }
     }
@@ -232,7 +232,8 @@ class CollectionObserver
      */
     public function deleting(Collection $collection): bool
     {
-        throw new \Exception(
+        throw new BusinessException(
+            'COL_001',
             "لا يمكن حذف التحصيلات. استخدم الإلغاء بدلاً من الحذف للحفاظ على سجل المراجعة."
         );
     }

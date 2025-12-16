@@ -21,9 +21,9 @@ class ExpenseFactory extends Factory
     public function definition(): array
     {
         return [
-            'type' => fake()->randomElement(['company', 'supplier']),
+            'expense_number' => 'EXP-' . fake()->unique()->numberBetween(10000, 99999),
+            'type' => 'company', // Default to company to avoid needing supplier_id
             'supplier_id' => null,
-            'shipment_id' => null,
             'date' => fake()->dateTimeBetween('-1 month', 'now'),
             'amount' => fake()->randomFloat(2, 50, 5000),
             'description' => fake()->sentence(),

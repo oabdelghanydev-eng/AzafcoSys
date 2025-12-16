@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Collection;
 use App\Models\CollectionAllocation;
 use App\Models\Invoice;
+use App\Exceptions\BusinessException;
 use Illuminate\Support\Facades\DB;
 
 class CollectionService
@@ -61,7 +62,11 @@ class CollectionService
     {
         // Validate invoice belongs to customer
         if ($invoice->customer_id !== $collection->customer_id) {
-            throw new \Exception('الفاتورة لا تخص هذا العميل');
+            throw new BusinessException(
+                'COL_003',
+                'الفاتورة لا تخص هذا العميل',
+                'Invoice does not belong to this customer'
+            );
         }
 
         DB::transaction(function () use ($collection, $invoice) {
