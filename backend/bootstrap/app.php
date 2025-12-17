@@ -21,8 +21,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Apply Security Headers to all responses
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // Apply localization middleware to all API routes
+        $middleware->api(prepend: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+
         // Apply rate limiting to API routes
-        $middleware->api([
+        $middleware->api(append: [
             'throttle:api',
         ]);
 
