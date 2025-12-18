@@ -21,8 +21,8 @@ class InvoiceObserver
 
     /**
      * Handle the Invoice "created" event.
-     * Note: Customer balance update is handled in Controller after totals are set
-     * (Observer fires before total is calculated)
+     * Note: Customer balance is updated by InvoiceController::store()
+     * after totals are calculated (not here, as Observer fires before total is set)
      */
     public function created(Invoice $invoice): void
     {

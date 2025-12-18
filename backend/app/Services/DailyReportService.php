@@ -101,7 +101,7 @@ class DailyReportService
 
     /**
      * Close daily report
-     * إغلاق اليومية
+     * إغلاق اليومية مع حساب الإجماليات
      */
     public function closeDay(DailyReport $report): DailyReport
     {
@@ -114,10 +114,45 @@ class DailyReportService
         }
 
         return DB::transaction(function () use ($report) {
+            // Calculate totals from invoices and collections
+            $date = $report->date;
+
+            // Invoices totals (excluding cancelled and wastage)
+            $invoiceStats = \App\Models\Invoice::where('date', $date)
+                ->where('status', 'active')
+                ->where('type', '!=', 'wastage')
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(total), 0) as total')
+                ->first();
+
+            // Collections totals (excluding cancelled)
+            $collectionStats = \App\Models\Collection::where('date', $date)
+                ->where('status', '!=', 'cancelled')
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(amount), 0) as total')
+                ->first();
+
+            // Expenses totals
+            $expenseStats = \App\Models\Expense::where('date', $date)
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(amount), 0) as total')
+                ->first();
+
+            // Calculate closing balances
+            $cashboxClosing = (float) $report->cashbox_opening
+                + (float) ($collectionStats->total ?? 0)
+                - (float) ($expenseStats->total ?? 0);
+
             $report->update([
                 'status' => 'closed',
                 'closed_at' => now(),
                 'closed_by' => auth()->id(),
+                // Totals
+                'total_sales' => $invoiceStats->total ?? 0,
+                'total_collections' => $collectionStats->total ?? 0,
+                'total_expenses' => $expenseStats->total ?? 0,
+                'invoices_count' => $invoiceStats->count ?? 0,
+                'collections_count' => $collectionStats->count ?? 0,
+                'expenses_count' => $expenseStats->count ?? 0,
+                // Closing balances
+                'cashbox_closing' => $cashboxClosing,
             ]);
 
             // Log user event

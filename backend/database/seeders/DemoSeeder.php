@@ -2,384 +2,176 @@
 
 namespace Database\Seeders;
 
-use App\Models\Account;
 use App\Models\Collection;
 use App\Models\Customer;
+use App\Models\DailyReport;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Models\Supplier;
-use App\Models\Transfer;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /**
- * Demo Data Seeder - 2025 Best Practices
- *
- * Creates realistic sample data for:
- * - PDF Report testing
- * - API endpoint testing
- * - Development environment
- *
- * Usage: php artisan db:seed --class=DemoSeeder
+ * DemoSeeder - Senior 2025 Approach
+ * Uses existing Factories with proper date linking + Invoice Items
  */
 class DemoSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Only run in non-production environments
-        if (app()->environment('production')) {
-            $this->command->error('Cannot run DemoSeeder in production!');
+        $this->command->info('🚀 بدء إنشاء البيانات الوهمية...');
 
-            return;
-        }
-
-        $this->command->info('🌱 Starting Demo Data Seeding...');
-
-        // 1. Ensure accounts exist
-        $this->seedAccounts();
-
-        // 2. Create or get admin user
-        $user = $this->seedAdminUser();
-
-        // 3. Create products if empty
-        $products = $this->seedProducts();
-
-        // 4. Create customers
-        $customers = $this->seedCustomers();
-
-        // 5. Create supplier and shipment
-        $shipment = $this->seedShipmentWithItems($user, $products);
-
-        // 6. Create invoices with items
-        $this->seedInvoicesWithItems($user, $customers, $shipment);
-
-        // 7. Create collections
-        $this->seedCollections($user, $customers);
-
-        // 8. Create expenses
-        $this->seedExpenses($user, $shipment);
-
-        // 9. Create transfers
-        $this->seedTransfers($user);
-
-        // 10. Create daily report
-        $this->seedDailyReport($user);
-
-        $this->command->newLine();
-        $this->command->info('✅ Demo Data Seeding Complete!');
-        $this->command->table(
-            ['Entity', 'Count'],
-            [
-                ['Products', Product::count()],
-                ['Customers', Customer::count()],
-                ['Suppliers', Supplier::count()],
-                ['Shipments', Shipment::count()],
-                ['Invoices', Invoice::count()],
-                ['Collections', Collection::count()],
-                ['Expenses', Expense::count()],
-                ['Transfers', Transfer::count()],
-            ]
+        // 1. Admin User
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@azafco.com'],
+            ['name' => 'مدير النظام', 'password' => Hash::make('password'), 'is_admin' => true]
         );
-    }
+        $this->command->info('✅ Admin User');
 
-    private function seedAccounts(): void
-    {
-        $this->command->info('  → Seeding Accounts...');
+        // 2. Suppliers using Factory
+        Supplier::factory()->count(10)->create();
+        $this->command->info('✅ 10 Suppliers');
 
-        if (! Account::where('type', 'cashbox')->exists()) {
-            Account::create([
-                'type' => 'cashbox',
-                'name' => 'الخزنة الرئيسية',
-                'balance' => 10000,
-                'is_active' => true,
+        // 3. Products using Factory
+        Product::factory()->count(9)->create();
+        $this->command->info('✅ 9 Products');
+
+        // 4. Customers using Factory
+        $customers = Customer::factory()->count(15)->create();
+        $this->command->info('✅ 15 Customers');
+
+        // 5. Shipments with Items using Factory
+        $shipments = Shipment::factory()
+            ->count(5)
+            ->has(ShipmentItem::factory()->count(9), 'items')
+            ->create(['created_by' => $admin->id]);
+        $this->command->info('✅ 5 Shipments with Items');
+
+        // Get all shipment items for FIFO linking
+        $shipmentItems = ShipmentItem::all();
+
+        // 6. Daily Reports + linked transactions with Invoice Items
+        for ($d = 7; $d >= 0; $d--) {
+            $date = now()->subDays($d)->toDateString();
+
+            // Create Daily Report
+            DailyReport::factory()->create([
+                'date' => $date,
+                'status' => $d > 0 ? 'closed' : 'open',
+                'opened_by' => $admin->id,
             ]);
-        }
 
-        if (! Account::where('type', 'bank')->exists()) {
-            Account::create([
-                'type' => 'bank',
-                'name' => 'البنك الرئيسي',
-                'balance' => 50000,
-                'is_active' => true,
-            ]);
-        }
-    }
+            // Create 5-8 Invoices for this date with Items
+            $invoiceCount = rand(5, 8);
+            for ($i = 0; $i < $invoiceCount; $i++) {
+                $customer = $customers->random();
 
-    private function seedAdminUser(): User
-    {
-        $this->command->info('  → Seeding Admin User...');
-
-        return User::firstOrCreate(
-            ['email' => 'admin@demo.com'],
-            [
-                'name' => 'Admin',
-                'password' => bcrypt('password'),
-                'is_admin' => true,
-                'is_locked' => false,
-            ]
-        );
-    }
-
-    private function seedProducts(): \Illuminate\Database\Eloquent\Collection
-    {
-        $this->command->info('  → Seeding Products...');
-
-        if (Product::count() >= 5) {
-            return Product::all();
-        }
-
-        $products = [
-            ['name' => 'سمك بلطي A', 'name_en' => 'Tilapia A', 'category' => 'fish', 'is_active' => true],
-            ['name' => 'سمك بلطي B', 'name_en' => 'Tilapia B', 'category' => 'fish', 'is_active' => true],
-            ['name' => 'سمك قاروص', 'name_en' => 'Seabass', 'category' => 'fish', 'is_active' => true],
-            ['name' => 'جمبري كبير', 'name_en' => 'Large Shrimp', 'category' => 'seafood', 'is_active' => true],
-            ['name' => 'جمبري صغير', 'name_en' => 'Small Shrimp', 'category' => 'seafood', 'is_active' => true],
-        ];
-
-        foreach ($products as $p) {
-            Product::firstOrCreate(['name' => $p['name']], $p);
-        }
-
-        return Product::all();
-    }
-
-    private function seedCustomers(): \Illuminate\Database\Eloquent\Collection
-    {
-        $this->command->info('  → Seeding Customers...');
-
-        if (Customer::count() >= 3) {
-            return Customer::all();
-        }
-
-        $customers = [
-            ['code' => 'CUS-00001', 'name' => 'محمد أحمد', 'phone' => '01001234567', 'balance' => 0, 'is_active' => true],
-            ['code' => 'CUS-00002', 'name' => 'سوبر ماركت النور', 'phone' => '01112345678', 'balance' => 500, 'is_active' => true],
-            ['code' => 'CUS-00003', 'name' => 'مطعم السمك الذهبي', 'phone' => '01223456789', 'balance' => 1200, 'is_active' => true],
-        ];
-
-        foreach ($customers as $c) {
-            Customer::firstOrCreate(['code' => $c['code']], $c);
-        }
-
-        return Customer::all();
-    }
-
-    private function seedShipmentWithItems(User $user, $products): Shipment
-    {
-        $this->command->info('  → Seeding Shipment with Items...');
-
-        // Create supplier
-        $supplier = Supplier::firstOrCreate(
-            ['code' => 'SUP-00001'],
-            [
-                'name' => 'مورد الأسماك الرئيسي',
-                'phone' => '01099887766',
-                'balance' => 0,
-                'is_active' => true,
-            ]
-        );
-
-        // Create shipment
-        $shipment = Shipment::firstOrCreate(
-            ['number' => 'SHP-DEMO-001'],
-            [
-                'supplier_id' => $supplier->id,
-                'date' => now()->subDays(3),
-                'status' => 'open',
-                'total_cost' => 15000,
-                'notes' => 'Demo shipment for testing',
-                'created_by' => $user->id,
-            ]
-        );
-
-        // Create shipment items for each product
-        foreach ($products->take(3) as $index => $product) {
-            ShipmentItem::firstOrCreate(
-                [
-                    'shipment_id' => $shipment->id,
-                    'product_id' => $product->id,
-                ],
-                [
-                    'weight_per_unit' => fake()->randomFloat(2, 0.5, 2),
-                    'weight_label' => 'A'.($index + 1),
-                    'cartons' => fake()->numberBetween(10, 50),
-                    'initial_quantity' => 200,
-                    'remaining_quantity' => 150, // Some sold
-                    'sold_quantity' => 50,
-                    'unit_cost' => fake()->randomFloat(2, 30, 80),
-                    'total_cost' => 200 * fake()->randomFloat(2, 30, 80),
-                ]
-            );
-        }
-
-        return $shipment;
-    }
-
-    private function seedInvoicesWithItems(User $user, $customers, Shipment $shipment): void
-    {
-        $this->command->info('  → Seeding Invoices with Items...');
-
-        $shipmentItems = $shipment->items;
-        $today = now()->toDateString();
-
-        foreach ($customers->take(2) as $index => $customer) {
-            $invoiceNumber = 'INV-DEMO-'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-
-            $invoice = Invoice::firstOrCreate(
-                ['invoice_number' => $invoiceNumber],
-                [
+                $invoice = Invoice::create([
+                    'invoice_number' => 'INV-' . date('Ymd', strtotime($date)) . '-' . str_pad($i + 1 + ($d * 10), 4, '0', STR_PAD_LEFT),
                     'customer_id' => $customer->id,
-                    'date' => $today,
+                    'date' => $date,
+                    'type' => 'sale',
+                    'status' => 'active',
                     'subtotal' => 0,
-                    'discount' => 0,
+                    'discount' => rand(0, 10),
                     'total' => 0,
                     'paid_amount' => 0,
                     'balance' => 0,
-                    'type' => 'sale',
-                    'status' => 'active',
-                    'created_by' => $user->id,
-                ]
-            );
-
-            // Add invoice items
-            $total = 0;
-            foreach ($shipmentItems->take(2) as $shipmentItem) {
-                $quantity = fake()->randomFloat(2, 10, 30);
-                $unitPrice = fake()->randomFloat(2, 50, 120);
-                $subtotal = $quantity * $unitPrice;
-                $total += $subtotal;
-
-                DB::table('invoice_items')->insertOrIgnore([
-                    'invoice_id' => $invoice->id,
-                    'product_id' => $shipmentItem->product_id,
-                    'shipment_item_id' => $shipmentItem->id,
-                    'cartons' => fake()->numberBetween(1, 5),
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'subtotal' => $subtotal,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'created_by' => $admin->id,
                 ]);
+
+                // Add 2-4 Invoice Items linked to ShipmentItems
+                $subtotal = 0;
+                $itemCount = rand(2, 4);
+                $usedProducts = [];
+
+                for ($j = 0; $j < $itemCount; $j++) {
+                    $availableItems = $shipmentItems->filter(function ($si) use ($usedProducts) {
+                        return $si->remaining_quantity > 10 && !in_array($si->product_id, $usedProducts);
+                    });
+
+                    if ($availableItems->isEmpty())
+                        break;
+
+                    $si = $availableItems->random();
+                    $usedProducts[] = $si->product_id;
+
+                    $qty = rand(5, min(30, (int) $si->remaining_quantity));
+                    $price = ($si->unit_cost ?? 10) + rand(3, 8);
+                    $itemSubtotal = $qty * $price;
+
+                    InvoiceItem::create([
+                        'invoice_id' => $invoice->id,
+                        'product_id' => $si->product_id,
+                        'shipment_item_id' => $si->id,
+                        'quantity' => $qty,
+                        'unit_price' => $price,
+                        'subtotal' => $itemSubtotal,
+                    ]);
+
+                    // FIFO deduction
+                    $si->decrement('remaining_quantity', $qty);
+                    $si->increment('sold_quantity', $qty);
+
+                    $subtotal += $itemSubtotal;
+                }
+
+                // Update invoice totals
+                $total = $subtotal - $invoice->discount;
+                $invoice->update([
+                    'subtotal' => $subtotal,
+                    'total' => $total,
+                    'balance' => $total,
+                ]);
+
+                $customer->increment('balance', $total);
             }
 
-            // Update invoice totals
-            $invoice->update([
-                'subtotal' => $total,
-                'total' => $total,
-                'balance' => $total,
-            ]);
-        }
-    }
+            // Create 3-5 Collections for this date
+            for ($i = 0; $i < rand(3, 5); $i++) {
+                $customer = Customer::where('balance', '>', 50)->inRandomOrder()->first();
+                if (!$customer)
+                    continue;
 
-    private function seedCollections(User $user, $customers): void
-    {
-        $this->command->info('  → Seeding Collections...');
+                $amount = min(rand(100, 500), (int) $customer->balance);
 
-        $today = now()->toDateString();
-
-        foreach ($customers->take(2) as $index => $customer) {
-            $receiptNumber = 'REC-DEMO-'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-
-            Collection::firstOrCreate(
-                ['receipt_number' => $receiptNumber],
-                [
+                Collection::factory()->create([
+                    'date' => $date,
                     'customer_id' => $customer->id,
-                    'date' => $today,
-                    'amount' => fake()->randomFloat(2, 200, 800),
-                    'payment_method' => $index % 2 == 0 ? 'cash' : 'bank',
-                    'distribution_method' => 'oldest_first',
+                    'amount' => $amount,
+                    'created_by' => $admin->id,
                     'status' => 'confirmed',
-                    'created_by' => $user->id,
-                ]
-            );
+                ]);
+
+                $customer->decrement('balance', $amount);
+            }
+
+            // Create 2-3 Expenses for this date
+            Expense::factory()
+                ->count(rand(2, 3))
+                ->create([
+                    'date' => $date,
+                    'created_by' => $admin->id,
+                ]);
         }
-    }
+        $this->command->info('✅ 8 Days of Data (Reports, Invoices with Items, Collections, Expenses)');
 
-    private function seedExpenses(User $user, Shipment $shipment): void
-    {
-        $this->command->info('  → Seeding Expenses...');
+        $this->command->info('🎉 تم إنشاء البيانات الوهمية بنجاح!');
 
-        $today = now()->toDateString();
-
-        // Company expense
-        Expense::firstOrCreate(
-            ['expense_number' => 'EXP-DEMO-001'],
-            [
-                'type' => 'company',
-                'supplier_id' => null,
-                'date' => $today,
-                'amount' => 150,
-                'payment_method' => 'cash',
-                'category' => 'utilities',
-                'description' => 'Demo company expense',
-                'created_by' => $user->id,
-            ]
-        );
-
-        // Supplier expense
-        Expense::firstOrCreate(
-            ['expense_number' => 'EXP-DEMO-002'],
-            [
-                'type' => 'supplier',
-                'supplier_id' => $shipment->supplier_id,
-                'date' => $today,
-                'amount' => 200,
-                'payment_method' => 'cash',
-                'category' => 'transport',
-                'description' => 'Demo supplier transport',
-                'created_by' => $user->id,
-            ]
-        );
-    }
-
-    private function seedTransfers(User $user): void
-    {
-        $this->command->info('  → Seeding Transfers...');
-
-        $today = now()->toDateString();
-
-        if (Transfer::count() == 0) {
-            $cashbox = Account::where('type', 'cashbox')->first();
-            $bank = Account::where('type', 'bank')->first();
-
-            Transfer::create([
-                'from_account_id' => $cashbox->id,
-                'to_account_id' => $bank->id,
-                'amount' => 2000,
-                'date' => $today,
-                'notes' => 'Demo transfer',
-                'created_by' => $user->id,
-            ]);
-        }
-    }
-
-    private function seedDailyReport(User $user): void
-    {
-        $this->command->info('  → Seeding Daily Report...');
-
-        $today = now()->toDateString();
-
-        DB::table('daily_reports')->insertOrIgnore([
-            'date' => $today,
-            'total_sales' => Invoice::whereDate('date', $today)->sum('total'),
-            'total_collections' => Collection::whereDate('date', $today)->sum('amount'),
-            'total_expenses' => Expense::whereDate('date', $today)->sum('amount'),
-            'cash_balance' => Account::where('type', 'cashbox')->first()?->balance ?? 0,
-            'bank_balance' => Account::where('type', 'bank')->first()?->balance ?? 0,
-            'invoices_count' => Invoice::whereDate('date', $today)->count(),
-            'collections_count' => Collection::whereDate('date', $today)->count(),
-            'expenses_count' => Expense::whereDate('date', $today)->count(),
-            'notes' => 'Auto-generated demo daily report',
-            'created_by' => $user->id,
-            'created_at' => now(),
-            'updated_at' => now(),
+        // Summary
+        $this->command->table(['Entity', 'Count'], [
+            ['Products', Product::count()],
+            ['Customers', Customer::count()],
+            ['Daily Reports', DailyReport::count()],
+            ['Invoices', Invoice::count()],
+            ['Invoice Items', InvoiceItem::count()],
+            ['Collections', Collection::count()],
+            ['Expenses', Expense::count()],
         ]);
     }
 }
