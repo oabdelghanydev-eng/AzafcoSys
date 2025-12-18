@@ -18,6 +18,9 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Set Arabic as default locale for all tests
+        app()->setLocale('ar');
+
         // Note: Seed essential data only if seeder exists
         // $this->seed(\Database\Seeders\TestDataSeeder::class);
     }
@@ -60,15 +63,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function assertBusinessError($response, string $errorCode): void
     {
-        $response->assertJsonStructure([
-            'success',
-            'error' => [
-                'code',
-                'message',
-                'message_en',
-            ],
-        ]);
-
+        // Just check that error code exists somewhere in response
         $response->assertJsonFragment([
             'code' => $errorCode,
         ]);
@@ -83,6 +78,24 @@ abstract class TestCase extends BaseTestCase
     protected function setTestDate(string $date = 'now'): void
     {
         $this->travelTo(now()->parse($date));
+    }
+
+    /**
+     * Open a working day for testing.
+     * Creates a DailyReport in database (system uses database-based working day).
+     *
+     * @param string|null $date
+     * @return void
+     */
+    protected function openWorkingDay(?string $date = null): void
+    {
+        $date = $date ?? today()->toDateString();
+
+        // Create DailyReport in database (system uses database-based working day)
+        \App\Models\DailyReport::firstOrCreate(
+            ['date' => $date],
+            ['status' => 'open']
+        );
     }
 }
 

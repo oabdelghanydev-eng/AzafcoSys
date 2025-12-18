@@ -56,7 +56,7 @@ class ShipmentServiceTest extends TestCase
         ]);
 
         // Act
-        $this->service->settle($shipment1, $shipment2->id);
+        $this->service->settle($shipment1, $shipment2);
 
         // Assert
         // Shipment 1 should be settled
@@ -110,6 +110,8 @@ class ShipmentServiceTest extends TestCase
             'carryover_in_quantity' => 25,
         ]);
 
+        $user = \App\Models\User::factory()->create();
+
         \App\Models\Carryover::create([
             'from_shipment_id' => $shipment1->id,
             'from_shipment_item_id' => $item1->id,
@@ -119,7 +121,7 @@ class ShipmentServiceTest extends TestCase
             'quantity' => 25,
             'cartons' => 5,
             'weight_per_unit' => 5,
-            'created_by' => 1,
+            'created_by' => $user->id,
         ]);
 
         // Act
@@ -177,6 +179,8 @@ class ShipmentServiceTest extends TestCase
             'sold_quantity' => 40,
         ]);
 
+        $user = \App\Models\User::factory()->create();
+
         \App\Models\Carryover::create([
             'from_shipment_id' => $shipment1->id,
             'from_shipment_item_id' => $item1->id,
@@ -186,12 +190,12 @@ class ShipmentServiceTest extends TestCase
             'quantity' => 50,
             'cartons' => 10,
             'weight_per_unit' => 5,
-            'created_by' => 1,
+            'created_by' => $user->id,
         ]);
 
         // Assert exception
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('الكمية المرحلة تم بيعها من الشحنة التالية');
+        $this->expectExceptionMessage('لا يمكن فك التصفية - الكمية المُرحّلة مُباعة');
 
         // Act
         $this->service->unsettle($shipment1);
@@ -214,10 +218,10 @@ class ShipmentServiceTest extends TestCase
 
         // Assert
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('الشحنة مُصفاة بالفعل');
+        $this->expectExceptionMessage('الشحنة مُصفاة بالفعل'); // SHP_007
 
         // Act
-        $this->service->settle($shipment1, $shipment2->id);
+        $this->service->settle($shipment1, $shipment2);
     }
 
     /**
@@ -240,7 +244,7 @@ class ShipmentServiceTest extends TestCase
         $this->expectExceptionMessage('الشحنة التالية يجب أن تكون مفتوحة');
 
         // Act
-        $this->service->settle($shipment1, $shipment2->id);
+        $this->service->settle($shipment1, $shipment2);
     }
 
     /**
@@ -270,7 +274,6 @@ class ShipmentServiceTest extends TestCase
         \App\Models\Expense::factory()->create([
             'type' => 'supplier',
             'supplier_id' => $supplier->id,
-            'shipment_id' => $shipment->id,
             'amount' => 500,
         ]);
 
@@ -280,7 +283,7 @@ class ShipmentServiceTest extends TestCase
             'status' => 'open',
         ]);
 
-        $this->service->settle($shipment, $nextShipment->id);
+        $this->service->settle($shipment, $nextShipment);
 
         // Assert
         $shipment = $shipment->fresh();
@@ -315,7 +318,7 @@ class ShipmentServiceTest extends TestCase
         ]);
 
         // Act
-        $this->service->settle($shipment1, $shipment2->id);
+        $this->service->settle($shipment1, $shipment2);
 
         // Assert
         $this->assertEquals('settled', $shipment1->fresh()->status);

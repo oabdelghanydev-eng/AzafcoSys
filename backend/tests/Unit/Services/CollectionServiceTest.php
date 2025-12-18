@@ -57,7 +57,7 @@ class CollectionServiceTest extends TestCase
         $collection = Collection::factory()->create([
             'customer_id' => $customer->id,
             'amount' => 600,
-            'distribution_method' => 'oldest_first',
+            'distribution_method' => 'manual', // Use manual to prevent Observer auto-allocation
             'status' => 'confirmed',
         ]);
 
@@ -116,7 +116,7 @@ class CollectionServiceTest extends TestCase
         $collection = Collection::factory()->create([
             'customer_id' => $customer->id,
             'amount' => 300,
-            'distribution_method' => 'newest_first',
+            'distribution_method' => 'manual', // Prevent Observer auto-allocation
         ]);
 
         // Act
@@ -157,11 +157,10 @@ class CollectionServiceTest extends TestCase
             'customer_id' => $customer->id,
             'amount' => 200,
             'distribution_method' => 'manual',
-            'invoice_id' => $invoice2->id, // Manually link to invoice2
         ]);
 
-        // Act
-        $this->service->allocatePayment($collection);
+        // Act - Manually allocate to invoice2
+        $this->service->allocateToInvoice($collection, $invoice2);
 
         // Assert - Only invoice2 should be affected
         $this->assertEquals(500, $invoice1->fresh()->balance);
@@ -197,7 +196,7 @@ class CollectionServiceTest extends TestCase
         $collection = Collection::factory()->create([
             'customer_id' => $customer->id,
             'amount' => 300,
-            'distribution_method' => 'oldest_first',
+            'distribution_method' => 'manual', // Prevent Observer auto-allocation
         ]);
 
         // Act
@@ -250,7 +249,7 @@ class CollectionServiceTest extends TestCase
         $collection = Collection::factory()->create([
             'customer_id' => $customer->id,
             'amount' => 500, // More than owed
-            'distribution_method' => 'oldest_first',
+            'distribution_method' => 'manual', // Prevent Observer auto-allocation
         ]);
 
         // Act
@@ -303,7 +302,7 @@ class CollectionServiceTest extends TestCase
         $collection = Collection::factory()->create([
             'customer_id' => $customer->id,
             'amount' => 750, // Partial coverage
-            'distribution_method' => 'oldest_first',
+            'distribution_method' => 'manual', // Prevent Observer auto-allocation
         ]);
 
         // Act

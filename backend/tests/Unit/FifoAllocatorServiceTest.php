@@ -115,7 +115,7 @@ class FifoAllocatorServiceTest extends TestCase
         $this->createShipmentWithItem(50, 10.00, 1);
 
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('المخزون غير كافي');
+        $this->expectExceptionMessageMatches('/الكمية المطلوبة غير متوفرة/'); // Match new detailed message
 
         $this->fifoService->allocate($this->product->id, 100);
     }

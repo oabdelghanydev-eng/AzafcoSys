@@ -31,7 +31,7 @@ class FifoAllocatorService
         $availableItems = ShipmentItem::query()
             ->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
             ->orderBy('shipments.fifo_sequence', 'asc')
             ->orderBy('shipment_items.id', 'asc')
@@ -59,11 +59,12 @@ class FifoAllocatorService
         }
 
         if ($remaining > 0) {
-            $available = $quantity - $remaining;
+            $availableStock = $quantity - $remaining;
+            // Use auto-translation - error code will load from resources/lang/{locale}/errors.php
             throw new BusinessException(
                 'INV_005',
-                "المخزون غير كافي. المطلوب: {$quantity}، المتاح: {$available}",
-                "Insufficient stock. Required: {$quantity}, Available: {$available}"
+                "الكمية المطلوبة غير متوفرة في المخزون. مطلوب: {$quantity}، متوفر: {$availableStock}",
+                "Requested quantity not available in stock. Requested: {$quantity}, Available: {$availableStock}"
             );
         }
 
@@ -142,7 +143,7 @@ class FifoAllocatorService
         return ShipmentItem::query()
             ->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->sum('remaining_quantity');
     }
 
@@ -155,7 +156,7 @@ class FifoAllocatorService
         return ShipmentItem::query()
             ->where('product_id', $productId)
             ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
             ->orderBy('shipments.fifo_sequence', 'asc')
             ->orderBy('shipment_items.id', 'asc')

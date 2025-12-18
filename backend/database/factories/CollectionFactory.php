@@ -15,13 +15,14 @@ class CollectionFactory extends Factory
         $amount = $this->faker->randomFloat(2, 100, 5000);
 
         return [
-            'receipt_number' => 'REC-'.$this->faker->unique()->numberBetween(10000, 99999),
+            'receipt_number' => 'REC-' . $this->faker->unique()->numberBetween(10000, 99999),
             'customer_id' => Customer::factory(),
             'date' => $this->faker->date(),
             'amount' => $amount,
             'payment_method' => $this->faker->randomElement(['cash', 'bank']),
             // Use 'auto' which maps to 'oldest_first' in business logic
             'distribution_method' => 'auto',
+            'status' => 'confirmed',  // Default status as per migration
             'allocated_amount' => 0,
             'unallocated_amount' => $amount,
             'notes' => $this->faker->optional()->sentence(),
@@ -30,7 +31,7 @@ class CollectionFactory extends Factory
 
     public function manual(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'distribution_method' => 'manual',
         ]);
     }

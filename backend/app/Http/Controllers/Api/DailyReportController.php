@@ -52,7 +52,7 @@ class DailyReportController extends Controller
     {
         $report = $this->dailyReportService->getCurrentOpenReport();
 
-        if (! $report) {
+        if (!$report) {
             return $this->success([
                 'report' => null,
                 'message' => 'لا توجد يومية مفتوحة',
@@ -80,7 +80,8 @@ class DailyReportController extends Controller
         return $this->success([
             'report' => $report,
             'working_date' => $report->date,
-        ], 'تم فتح اليومية بنجاح', 201);
+            'date' => $report->date->format('Y-m-d'),
+        ], 'تم فتح اليومية بنجاح');
     }
 
     /**
@@ -91,7 +92,7 @@ class DailyReportController extends Controller
     {
         $report = DailyReport::where('date', $date)->first();
 
-        if (! $report) {
+        if (!$report) {
             return $this->error('DAY_006', 'اليومية غير موجودة', 'Daily report not found', 404);
         }
 
@@ -104,13 +105,13 @@ class DailyReportController extends Controller
      */
     public function close(Request $request): JsonResponse
     {
-        if (! Gate::allows('close', DailyReport::class)) {
+        if (!Gate::allows('close', DailyReport::class)) {
             throw new BusinessException('AUTH_003', 'ليس لديك صلاحية إغلاق اليومية', 'Permission denied');
         }
 
         $report = $this->dailyReportService->getCurrentOpenReport();
 
-        if (! $report) {
+        if (!$report) {
             return $this->error('DAY_004', 'لا توجد يومية مفتوحة', 'No open daily report', 422);
         }
 
@@ -125,13 +126,13 @@ class DailyReportController extends Controller
      */
     public function reopen(string $date): JsonResponse
     {
-        if (! Gate::allows('reopen', DailyReport::class)) {
+        if (!Gate::allows('reopen', DailyReport::class)) {
             throw new BusinessException('AUTH_003', 'ليس لديك صلاحية إعادة فتح اليومية', 'Permission denied');
         }
 
         $report = DailyReport::where('date', $date)->first();
 
-        if (! $report) {
+        if (!$report) {
             return $this->error('DAY_006', 'اليومية غير موجودة', 'Daily report not found', 404);
         }
 

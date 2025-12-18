@@ -46,11 +46,11 @@ class InvoiceController extends Controller
         $this->checkPermission('invoices.view');
 
         $query = Invoice::with(['customer', 'createdBy'])
-            ->when($request->customer_id, fn ($q, $id) => $q->where('customer_id', $id))
-            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
-            ->when($request->unpaid_only, fn ($q) => $q->where('balance', '>', 0))
+            ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
+            ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->unpaid_only, fn($q) => $q->where('balance', '>', 0))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -108,11 +108,7 @@ class InvoiceController extends Controller
                 'balance' => $total,
             ]);
 
-            // Update customer balance (moved here from Observer since total is set after create)
-            if ($invoice->type !== 'wastage') {
-                \App\Models\Customer::where('id', $invoice->customer_id)
-                    ->increment('balance', (float) $total);
-            }
+            // Note: Customer balance is now updated by InvoiceObserver->created()
 
             return $this->success(
                 new InvoiceResource($invoice->load('items.product', 'customer')),

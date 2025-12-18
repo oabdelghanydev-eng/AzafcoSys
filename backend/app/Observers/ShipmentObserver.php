@@ -29,17 +29,26 @@ class ShipmentObserver
 
         // If shipment is settled, only allow specific changes
         if ($originalStatus === 'settled') {
-            // Get all changed fields except timestamps
+            // Get all changed fields except timestamps and settlement totals
             $changedFields = array_diff(
                 array_keys($shipment->getDirty()),
-                ['updated_at', 'status']
+                [
+                    'updated_at',
+                    'status',
+                    'settled_at',               // Settlement timestamp
+                    'settled_by',               // Settlement user
+                    'total_sales',              // Settlement calculated fields
+                    'total_wastage',            // Settlement calculated fields
+                    'total_carryover_out',      // Settlement calculated fields
+                    'total_supplier_expenses',  // Settlement calculated fields
+                ]
             );
 
             // If any field other than status/timestamps changed, block it
-            if (! empty($changedFields)) {
+            if (!empty($changedFields)) {
                 throw new BusinessException(
                     ErrorCodes::SHP_001,
-                    ErrorCodes::getMessage(ErrorCodes::SHP_001).'. الحقول: '.implode(', ', $changedFields),
+                    ErrorCodes::getMessage(ErrorCodes::SHP_001) . '. الحقول: ' . implode(', ', $changedFields),
                     ErrorCodes::getMessageEn(ErrorCodes::SHP_001)
                 );
             }
@@ -58,17 +67,12 @@ class ShipmentObserver
 
     /**
      * Handle the Shipment "updated" event.
-     * Logs the change
+     * Observer only logs changes - Service handles all business logic
      */
     public function updated(Shipment $shipment): void
     {
-        // If settling, record settlement info
-        if ($shipment->wasChanged('status') && $shipment->status === 'settled') {
-            $shipment->settled_at = now();
-            $shipment->settled_by = auth()->id();
-            $shipment->saveQuietly();
-        }
-
+        // Service handles all settlement logic (status, totals, timestamps)
+        // Observer responsibility: Only log the change
         AuditService::logUpdate($shipment, $shipment->getOriginal());
     }
 

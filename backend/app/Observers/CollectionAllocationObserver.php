@@ -26,9 +26,9 @@ class CollectionAllocationObserver
      */
     public function deleted(CollectionAllocation $allocation): void
     {
-        // Only update if the invoice still exists and is active
+        // Update invoice balances regardless of status
+        // As per BL_Collections.md documentation
         Invoice::where('id', $allocation->invoice_id)
-            ->where('status', 'active')
             ->update([
                 'paid_amount' => \DB::raw("paid_amount - {$allocation->amount}"),
                 'balance' => \DB::raw("balance + {$allocation->amount}"),

@@ -54,7 +54,7 @@
     <php>
         <!-- Environment -->
         <env name="APP_ENV" value="testing"/>
-        <env name="APP_KEY" value="base64:TEST_KEY_32_CHAR_STRING_HERE"/>
+        <env name="APP_KEY" value="base64:eS+cNBST2ik2ZB+j2d6Mohg4VJ79g1Gb9OxT50BFT4o="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         
         <!-- Performance optimizations for testing -->

@@ -18,6 +18,7 @@ class Collection extends Model
         'amount',
         'payment_method',
         'distribution_method',
+        'status',                   // Critical for cancellation Observer
         'allocated_amount',
         'unallocated_amount',
         'notes',

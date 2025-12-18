@@ -8,8 +8,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * تحسين 2025-12-13: تحديث جدول التحصيلات ليدعم FIFO/LIFO والحالة
  */
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::table('collections', function (Blueprint $table) {
@@ -17,11 +16,8 @@ return new class extends Migration
             $table->enum('status', ['confirmed', 'cancelled'])->default('confirmed')->after('unallocated_amount');
         });
 
-        // Update distribution_method enum to support new values
-        // Note: SQLite doesn't support modifying enums, using raw SQL for MySQL
-        if (config('database.default') !== 'sqlite') {
-            DB::statement("ALTER TABLE collections MODIFY COLUMN distribution_method ENUM('auto', 'manual', 'oldest_first', 'newest_first') DEFAULT 'auto'");
-        }
+        // Update distribution_method enum to support new values (MySQL)
+        DB::statement("ALTER TABLE collections MODIFY COLUMN distribution_method ENUM('auto', 'manual', 'oldest_first', 'newest_first') DEFAULT 'auto'");
     }
 
     public function down(): void
@@ -30,8 +26,7 @@ return new class extends Migration
             $table->dropColumn('status');
         });
 
-        if (config('database.default') !== 'sqlite') {
-            DB::statement("ALTER TABLE collections MODIFY COLUMN distribution_method ENUM('auto', 'manual') DEFAULT 'auto'");
-        }
+        // Restore original enum values (MySQL)
+        DB::statement("ALTER TABLE collections MODIFY COLUMN distribution_method ENUM('auto', 'manual') DEFAULT 'auto'");
     }
 };

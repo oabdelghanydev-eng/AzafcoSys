@@ -84,7 +84,7 @@ class CollectionObserverTest extends TestCase
             'paid_amount' => 0,
         ]);
 
-        $collection = Collection::factory()->create([
+        $collection = Collection::factory()->manual()->create([
             'customer_id' => $customer->id,
             'amount' => 300,
             'status' => 'confirmed',
@@ -144,7 +144,7 @@ class CollectionObserverTest extends TestCase
 
         // Assert
         $this->assertDatabaseHas('audit_logs', [
-            'model_type' => 'Collection',
+            'model_type' => 'App\\Models\\Collection', // AuditService stores FQCN
             'model_id' => $collection->id,
             'action' => 'created',
             'user_id' => $user->id,
@@ -165,25 +165,24 @@ class CollectionObserverTest extends TestCase
             'total' => 500,
             'balance' => 500,
             'paid_amount' => 0,
+            'status' => 'active',  // Required for Observer
         ]);
 
-        $collection = Collection::factory()->create([
+        $collection = Collection::factory()->manual()->create([
             'customer_id' => $customer->id,
             'amount' => 300,
         ]);
 
-        // Simulate allocation (Observer creates it)
+        // Simulate allocation (Observer creates it and updates invoice automatically)
         CollectionAllocation::create([
             'collection_id' => $collection->id,
             'invoice_id' => $invoice->id,
             'amount' => 300,
         ]);
 
-        // Invoice should now have paid_amount = 300, balance = 200
-        $invoice->update([
-            'paid_amount' => 300,
-            'balance' => 200,
-        ]);
+        // Observer automatically updated:
+        // invoice.paid_amount = 0 + 300 = 300
+        // invoice.balance = 500 - 300 = 200
 
         // Act - Cancel collection
         $collection->update(['status' => 'cancelled']);
@@ -210,6 +209,7 @@ class CollectionObserverTest extends TestCase
             'total' => 500,
             'balance' => 500,
             'paid_amount' => 0,
+            'status' => 'active',  // Required for Observer
         ]);
 
         $invoice2 = Invoice::factory()->create([
@@ -217,14 +217,15 @@ class CollectionObserverTest extends TestCase
             'total' => 500,
             'balance' => 500,
             'paid_amount' => 0,
+            'status' => 'active',  // Required for Observer
         ]);
 
-        $collection = Collection::factory()->create([
+        $collection = Collection::factory()->manual()->create([
             'customer_id' => $customer->id,
             'amount' => 700,
         ]);
 
-        // Create allocations
+        // Create allocations (Observer updates invoices automatically)
         CollectionAllocation::create([
             'collection_id' => $collection->id,
             'invoice_id' => $invoice1->id,
@@ -237,9 +238,9 @@ class CollectionObserverTest extends TestCase
             'amount' => 200,
         ]);
 
-        // Update invoices
-        $invoice1->update(['paid_amount' => 500, 'balance' => 0]);
-        $invoice2->update(['paid_amount' => 200, 'balance' => 300]);
+        // Observer automatically updated invoic invoices:
+        // invoice1: paid=500, balance=0
+        // invoice2: paid=200, balance=300
 
         // Act - Cancel collection
         $collection->update(['status' => 'cancelled']);

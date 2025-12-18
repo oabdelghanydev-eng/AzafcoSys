@@ -75,8 +75,9 @@ class CollectionObserver
     private function handleCancellation(Collection $collection): void
     {
         \Illuminate\Support\Facades\DB::transaction(function () use ($collection) {
-            // 1. Delete allocations (their observer increases invoice balances)
-            $collection->allocations()->delete();
+            // 1. Delete allocations using Eloquent (fires observers!)
+            // IMPORTANT: Must use get()->each->delete() not delete() query
+            $collection->allocations()->get()->each->delete();
 
             // 2. Increase customer balance back
             Customer::where('id', $collection->customer_id)

@@ -21,6 +21,11 @@ class Shipment extends Model
         'settled_at',
         'settled_by',
         'created_by',
+        // Settlement totals
+        'total_sales',
+        'total_wastage',
+        'total_carryover_out',
+        'total_supplier_expenses',
         // fifo_sequence is NOT fillable - it's auto-generated and immutable
     ];
 
