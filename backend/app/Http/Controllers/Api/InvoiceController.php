@@ -108,7 +108,11 @@ class InvoiceController extends Controller
                 'balance' => $total,
             ]);
 
-            // Note: Customer balance is now updated by InvoiceObserver->created()
+            // Update customer balance (except for wastage invoices)
+            if (($validated['type'] ?? 'sale') !== 'wastage') {
+                Customer::where('id', $validated['customer_id'])
+                    ->increment('balance', $total);
+            }
 
             return $this->success(
                 new InvoiceResource($invoice->load('items.product', 'customer')),
