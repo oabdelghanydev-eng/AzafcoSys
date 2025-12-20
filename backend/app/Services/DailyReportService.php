@@ -6,6 +6,7 @@ use App\Exceptions\BusinessException;
 use App\Models\Account;
 use App\Models\DailyReport;
 use App\Models\Setting;
+use App\Services\AlertService;
 use App\Services\TelegramService;
 use Illuminate\Support\Facades\DB;
 
@@ -162,8 +163,24 @@ class DailyReportService
             // Send Telegram notification (async - don't block)
             $this->sendDailyReportToTelegram($report->fresh());
 
+            // Run daily alerts check
+            $this->runDailyAlerts();
+
             return $report->fresh();
         });
+    }
+
+    /**
+     * Run daily alerts after closing
+     */
+    private function runDailyAlerts(): void
+    {
+        try {
+            $alertService = app(AlertService::class);
+            $alertService->runDailyChecks();
+        } catch (\Exception $e) {
+            \Log::warning('Failed to run daily alerts', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -182,8 +199,12 @@ class DailyReportService
             $pdfService = app(\App\Services\Reports\PdfGeneratorService::class);
             $reportService = app(\App\Services\Reports\DailyClosingReportService::class);
 
-            $data = $reportService->generate($report->date);
-            $filename = "reports/daily-report-{$report->date}.pdf";
+            $dateString = $report->date instanceof \Carbon\Carbon
+                ? $report->date->format('Y-m-d')
+                : $report->date;
+
+            $data = $reportService->generate($dateString);
+            $filename = "reports/daily-report-{$dateString}.pdf";
             $path = $pdfService->save('reports.daily-closing', $data, $filename);
 
             // Send to Telegram
@@ -193,7 +214,7 @@ class DailyReportService
                 'total_expenses' => $report->total_expenses ?? 0,
             ];
 
-            $telegram->sendDailyReport($path, $report->date, $summary);
+            $telegram->sendDailyReport($path, $dateString, $summary);
         } catch (\Exception $e) {
             \Log::warning('Failed to send daily report to Telegram', ['error' => $e->getMessage()]);
         }
