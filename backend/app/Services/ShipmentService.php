@@ -6,6 +6,7 @@ use App\Exceptions\BusinessException;
 use App\Models\Carryover;
 use App\Models\Shipment;
 use App\Models\ShipmentItem;
+use App\Services\TelegramService;
 use Illuminate\Support\Facades\DB;
 
 class ShipmentService
@@ -112,7 +113,43 @@ class ShipmentService
                 'total_carryover_out' => $totalCarryoverOut,
                 'total_supplier_expenses' => $totalSupplierExpenses,
             ]);
+
+            // Send Telegram notification
+            $this->sendSettlementReportToTelegram($shipment->fresh());
         });
+    }
+
+    /**
+     * Send settlement report PDF to Telegram
+     */
+    private function sendSettlementReportToTelegram(Shipment $shipment): void
+    {
+        try {
+            $telegram = app(TelegramService::class);
+
+            if (!$telegram->isConfigured()) {
+                return;
+            }
+
+            // Generate PDF
+            $pdfService = app(\App\Services\Reports\PdfGeneratorService::class);
+            $reportService = app(\App\Services\Reports\ShipmentSettlementReportService::class);
+
+            $data = $reportService->generate($shipment);
+            $filename = "reports/settlement-{$shipment->number}.pdf";
+            $path = $pdfService->save('reports.shipment-settlement', $data, $filename);
+
+            // Send to Telegram
+            $summary = [
+                'total_sales' => $data['totalSales'] ?? 0,
+                'commission' => $data['companyCommission'] ?? 0,
+                'final_balance' => $data['finalSupplierBalance'] ?? 0,
+            ];
+
+            $telegram->sendSettlementReport($path, $shipment->number, $shipment->supplier->name, $summary);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send settlement report to Telegram', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

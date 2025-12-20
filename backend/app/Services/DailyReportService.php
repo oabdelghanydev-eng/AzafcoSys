@@ -6,6 +6,7 @@ use App\Exceptions\BusinessException;
 use App\Models\Account;
 use App\Models\DailyReport;
 use App\Models\Setting;
+use App\Services\TelegramService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -158,8 +159,44 @@ class DailyReportService
             // Log user event
             $this->logUserEvent('daily_close', "إغلاق يومية {$report->date}");
 
+            // Send Telegram notification (async - don't block)
+            $this->sendDailyReportToTelegram($report->fresh());
+
             return $report->fresh();
         });
+    }
+
+    /**
+     * Send daily report PDF to Telegram
+     */
+    private function sendDailyReportToTelegram(DailyReport $report): void
+    {
+        try {
+            $telegram = app(TelegramService::class);
+
+            if (!$telegram->isConfigured()) {
+                return;
+            }
+
+            // Generate PDF
+            $pdfService = app(\App\Services\Reports\PdfGeneratorService::class);
+            $reportService = app(\App\Services\Reports\DailyClosingReportService::class);
+
+            $data = $reportService->generate($report->date);
+            $filename = "reports/daily-report-{$report->date}.pdf";
+            $path = $pdfService->save('reports.daily-closing', $data, $filename);
+
+            // Send to Telegram
+            $summary = [
+                'total_sales' => $report->total_sales ?? 0,
+                'total_collections' => $report->total_collections ?? 0,
+                'total_expenses' => $report->total_expenses ?? 0,
+            ];
+
+            $telegram->sendDailyReport($path, $report->date, $summary);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send daily report to Telegram', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

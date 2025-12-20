@@ -5,17 +5,22 @@ namespace App\Console\Commands;
 use App\Models\Shipment;
 use App\Services\Reports\PdfGeneratorService;
 use App\Services\Reports\ShipmentSettlementReportService;
+use App\Services\TelegramService;
 use Illuminate\Console\Command;
 
 class GenerateSettlementReportPdf extends Command
 {
-    protected $signature = 'report:settlement {shipment_id?} {--status=closed : Shipment status to find}';
+    protected $signature = 'report:settlement {shipment_id?} {--status=closed : Shipment status to find} {--telegram : Send report to Telegram}';
     protected $description = 'Generate Shipment Settlement Report PDF';
 
-    public function handle(ShipmentSettlementReportService $reportService, PdfGeneratorService $pdfService)
-    {
+    public function handle(
+        ShipmentSettlementReportService $reportService,
+        PdfGeneratorService $pdfService,
+        TelegramService $telegram
+    ) {
         $shipmentId = $this->argument('shipment_id');
         $status = $this->option('status');
+        $sendTelegram = $this->option('telegram');
 
         // Find shipment
         if ($shipmentId) {
@@ -45,6 +50,23 @@ class GenerateSettlementReportPdf extends Command
             $path = $pdfService->save('reports.shipment-settlement', $data, $filename);
 
             $this->info("✅ PDF saved to: {$path}");
+
+            // Send to Telegram if requested
+            if ($sendTelegram) {
+                $this->info("📲 Sending to Telegram...");
+
+                $summary = [
+                    'total_sales' => $data['totalSales'] ?? 0,
+                    'commission' => $data['companyCommission'] ?? 0,
+                    'final_balance' => $data['finalSupplierBalance'] ?? 0,
+                ];
+
+                if ($telegram->sendSettlementReport($path, $shipment->number, $shipment->supplier->name, $summary)) {
+                    $this->info("✅ Sent to Telegram!");
+                } else {
+                    $this->warn("⚠️ Failed to send to Telegram (check config)");
+                }
+            }
 
             // Show summary
             $this->newLine();
