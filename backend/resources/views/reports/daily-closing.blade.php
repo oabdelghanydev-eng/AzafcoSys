@@ -97,6 +97,86 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════════════
+    1.5 RETURNS / المرتجعات (NEW)
+    ═══════════════════════════════════════════════════════════════════ --}}
+    <div class="section">
+        <h2 class="section-title">
+            <span class="section-number">1.5</span>
+            <span class="ar">المرتجعات</span>
+            <span class="en">Returns</span>
+        </h2>
+
+        @if(isset($returnItems) && count($returnItems) > 0)
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 12%;">
+                            <span class="ar">رقم المرتجع</span>
+                            <span class="en">Return #</span>
+                        </th>
+                        <th style="width: 18%;">
+                            <span class="ar">العميل</span>
+                            <span class="en">Customer</span>
+                        </th>
+                        <th style="width: 25%;">
+                            <span class="ar">المنتج</span>
+                            <span class="en">Product</span>
+                        </th>
+                        <th class="text-center" style="width: 10%;">
+                            <span class="ar">الكراتين</span>
+                            <span class="en">Cartons</span>
+                        </th>
+                        <th class="text-center" style="width: 12%;">
+                            <span class="ar">الوزن المحسوب</span>
+                            <span class="en">Calc. Weight</span>
+                        </th>
+                        <th class="text-center" style="width: 12%;">
+                            <span class="ar">العجز المسترد</span>
+                            <span class="en">Recovered</span>
+                        </th>
+                        <th class="text-left" style="width: 11%;">
+                            <span class="ar">القيمة</span>
+                            <span class="en">Value</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($returnItems as $item)
+                        <tr>
+                            <td>{{ $item['return_number'] }}</td>
+                            <td>{{ $item['customer_name'] }}</td>
+                            <td>{{ $item['product_name'] }}</td>
+                            <td class="text-center">{{ $item['cartons'] }}</td>
+                            <td class="text-center">{{ number_format($item['calculated_weight'], 2) }} kg</td>
+                            <td class="text-center positive">{{ number_format($item['recovered_wastage'], 2) }} kg</td>
+                            <td class="text-left money negative">{{ $currency($item['subtotal']) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="total-row">
+                        <td colspan="3">
+                            <strong>
+                                <span class="ar">الإجمالي</span>
+                                <span class="en">Total</span>
+                            </strong>
+                        </td>
+                        <td class="text-center"><strong>{{ $totalReturnsCartons ?? 0 }}</strong></td>
+                        <td class="text-center"><strong>{{ number_format($totalReturnsWeight ?? 0, 2) }} kg</strong></td>
+                        <td class="text-center positive"><strong>{{ number_format($totalRecoveredWastage ?? 0, 2) }} kg</strong>
+                        </td>
+                        <td class="text-left money negative"><strong>{{ $currency($totalReturnsValue ?? 0) }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        @else
+            <div class="no-data">
+                <span class="ar">لا توجد مرتجعات لهذا اليوم</span>
+                <br>
+                <span class="en">No returns for this day</span>
+            </div>
+        @endif
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════════
     2. COLLECTIONS / التحصيلات
     ═══════════════════════════════════════════════════════════════════ --}}
     <div class="section">
@@ -405,6 +485,55 @@
             <span class="summary-value money negative">-{{ $currency($totalExpenses) }}</span>
         </div>
 
+        @if(isset($totalReturnsValue) && $totalReturnsValue > 0)
+            <div class="summary-row">
+                <span class="summary-label">
+                    <span class="ar">إجمالي المرتجعات</span>
+                    <span class="en">Total Returns</span>
+                </span>
+                <span class="summary-value money negative">-{{ $currency($totalReturnsValue) }}</span>
+            </div>
+        @endif
+
+        <hr>
+
+        <h3>
+            <span class="ar">تحليل العجز</span>
+            <span class="en">Wastage Analysis</span>
+        </h3>
+
+        <div class="summary-row">
+            <span class="summary-label">
+                <span class="ar">عجز المبيعات</span>
+                <span class="en">Sales Wastage</span>
+            </span>
+            <span class="summary-value {{ ($totalWastage ?? 0) > 0 ? 'negative' : 'positive' }}">
+                {{ number_format($totalWastage ?? 0, 2) }} kg
+            </span>
+        </div>
+
+        @if(isset($totalRecoveredWastage) && $totalRecoveredWastage > 0)
+            <div class="summary-row">
+                <span class="summary-label">
+                    <span class="ar">العجز المسترد (المرتجعات)</span>
+                    <span class="en">Recovered Wastage (Returns)</span>
+                </span>
+                <span class="summary-value positive">-{{ number_format($totalRecoveredWastage, 2) }} kg</span>
+            </div>
+        @endif
+
+        <div class="summary-row total">
+            <span class="summary-label">
+                <strong>
+                    <span class="ar">صافي العجز</span>
+                    <span class="en">Net Wastage</span>
+                </strong>
+            </span>
+            <span class="summary-value {{ ($netWastage ?? 0) > 0 ? 'negative' : 'positive' }}">
+                <strong>{{ number_format($netWastage ?? $totalWastage ?? 0, 2) }} kg</strong>
+            </span>
+        </div>
+
         <hr>
 
         <h3>
@@ -440,13 +569,14 @@
     {{-- ═══════════════════════════════════════════════════════════════════
     REMAINING INVENTORY / المخزون المتبقي
     ═══════════════════════════════════════════════════════════════════ --}}
-    @if($remainingStock->count() > 0)
-        <div class="section" style="margin-top: 20px;">
-            <div class="section-title">
-                <span class="number">📦</span>
-                <span class="ar">المخزون المتبقي</span>
-                <span class="en">Remaining Inventory</span>
-            </div>
+    <div class="section" style="margin-top: 20px;">
+        <div class="section-title">
+            <span class="number">📦</span>
+            <span class="ar">المخزون المتبقي</span>
+            <span class="en">Remaining Inventory</span>
+        </div>
+
+        @if($remainingStock->count() > 0)
             <table>
                 <thead>
                     <tr>
@@ -499,7 +629,13 @@
                     @endif
                 </tbody>
             </table>
-        </div>
-    @endif
+        @else
+            <div class="no-data">
+                <span class="ar">المخزون فارغ - تم بيع جميع البضاعة</span>
+                <br>
+                <span class="en">Inventory is empty - All stock has been sold</span>
+            </div>
+        @endif
+    </div>
 
 @endsection

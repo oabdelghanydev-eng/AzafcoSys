@@ -18,6 +18,7 @@ class StoreSupplierRequest extends FormRequest
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
             'notes' => 'nullable|string',
+            'opening_balance' => 'nullable|numeric',  // رصيد أول المدة (يمكن أن يكون سالب أو موجب)
         ];
     }
 
@@ -25,6 +26,8 @@ class StoreSupplierRequest extends FormRequest
     {
         return [
             'name.required' => 'اسم المورد مطلوب',
+            'opening_balance.numeric' => 'رصيد أول المدة يجب أن يكون رقم',
         ];
     }
 }
+

@@ -51,7 +51,7 @@ class DailyClosingReportService
         $data['totalWeight'] = $invoiceItems->sum('total_weight');
         $data['totalSales'] = $invoiceItems->sum('subtotal');
 
-        // Daily Wastage Calculation per product
+        // Daily Wastage Calculation per product (from sales)
         // Wastage = (sold_cartons × weight_per_unit) - actual_sold_quantity
         $wastageByProduct = InvoiceItem::whereHas('invoice', function ($q) use ($date) {
             $q->where('date', $date)->where('status', 'active');
@@ -81,8 +81,73 @@ class DailyClosingReportService
             })
             ->values();
 
+        // Returns Section - استرداد العجز من المرتجعات
+        $returns = \App\Models\ReturnModel::where('date', $date)
+            ->where('status', 'active')
+            ->with(['customer', 'items.product', 'items.originalInvoiceItem'])
+            ->get();
+
+        // Calculate return items with recovered wastage
+        $returnItems = collect();
+        $recoveredWastageByProduct = collect();
+
+        foreach ($returns as $return) {
+            foreach ($return->items as $item) {
+                $originalInvoice = $item->originalInvoiceItem;
+
+                // Calculate weight based on original invoice actual weight per carton
+                // وزن المرتجع = عدد الكراتين × (الوزن الفعلي المباع ÷ عدد الكراتين في الفاتورة)
+                $actualWeightPerCarton = 0;
+                $wastagePerCarton = 0;
+
+                if ($originalInvoice && $originalInvoice->cartons > 0) {
+                    $actualWeightPerCarton = $originalInvoice->quantity / $originalInvoice->cartons;
+                    $expectedWeightPerCarton = $originalInvoice->shipmentItem?->weight_per_unit ?? 0;
+                    $wastagePerCarton = $expectedWeightPerCarton - $actualWeightPerCarton;
+                }
+
+                $returnedWeight = $item->cartons * $actualWeightPerCarton;
+                $recoveredWastage = $item->cartons * $wastagePerCarton;
+
+                $returnItems->push([
+                    'return_number' => $return->return_number,
+                    'customer_name' => $return->customer->name,
+                    'product_name' => $item->product->bilingual_name,
+                    'cartons' => $item->cartons,
+                    'calculated_weight' => $returnedWeight,
+                    'recovered_wastage' => $recoveredWastage,
+                    'subtotal' => $item->subtotal,
+                ]);
+
+                // Aggregate recovered wastage by product
+                $productId = $item->product_id;
+                if (!$recoveredWastageByProduct->has($productId)) {
+                    $recoveredWastageByProduct[$productId] = [
+                        'product_id' => $productId,
+                        'product_name' => $item->product->bilingual_name,
+                        'returned_cartons' => 0,
+                        'returned_weight' => 0,
+                        'recovered_wastage' => 0,
+                    ];
+                }
+                $recoveredWastageByProduct[$productId]['returned_cartons'] += $item->cartons;
+                $recoveredWastageByProduct[$productId]['returned_weight'] += $returnedWeight;
+                $recoveredWastageByProduct[$productId]['recovered_wastage'] += $recoveredWastage;
+            }
+        }
+
+        $data['returns'] = $returns;
+        $data['returnItems'] = $returnItems;
+        $data['totalReturnsCartons'] = $returnItems->sum('cartons');
+        $data['totalReturnsWeight'] = $returnItems->sum('calculated_weight');
+        $data['totalReturnsValue'] = $returnItems->sum('subtotal');
+        $data['recoveredWastageByProduct'] = $recoveredWastageByProduct->values();
+        $data['totalRecoveredWastage'] = $recoveredWastageByProduct->sum('recovered_wastage');
+
+        // Net Wastage = Sales Wastage - Recovered Wastage
         $data['wastageByProduct'] = $wastageByProduct;
         $data['totalWastage'] = $wastageByProduct->sum('wastage');
+        $data['netWastage'] = $data['totalWastage'] - $data['totalRecoveredWastage'];
 
         // 2. Collections
         $collections = Collection::where('date', $date)
