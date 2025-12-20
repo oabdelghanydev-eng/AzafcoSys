@@ -9,6 +9,30 @@
 
 ---
 
+## 🌐 Environment Configuration
+
+### Development
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8001/api
+NEXT_PUBLIC_APP_NAME=Sales System
+```
+
+### Production (Hostinger Startup Cloud)
+```env
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api
+NEXT_PUBLIC_APP_NAME=Sales System
+```
+
+### URL Structure
+| Environment | Frontend | Backend API |
+|-------------|----------|-------------|
+| **Development** | `http://localhost:3000` | `http://localhost:8001/api` |
+| **Production** | `https://yourdomain.com` | `https://api.yourdomain.com/api` |
+
+> ⚠️ **Note:** Replace `yourdomain.com` with actual domain
+
+---
+
 ## 🎨 UI Specifications
 
 | Item | Value |
