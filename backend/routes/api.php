@@ -159,4 +159,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{alert}/resolve', [\App\Http\Controllers\Api\AlertController::class, 'resolve']);
         Route::delete('/{alert}', [\App\Http\Controllers\Api\AlertController::class, 'destroy']);
     });
+
+    // Credit/Debit Notes (Price Adjustments)
+    Route::prefix('credit-notes')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\CreditNoteController::class, 'index']);
+        Route::post('/credit', [\App\Http\Controllers\Api\CreditNoteController::class, 'storeCredit']);
+        Route::post('/debit', [\App\Http\Controllers\Api\CreditNoteController::class, 'storeDebit']);
+        Route::get('/{creditNote}', [\App\Http\Controllers\Api\CreditNoteController::class, 'show']);
+        Route::post('/{creditNote}/cancel', [\App\Http\Controllers\Api\CreditNoteController::class, 'cancel']);
+        Route::get('/customer/{customer}', [\App\Http\Controllers\Api\CreditNoteController::class, 'customerNotes']);
+    });
+
+    // Price Adjustment for Invoices
+    Route::post('/invoices/{invoice}/price-adjustment', [\App\Http\Controllers\Api\CreditNoteController::class, 'storePriceAdjustment']);
 });
+

@@ -24,6 +24,11 @@ class TelegramService
      */
     public function isConfigured(): bool
     {
+        // Disable in testing environment
+        if (app()->environment('testing')) {
+            return false;
+        }
+
         return !empty($this->botToken) && !empty($this->chatId);
     }
 

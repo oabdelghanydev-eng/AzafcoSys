@@ -4,6 +4,7 @@ namespace App\Services\Reports;
 
 use App\Models\Account;
 use App\Models\Collection;
+use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Expense;
 use App\Models\Invoice;
@@ -168,6 +169,17 @@ class DailyClosingReportService
         $data['totalExpensesCompany'] = $expenses->where('type', 'company')->sum('amount');
         $data['totalExpensesSupplier'] = $expenses->where('type', 'supplier')->sum('amount');
         $data['totalExpenses'] = $expenses->sum('amount');
+
+        // 3.5 Credit/Debit Notes (Price Adjustments)
+        $creditNotes = CreditNote::where('date', $date)
+            ->where('status', 'active')
+            ->with(['customer', 'invoice'])
+            ->get();
+
+        $data['creditNotes'] = $creditNotes;
+        $data['totalCreditNotes'] = $creditNotes->where('type', 'credit')->sum('amount');
+        $data['totalDebitNotes'] = $creditNotes->where('type', 'debit')->sum('amount');
+        $data['netAdjustments'] = $data['totalDebitNotes'] - $data['totalCreditNotes'];
 
         // 4. Transfers
         $data['transfers'] = Transfer::whereDate('created_at', $date)

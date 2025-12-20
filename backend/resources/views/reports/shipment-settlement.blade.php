@@ -417,6 +417,19 @@
             <span class="summary-value money negative">-{{ $currency($previousReturnsDeduction) }}</span>
         </div>
 
+        {{-- 2.5 Price Adjustments --}}
+        @if(isset($priceAdjustments) && $priceAdjustments != 0)
+            <div class="summary-row">
+                <span class="summary-label">
+                    <span class="ar">{{ $priceAdjustments > 0 ? '(+) تسويات أسعار' : '(-) تسويات أسعار' }}</span>
+                    <span class="en">{{ $priceAdjustments > 0 ? '(+) Price Adjustments' : '(-) Price Adjustments' }}</span>
+                </span>
+                <span class="summary-value money {{ $priceAdjustments > 0 ? 'positive' : 'negative' }}">
+                    {{ $priceAdjustments > 0 ? '+' : '' }}{{ $currency($priceAdjustments) }}
+                </span>
+            </div>
+        @endif
+
         {{-- 3. Commission --}}
         <div class="summary-row">
             <span class="summary-label">

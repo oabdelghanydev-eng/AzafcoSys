@@ -89,10 +89,28 @@ class ShipmentSettlementReportService
         $data['supplierExpenses'] = $supplierExpenses;
         $data['totalSupplierExpenses'] = $supplierExpenses->sum('amount');
 
+        // 6.5 Credit/Debit Notes (Price Adjustments during shipment)
+        $creditNotes = \App\Models\CreditNote::whereHas('invoice', function ($q) use ($shipment) {
+            $q->whereHas('items', function ($q2) use ($shipment) {
+                $q2->whereHas('shipmentItem', function ($q3) use ($shipment) {
+                    $q3->where('shipment_id', $shipment->id);
+                });
+            });
+        })
+            ->where('status', 'active')
+            ->with(['customer', 'invoice'])
+            ->get();
+
+        $data['creditNotes'] = $creditNotes;
+        $data['totalCreditNotes'] = $creditNotes->where('type', 'credit')->sum('amount');
+        $data['totalDebitNotes'] = $creditNotes->where('type', 'debit')->sum('amount');
+        $data['netAdjustments'] = $data['totalDebitNotes'] - $data['totalCreditNotes'];
+
         // 7. Financial Calculation (Correct Order)
         $data['totalSales'] = $data['totalSalesAmount'];
         $data['previousReturnsDeduction'] = $totalReturnsValue;
-        $data['netSales'] = $data['totalSales'] - $data['previousReturnsDeduction'];
+        $data['priceAdjustments'] = $data['netAdjustments']; // Credit reduces, Debit increases
+        $data['netSales'] = $data['totalSales'] - $data['previousReturnsDeduction'] + $data['priceAdjustments'];
         $data['companyCommission'] = $data['netSales'] * $this->getCommissionRate();
         $data['supplierExpensesDeduction'] = $data['totalSupplierExpenses'];
         $data['previousBalance'] = $shipment->supplier->balance;

@@ -347,6 +347,87 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════════════
+    3.5 CREDIT/DEBIT NOTES / إشعارات التسوية
+    ═══════════════════════════════════════════════════════════════════ --}}
+    @if(isset($creditNotes) && $creditNotes->count() > 0)
+        <div class="section">
+            <div class="section-title">
+                <span class="number">3.5</span>
+                <span class="ar">إشعارات التسوية</span>
+                <span class="en">Credit/Debit Notes</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">
+                            <span class="ar">رقم الإشعار</span>
+                            <span class="en">Note #</span>
+                        </th>
+                        <th style="width: 10%;">
+                            <span class="ar">النوع</span>
+                            <span class="en">Type</span>
+                        </th>
+                        <th style="width: 20%;">
+                            <span class="ar">العميل</span>
+                            <span class="en">Customer</span>
+                        </th>
+                        <th style="width: 30%;">
+                            <span class="ar">السبب</span>
+                            <span class="en">Reason</span>
+                        </th>
+                        <th class="text-left" style="width: 15%;">
+                            <span class="ar">المبلغ</span>
+                            <span class="en">Amount</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($creditNotes as $note)
+                        <tr>
+                            <td>{{ $note->note_number }}</td>
+                            <td>
+                                @if($note->type === 'credit')
+                                    <span class="negative">دائن</span>
+                                @else
+                                    <span class="positive">مدين</span>
+                                @endif
+                            </td>
+                            <td>{{ $note->customer->name }}</td>
+                            <td>{{ $note->reason }}</td>
+                            <td class="text-left money {{ $note->type === 'credit' ? 'negative' : 'positive' }}">
+                                {{ $note->type === 'credit' ? '-' : '+' }}{{ $currency($note->amount) }}
+                            </td>
+                        </tr>
+                    @endforeach
+                    <tr class="total-row">
+                        <td colspan="4">
+                            <strong>
+                                <span class="ar">صافي التسويات</span>
+                                <span class="en">Net Adjustments</span>
+                            </strong>
+                        </td>
+                        <td class="text-left money {{ ($netAdjustments ?? 0) >= 0 ? 'negative' : 'positive' }}">
+                            <strong>{{ $currency($netAdjustments ?? 0) }}</strong>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {{-- Summary --}}
+            <div class="info-box">
+                <div class="info-row">
+                    <div class="info-label">إشعارات دائنة (تخفيض) / Credit Notes</div>
+                    <div class="info-value negative">-{{ $currency($totalCreditNotes ?? 0) }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">إشعارات مدينة (زيادة) / Debit Notes</div>
+                    <div class="info-value positive">+{{ $currency($totalDebitNotes ?? 0) }}</div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════════════
     4. TRANSFERS / التحويلات
     ═══════════════════════════════════════════════════════════════════ --}}
     @if($transfers->count() > 0)

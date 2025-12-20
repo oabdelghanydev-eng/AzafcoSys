@@ -55,6 +55,7 @@ class NumberGeneratorService
             'expense' => 'expenses',
             'supplier' => 'suppliers',
             'customer' => 'customers',
+            'credit_note', 'debit_note' => 'credit_notes',
             default => $type . 's',
         };
     }
@@ -72,6 +73,7 @@ class NumberGeneratorService
             'expense' => 'expense_number',
             'supplier' => 'code',
             'customer' => 'code',
+            'credit_note', 'debit_note' => 'note_number',
             default => 'number',
         };
     }

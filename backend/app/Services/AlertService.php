@@ -123,7 +123,7 @@ class AlertService
             ->get();
 
         foreach ($delayedShipments as $shipment) {
-            $openDays = now()->diffInDays($shipment->date);
+            $openDays = (int) abs(now()->diffInDays($shipment->date));
 
             // Check if alert already exists for this shipment
             $existingAlert = Alert::where('type', 'shipment_delay')

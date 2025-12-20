@@ -39,13 +39,13 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         // Content Security Policy (CSP)
-        // Customized for API responses - restrictive by default
+        // Customized for API responses - includes unpkg.com for Scramble API docs
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self'",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data:",
-            "font-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://unpkg.com",
+            "img-src 'self' data: https:",
+            "font-src 'self' https://fonts.gstatic.com",
             "connect-src 'self'",
             "frame-ancestors 'none'",
             "form-action 'self'",
