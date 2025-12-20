@@ -16,9 +16,9 @@ class StoreExpenseRequest extends FormRequest
         return [
             'date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
-            'type' => 'required|in:supplier,company',
+            'type' => 'required|in:supplier,company,supplier_payment',
             'payment_method' => 'required|in:cash,bank',
-            'supplier_id' => 'required_if:type,supplier|nullable|exists:suppliers,id',
+            'supplier_id' => 'required_if:type,supplier|required_if:type,supplier_payment|nullable|exists:suppliers,id',
             'description' => 'nullable|string|max:500',
             'notes' => 'nullable|string',
         ];

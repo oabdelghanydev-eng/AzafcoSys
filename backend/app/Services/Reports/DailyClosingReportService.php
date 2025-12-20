@@ -168,6 +168,7 @@ class DailyClosingReportService
         $data['totalExpensesBank'] = $expenses->where('payment_method', 'bank')->sum('amount');
         $data['totalExpensesCompany'] = $expenses->where('type', 'company')->sum('amount');
         $data['totalExpensesSupplier'] = $expenses->where('type', 'supplier')->sum('amount');
+        $data['totalSupplierPayments'] = $expenses->where('type', 'supplier_payment')->sum('amount');
         $data['totalExpenses'] = $expenses->sum('amount');
 
         // 3.5 Credit/Debit Notes (Price Adjustments)

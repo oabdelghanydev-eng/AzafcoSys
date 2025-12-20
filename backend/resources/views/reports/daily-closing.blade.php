@@ -336,6 +336,12 @@
                     <div class="info-label">مورد / Supplier</div>
                     <div class="info-value">{{ $currency($totalExpensesSupplier) }}</div>
                 </div>
+                @if(isset($totalSupplierPayments) && $totalSupplierPayments > 0)
+                    <div class="info-row">
+                        <div class="info-label">مدفوعات للموردين / Supplier Payments</div>
+                        <div class="info-value">{{ $currency($totalSupplierPayments) }}</div>
+                    </div>
+                @endif
             </div>
         @else
             <div class="no-data">
