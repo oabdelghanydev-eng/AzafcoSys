@@ -21,13 +21,49 @@ class CollectionObserver
     /**
      * Handle the Collection "created" event.
      * 1. Decrease customer balance
-     * 2. Auto-distribute to invoices if auto mode
+     * 2. Increase account balance (cashbox/bank)
+     * 3. Auto-distribute to invoices if auto mode
      */
     public function created(Collection $collection): void
     {
         // Decrease customer balance (customer is paying, so balance decreases)
         Customer::where('id', $collection->customer_id)
             ->decrement('balance', (float) $collection->amount);
+
+        // Increase account balance (cashbox or bank)
+        $accountType = $collection->payment_method === 'cash' ? 'cashbox' : 'bank';
+        $account = \App\Models\Account::where('type', $accountType)
+            ->where('is_active', true)
+            ->first();
+
+        if ($account) {
+            $account->increment('balance', (float) $collection->amount);
+
+            // Create transaction record
+            if ($collection->payment_method === 'cash') {
+                \App\Models\CashboxTransaction::create([
+                    'account_id' => $account->id,
+                    'type' => 'in',
+                    'amount' => $collection->amount,
+                    'balance_after' => $account->balance,
+                    'reference_type' => Collection::class,
+                    'reference_id' => $collection->id,
+                    'description' => 'تحصيل من عميل',
+                    'created_by' => auth()->id(),
+                ]);
+            } else {
+                \App\Models\BankTransaction::create([
+                    'account_id' => $account->id,
+                    'type' => 'in',
+                    'amount' => $collection->amount,
+                    'balance_after' => $account->balance,
+                    'reference_type' => Collection::class,
+                    'reference_id' => $collection->id,
+                    'description' => 'تحصيل من عميل',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+        }
 
         // تصحيح 2025-12-13: distribute if not manual (supports oldest_first and newest_first)
         if ($collection->distribution_method !== 'manual') {

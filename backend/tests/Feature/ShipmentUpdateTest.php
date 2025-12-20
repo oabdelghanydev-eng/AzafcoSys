@@ -11,8 +11,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Feature Tests for Shipment Update Endpoint
- * Epic 4: Only open shipments can be updated
+ * Feature Tests for Shipment Update Endpoint (Cartons-Based)
+ * Updated 2025-12-19: Uses cartons for tracking
  */
 class ShipmentUpdateTest extends TestCase
 {
@@ -112,77 +112,68 @@ class ShipmentUpdateTest extends TestCase
     }
 
     // ============================================
-    // Quantity Update Tests
+    // Cartons Update Tests
     // ============================================
 
-    public function test_can_increase_quantity(): void
+    public function test_can_increase_cartons(): void
     {
         $shipment = $this->createShipment('open');
         $item = $shipment->items->first();
-        $originalInitial = $item->initial_quantity;
-        $originalRemaining = $item->remaining_quantity;
+        $originalCartons = $item->cartons;
 
         $response = $this->actingAs($this->user)
             ->putJson("/api/shipments/{$shipment->id}", [
                 'items' => [
-                    ['id' => $item->id, 'initial_quantity' => $originalInitial + 50],
+                    ['id' => $item->id, 'cartons' => $originalCartons + 50],
                 ],
             ]);
 
         $response->assertStatus(200);
         $item->refresh();
-        $this->assertEquals($originalInitial + 50, (float) $item->initial_quantity);
-        $this->assertEquals($originalRemaining + 50, (float) $item->remaining_quantity);
+        $this->assertEquals($originalCartons + 50, $item->cartons);
     }
 
-    public function test_cannot_reduce_quantity_below_sold(): void
+    public function test_cannot_reduce_cartons_below_sold(): void
     {
         $shipment = $this->createShipment('open');
         $item = $shipment->items->first();
 
-        // Simulate some quantity was sold
-        $item->update([
-            'sold_quantity' => 30,
-            'remaining_quantity' => $item->initial_quantity - 30,
-        ]);
+        // Simulate some cartons were sold
+        $item->update(['sold_cartons' => 30]);
 
         // Try to reduce below sold amount
         $response = $this->actingAs($this->user)
             ->putJson("/api/shipments/{$shipment->id}", [
                 'items' => [
-                    ['id' => $item->id, 'initial_quantity' => 20], // Less than sold (30)
+                    ['id' => $item->id, 'cartons' => 20], // Less than sold (30)
                 ],
             ]);
 
-        // Should fail with 500 (exception) since we're catching the exception in transaction
-        // We just verify the quantity wasn't changed
+        // Should fail - verify cartons wasn't changed
         $item->refresh();
-        $this->assertEquals(100, (float) $item->initial_quantity);
+        $this->assertEquals(100, $item->cartons);
     }
 
-    public function test_can_reduce_quantity_to_sold_amount(): void
+    public function test_can_reduce_cartons_to_sold_amount(): void
     {
         $shipment = $this->createShipment('open');
         $item = $shipment->items->first();
 
-        // Simulate some quantity was sold
-        $item->update([
-            'sold_quantity' => 30,
-            'remaining_quantity' => $item->initial_quantity - 30,
-        ]);
+        // Simulate some cartons were sold
+        $item->update(['sold_cartons' => 30]);
 
         // Reduce to exactly sold amount (remaining becomes 0)
         $response = $this->actingAs($this->user)
             ->putJson("/api/shipments/{$shipment->id}", [
                 'items' => [
-                    ['id' => $item->id, 'initial_quantity' => 30],
+                    ['id' => $item->id, 'cartons' => 30],
                 ],
             ]);
 
         $response->assertStatus(200);
         $item->refresh();
-        $this->assertEquals(30, (float) $item->initial_quantity);
-        $this->assertEquals(0, (float) $item->remaining_quantity);
+        $this->assertEquals(30, $item->cartons);
+        $this->assertEquals(0, $item->remaining_cartons); // Accessor
     }
 
     // ============================================
@@ -200,12 +191,12 @@ class ShipmentUpdateTest extends TestCase
         ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
             'product_id' => $this->product->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 100,
-            'sold_quantity' => 0,
+            'cartons' => 100,
+            'sold_cartons' => 0,
             'weight_per_unit' => 20.0,
         ]);
 
         return $shipment->fresh(['items']);
     }
 }
+

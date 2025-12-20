@@ -143,7 +143,7 @@ class PermissionAuthorizationTest extends TestCase
                 'customer_id' => $customer->id,
                 'date' => now()->format('Y-m-d'),
                 'items' => [
-                    ['product_id' => 1, 'quantity' => 10, 'unit_price' => 100],
+                    ['product_id' => 1, 'cartons' => 2, 'total_weight' => 10, 'price' => 100],
                 ],
             ]);
 

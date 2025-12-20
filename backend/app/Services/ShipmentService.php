@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 class ShipmentService
 {
     /**
-     * تصفية الشحنة وترحيل المتبقي
+     * تصفية الشحنة وترحيل الكراتين المتبقية
      *
      * @param  Shipment  $shipment  الشحنة المراد تصفيتها
      * @param  Shipment  $nextShipment  الشحنة المفتوحة لاستقبال المتبقي
@@ -21,7 +21,7 @@ class ShipmentService
     public function settle(Shipment $shipment, Shipment $nextShipment): void
     {
         if ($shipment->status === 'settled') {
-            throw new BusinessException('SHP_007'); // Fixed: was SHP_003
+            throw new BusinessException('SHP_007');
         }
 
         if ($nextShipment->status !== 'open') {
@@ -33,12 +33,14 @@ class ShipmentService
         }
 
         DB::transaction(function () use ($shipment, $nextShipment) {
-            // جلب الأصناف ذات المتبقي
+            // جلب الأصناف ذات كراتين متبقية
             $itemsWithRemaining = $shipment->items()
-                ->where('remaining_quantity', '>', 0)
-                ->get();
+                ->get()
+                ->filter(fn($item) => $item->remaining_cartons > 0);
 
             foreach ($itemsWithRemaining as $item) {
+                $remainingCartons = $item->remaining_cartons;
+
                 // البحث عن item موجود بنفس المنتج والوزن في الشحنة التالية
                 $existingItem = $nextShipment->items()
                     ->where('product_id', $item->product_id)
@@ -47,9 +49,7 @@ class ShipmentService
 
                 if ($existingItem) {
                     // إضافة للـ item الموجود
-                    $existingItem->increment('initial_quantity', $item->remaining_quantity);
-                    $existingItem->increment('remaining_quantity', $item->remaining_quantity);
-                    $existingItem->increment('carryover_in_quantity', $item->remaining_quantity);
+                    $existingItem->increment('carryover_in_cartons', $remainingCartons);
                     $newItem = $existingItem;
                 } else {
                     // إنشاء item جديد في الشحنة التالية
@@ -58,10 +58,10 @@ class ShipmentService
                         'product_id' => $item->product_id,
                         'weight_label' => $item->weight_label,
                         'weight_per_unit' => $item->weight_per_unit,
-                        'cartons' => 0, // ترحيل، لا يوجد كراتين جديدة
-                        'initial_quantity' => $item->remaining_quantity,
-                        'remaining_quantity' => $item->remaining_quantity,
-                        'carryover_in_quantity' => $item->remaining_quantity,
+                        'cartons' => 0,  // لا توجد كراتين جديدة، فقط مرحلة
+                        'sold_cartons' => 0,
+                        'carryover_in_cartons' => $remainingCartons,
+                        'carryover_out_cartons' => 0,
                         'unit_cost' => $item->unit_cost,
                     ]);
                 }
@@ -73,7 +73,7 @@ class ShipmentService
                     'to_shipment_id' => $nextShipment->id,
                     'to_shipment_item_id' => $newItem->id,
                     'product_id' => $item->product_id,
-                    'quantity' => $item->remaining_quantity,
+                    'cartons' => $remainingCartons,
                     'reason' => 'end_of_shipment',
                     'notes' => "ترحيل من شحنة {$shipment->number}",
                     'created_by' => auth()->id(),
@@ -81,25 +81,33 @@ class ShipmentService
 
                 // تحديث الـ item الأصلي
                 $item->update([
-                    'carryover_out_quantity' => $item->remaining_quantity,
-                    'remaining_quantity' => 0,
+                    'carryover_out_cartons' => $remainingCartons,
                 ]);
+
+                // حساب العجز: الوزن المتوقع - الوزن الفعلي المباع
+                $expectedWeight = ($item->cartons + $item->carryover_in_cartons) * $item->weight_per_unit;
+                $actualSoldWeight = $item->invoiceItems()->sum('quantity');
+                $wastage = $expectedWeight - $actualSoldWeight;
+
+                if ($wastage > 0) {
+                    $item->update(['wastage_quantity' => $wastage]);
+                }
             }
 
             // Calculate totals AFTER updating items
-            $totalSales = $shipment->items()->sum('sold_quantity');
+            $totalSoldCartons = $shipment->items()->sum('sold_cartons');
             $totalWastage = $shipment->items()->sum('wastage_quantity');
-            $totalCarryoverOut = $shipment->items()->sum('carryover_out_quantity');
+            $totalCarryoverOut = $shipment->items()->sum('carryover_out_cartons');
             $totalSupplierExpenses = \App\Models\Expense::where('type', 'supplier')
                 ->where('supplier_id', $shipment->supplier_id)
                 ->sum('amount');
 
-            // تغيير حالة الشحنة مع كل البيانات المطلوبة
+            // تغيير حالة الشحنة
             $shipment->update([
                 'status' => 'settled',
                 'settled_at' => now(),
                 'settled_by' => auth()->id(),
-                'total_sales' => $totalSales,
+                'total_sales' => $totalSoldCartons,
                 'total_wastage' => $totalWastage,
                 'total_carryover_out' => $totalCarryoverOut,
                 'total_supplier_expenses' => $totalSupplierExpenses,
@@ -125,29 +133,24 @@ class ShipmentService
             foreach ($carryovers as $carryover) {
                 $nextItem = $carryover->toShipmentItem;
 
-                // Safety Check - لا يمكن إلغاء التصفية إذا تم بيع المرحل
-                if ($nextItem && $nextItem->remaining_quantity < $carryover->quantity) {
-                    throw new BusinessException('SHP_005');
+                // Safety Check - لا يمكن إلغاء التصفية إذا تم بيع الكراتين المرحلة
+                if ($nextItem && $nextItem->sold_cartons > 0) {
+                    // Check if sold_cartons is from the carryover
+                    $availableToReverse = $nextItem->carryover_in_cartons - $nextItem->sold_cartons;
+                    if ($availableToReverse < $carryover->cartons) {
+                        throw new BusinessException('SHP_005');
+                    }
                 }
 
                 // استرجاع للشحنة الأصلية
-                $carryover->fromShipmentItem->increment(
-                    'remaining_quantity',
-                    (float) $carryover->quantity
-                );
-                $carryover->fromShipmentItem->decrement(
-                    'carryover_out_quantity',
-                    (float) $carryover->quantity
-                );
+                $carryover->fromShipmentItem->decrement('carryover_out_cartons', $carryover->cartons);
 
                 // خصم من الشحنة التالية
                 if ($nextItem) {
-                    $nextItem->decrement('initial_quantity', (float) $carryover->quantity);
-                    $nextItem->decrement('remaining_quantity', (float) $carryover->quantity);
-                    $nextItem->decrement('carryover_in_quantity', (float) $carryover->quantity);
+                    $nextItem->decrement('carryover_in_cartons', $carryover->cartons);
 
-                    // حذف item إذا فارغ
-                    if ($nextItem->initial_quantity <= 0) {
+                    // حذف item إذا فارغ (لا كراتين أصلية ولا مرحلة)
+                    if ($nextItem->cartons === 0 && $nextItem->carryover_in_cartons <= 0) {
                         $nextItem->delete();
                     }
                 }
@@ -155,6 +158,9 @@ class ShipmentService
                 // حذف سجل الترحيل
                 $carryover->delete();
             }
+
+            // Reset wastage
+            $shipment->items()->update(['wastage_quantity' => 0]);
 
             // تغيير حالة الشحنة
             $shipment->update([
@@ -182,43 +188,52 @@ class ShipmentService
             ],
             'items' => [],
             'totals' => [
-                'initial' => 0,
-                'sold' => 0,
-                'wastage' => 0,
+                'total_cartons' => 0,
+                'sold_cartons' => 0,
                 'carryover_in' => 0,
                 'carryover_out' => 0,
-                'remaining' => 0,
+                'remaining_cartons' => 0,
+                'expected_weight' => 0,
+                'actual_sold_weight' => 0,
+                'wastage' => 0,
                 'total_cost' => 0,
-                'total_sales' => 0,
             ],
         ];
 
         foreach ($items as $item) {
+            $expectedWeight = ($item->cartons + $item->carryover_in_cartons) * $item->weight_per_unit;
+            $actualSoldWeight = $item->invoiceItems()->sum('quantity');
+
             $itemData = [
                 'product' => $item->product->name,
                 'weight_label' => $item->weight_label,
+                'weight_per_unit' => (float) $item->weight_per_unit,
                 'cartons' => $item->cartons,
-                'initial' => (float) $item->initial_quantity,
-                'sold' => (float) $item->sold_quantity,
+                'sold_cartons' => $item->sold_cartons,
+                'carryover_in' => $item->carryover_in_cartons,
+                'carryover_out' => $item->carryover_out_cartons,
+                'remaining_cartons' => $item->remaining_cartons,
+                'expected_weight' => $expectedWeight,
+                'actual_sold_weight' => (float) $actualSoldWeight,
                 'wastage' => (float) $item->wastage_quantity,
-                'carryover_in' => (float) ($item->carryover_in_quantity ?? 0),
-                'carryover_out' => (float) ($item->carryover_out_quantity ?? 0),
-                'remaining' => (float) $item->remaining_quantity,
                 'unit_cost' => (float) $item->unit_cost,
-                'total_cost' => (float) ($item->initial_quantity * $item->unit_cost),
+                'total_cost' => (float) ($item->cartons * $item->unit_cost),
             ];
 
             $report['items'][] = $itemData;
 
-            $report['totals']['initial'] += $itemData['initial'];
-            $report['totals']['sold'] += $itemData['sold'];
-            $report['totals']['wastage'] += $itemData['wastage'];
-            $report['totals']['carryover_in'] += $itemData['carryover_in'];
-            $report['totals']['carryover_out'] += $itemData['carryover_out'];
-            $report['totals']['remaining'] += $itemData['remaining'];
+            $report['totals']['total_cartons'] += $item->cartons;
+            $report['totals']['sold_cartons'] += $item->sold_cartons;
+            $report['totals']['carryover_in'] += $item->carryover_in_cartons;
+            $report['totals']['carryover_out'] += $item->carryover_out_cartons;
+            $report['totals']['remaining_cartons'] += $item->remaining_cartons;
+            $report['totals']['expected_weight'] += $expectedWeight;
+            $report['totals']['actual_sold_weight'] += $actualSoldWeight;
+            $report['totals']['wastage'] += $item->wastage_quantity;
             $report['totals']['total_cost'] += $itemData['total_cost'];
         }
 
         return $report;
     }
 }
+

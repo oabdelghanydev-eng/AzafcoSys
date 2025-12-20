@@ -108,17 +108,22 @@ FOR EACH item WITH remaining > 0:
 ```php
 [
     'supplier_id' => 'required|exists:suppliers,id',
-    'number' => 'required|unique:shipments,number',
+    'number' => 'required|unique:shipments,number',  // OR auto-generated
     'date' => 'required|date',
     'arrival_date' => 'nullable|date|after_or_equal:date',
     'items' => 'required|array|min:1',
     'items.*.product_id' => 'required|exists:products,id',
     'items.*.cartons' => 'required|integer|min:1',
     'items.*.weight_per_unit' => 'required|numeric|min:0.001',
-    'items.*.initial_quantity' => 'required|numeric|min:0.001',
+    // 'items.*.initial_quantity' => auto-calculated by backend = cartons × weight_per_unit
     'items.*.weight_label' => 'nullable|string|max:50',
+    'items.*.unit_cost' => 'nullable|numeric|min:0', // defaults to 0
     'notes' => 'nullable|string|max:1000',
 ]
+
+// Backend auto-calculates:
+// initial_quantity = cartons × weight_per_unit
+// remaining_quantity = initial_quantity
 ```
 
 ### SettleShipmentRequest

@@ -10,12 +10,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * ShipmentService Unit Tests
- * 
- * Tests critical business rules:
- * - BR-SHP-001: Shipment status flow
- * - BR-SHP-003: Settlement logic
- * - BR-SHP-004: Unsettle with carryover reversal
+ * ShipmentService Unit Tests (Cartons-Based)
+ * Updated 2025-12-19: Uses cartons for tracking/carryover
  */
 class ShipmentServiceTest extends TestCase
 {
@@ -31,9 +27,9 @@ class ShipmentServiceTest extends TestCase
 
     /**
      * @test
-     * BR-SHP-003: Settle shipment and carryover remaining items
+     * BR-SHP-003: Settle shipment and carryover remaining cartons
      */
-    public function it_settles_shipment_and_carryovers_remaining_quantity(): void
+    public function it_settles_shipment_and_carryovers_remaining_cartons(): void
     {
         // Arrange
         $supplier = Supplier::factory()->create();
@@ -50,9 +46,10 @@ class ShipmentServiceTest extends TestCase
 
         $item1 = ShipmentItem::factory()->create([
             'shipment_id' => $shipment1->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 30, // 30kg left
-            'sold_quantity' => 70,
+            'cartons' => 100,
+            'sold_cartons' => 70,
+            'carryover_in_cartons' => 0,
+            'carryover_out_cartons' => 0,
         ]);
 
         // Act
@@ -62,19 +59,19 @@ class ShipmentServiceTest extends TestCase
         // Shipment 1 should be settled
         $this->assertEquals('settled', $shipment1->fresh()->status);
 
-        // Carryover should be created
+        // Carryover should be created (30 cartons remaining)
         $this->assertDatabaseHas('carryovers', [
             'from_shipment_id' => $shipment1->id,
             'to_shipment_id' => $shipment2->id,
             'product_id' => $item1->product_id,
-            'quantity' => 30,
+            'cartons' => 30,
         ]);
 
         // New item in shipment2
         $this->assertDatabaseHas('shipment_items', [
             'shipment_id' => $shipment2->id,
             'product_id' => $item1->product_id,
-            'carryover_in_quantity' => 30,
+            'carryover_in_cartons' => 30,
         ]);
     }
 
@@ -99,15 +96,17 @@ class ShipmentServiceTest extends TestCase
 
         $item1 = ShipmentItem::factory()->create([
             'shipment_id' => $shipment1->id,
-            'remaining_quantity' => 0, // Already settled
-            'carryover_out_quantity' => 25,
+            'cartons' => 50,
+            'sold_cartons' => 25,
+            'carryover_out_cartons' => 25,
         ]);
 
         $item2 = ShipmentItem::factory()->create([
             'shipment_id' => $shipment2->id,
             'product_id' => $item1->product_id,
-            'remaining_quantity' => 25,
-            'carryover_in_quantity' => 25,
+            'cartons' => 0,
+            'sold_cartons' => 0,
+            'carryover_in_cartons' => 25,
         ]);
 
         $user = \App\Models\User::factory()->create();
@@ -118,9 +117,8 @@ class ShipmentServiceTest extends TestCase
             'to_shipment_id' => $shipment2->id,
             'to_shipment_item_id' => $item2->id,
             'product_id' => $item1->product_id,
-            'quantity' => 25,
-            'cartons' => 5,
-            'weight_per_unit' => 5,
+            'cartons' => 25,
+            'reason' => 'end_of_shipment',
             'created_by' => $user->id,
         ]);
 
@@ -136,20 +134,20 @@ class ShipmentServiceTest extends TestCase
             'from_shipment_id' => $shipment1->id,
         ]);
 
-        // Item in shipment2 should have carryover removed
-        $this->assertEquals(0, $item2->fresh()->remaining_quantity);
-        $this->assertEquals(0, $item2->fresh()->carryover_in_quantity);
+        // Item in shipment2 should be deleted (was only carryover)
+        $this->assertDatabaseMissing('shipment_items', [
+            'id' => $item2->id,
+        ]);
 
-        // Original item should restore remaining quantity
-        $this->assertEquals(25, $item1->fresh()->remaining_quantity);
-        $this->assertEquals(0, $item1->fresh()->carryover_out_quantity);
+        // Original item should have carryover_out reset
+        $this->assertEquals(0, $item1->fresh()->carryover_out_cartons);
     }
 
     /**
      * @test
      * BR-SHP-005: Cannot unsettle if carryover quantity already sold
      */
-    public function it_prevents_unsettle_if_carryover_quantity_was_sold(): void
+    public function it_prevents_unsettle_if_carryover_cartons_were_sold(): void
     {
         // Arrange
         $supplier = Supplier::factory()->create();
@@ -166,17 +164,17 @@ class ShipmentServiceTest extends TestCase
 
         $item1 = ShipmentItem::factory()->create([
             'shipment_id' => $shipment1->id,
-            'remaining_quantity' => 0,
-            'carryover_out_quantity' => 50,
+            'cartons' => 50,
+            'sold_cartons' => 0,
+            'carryover_out_cartons' => 50,
         ]);
 
         $item2 = ShipmentItem::factory()->create([
             'shipment_id' => $shipment2->id,
             'product_id' => $item1->product_id,
-            'initial_quantity' => 50,
-            'remaining_quantity' => 10, // 40kg already sold from carryover!
-            'carryover_in_quantity' => 50,
-            'sold_quantity' => 40,
+            'cartons' => 0,
+            'sold_cartons' => 40, // 40 cartons already sold from carryover!
+            'carryover_in_cartons' => 50,
         ]);
 
         $user = \App\Models\User::factory()->create();
@@ -187,9 +185,8 @@ class ShipmentServiceTest extends TestCase
             'to_shipment_id' => $shipment2->id,
             'to_shipment_item_id' => $item2->id,
             'product_id' => $item1->product_id,
-            'quantity' => 50,
-            'cartons' => 10,
-            'weight_per_unit' => 5,
+            'cartons' => 50,
+            'reason' => 'end_of_shipment',
             'created_by' => $user->id,
         ]);
 
@@ -218,7 +215,7 @@ class ShipmentServiceTest extends TestCase
 
         // Assert
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('الشحنة مُصفاة بالفعل'); // SHP_007
+        $this->expectExceptionMessage('الشحنة مُصفاة بالفعل');
 
         // Act
         $this->service->settle($shipment1, $shipment2);
@@ -262,11 +259,12 @@ class ShipmentServiceTest extends TestCase
         ]);
 
         // Add items with sales
-        $item1 = ShipmentItem::factory()->create([
+        ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 20,
-            'sold_quantity' => 70,
+            'cartons' => 100,
+            'sold_cartons' => 70,
+            'carryover_in_cartons' => 0,
+            'carryover_out_cartons' => 0,
             'wastage_quantity' => 10,
         ]);
 
@@ -289,15 +287,14 @@ class ShipmentServiceTest extends TestCase
         $shipment = $shipment->fresh();
 
         $this->assertNotNull($shipment->settled_at);
-        $this->assertNotNull($shipment->total_sales);
-        $this->assertNotNull($shipment->total_wastage);
-        $this->assertEquals(20, $shipment->total_carryover_out);
+        $this->assertEquals(70, $shipment->total_sales); // sold_cartons
+        $this->assertEquals(30, $shipment->total_carryover_out); // 100 - 70 cartons
         $this->assertEquals(500, $shipment->total_supplier_expenses);
     }
 
     /**
      * @test
-     * Edge Case: Settle shipment with no remaining quantity
+     * Edge Case: Settle shipment with no remaining cartons
      */
     public function it_settles_shipment_with_zero_carryover(): void
     {
@@ -312,9 +309,8 @@ class ShipmentServiceTest extends TestCase
 
         ShipmentItem::factory()->create([
             'shipment_id' => $shipment1->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 0, // All sold
-            'sold_quantity' => 100,
+            'cartons' => 100,
+            'sold_cartons' => 100, // All sold
         ]);
 
         // Act
@@ -329,3 +325,4 @@ class ShipmentServiceTest extends TestCase
         ]);
     }
 }
+

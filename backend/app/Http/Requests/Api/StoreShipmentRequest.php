@@ -18,14 +18,14 @@ class StoreShipmentRequest extends FormRequest
             'date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
 
-            // Items
+            // Items - Frontend provides: product_id, cartons, weight_per_unit
+            // Backend calculates: initial_quantity = cartons × weight_per_unit
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.cartons' => ['required', 'integer', 'min:1'],
             'items.*.weight_per_unit' => ['required', 'numeric', 'min:0.001'],
             'items.*.weight_label' => ['nullable', 'string', 'max:50'],
-            'items.*.cartons' => ['required', 'integer', 'min:1'],
-            'items.*.initial_quantity' => ['required', 'numeric', 'min:0.001'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'], // Optional, defaults to 0
         ];
     }
 

@@ -13,15 +13,15 @@ class ShipmentItemObserver
      */
     public function updated(ShipmentItem $item): void
     {
-        // Check if this update could trigger auto-close
-        if ($item->wasChanged('remaining_quantity') && $item->remaining_quantity <= 0) {
+        // Check if this update could trigger auto-close (sold_cartons changed)
+        if ($item->wasChanged('sold_cartons') && $item->remaining_cartons <= 0) {
             $this->checkAutoClose($item->shipment);
         }
     }
 
     /**
      * Check if shipment should be auto-closed
-     * Shipment closes when all items have zero remaining
+     * Shipment closes when all items have zero remaining cartons
      */
     private function checkAutoClose(Shipment $shipment): void
     {
@@ -30,14 +30,13 @@ class ShipmentItemObserver
             return;
         }
 
-        // Check if any item still has stock
-        $hasStock = $shipment->items()
-            ->where('remaining_quantity', '>', 0)
-            ->exists();
+        // Check if any item still has stock (using accessor)
+        $hasStock = $shipment->items->contains(fn($item) => $item->remaining_cartons > 0);
 
-        if (! $hasStock) {
+        if (!$hasStock) {
             $shipment->status = 'closed';
             $shipment->saveQuietly();
         }
     }
 }
+

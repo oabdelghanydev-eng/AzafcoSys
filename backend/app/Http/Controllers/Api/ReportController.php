@@ -32,7 +32,7 @@ class ReportController extends Controller
     {
         $this->checkPermission('reports.daily');
         // Validate date format
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -135,16 +135,16 @@ class ReportController extends Controller
         // Get expenses for this shipment
         $expensesTotal = Expense::where('shipment_id', $shipment->id)->sum('amount');
 
-        // Items breakdown
+        // Items breakdown (cartons-based)
         $itemsBreakdown = $shipment->items->map(function ($item) {
             return [
                 'product' => $item->product->name,
-                'initial_quantity' => (float) $item->initial_quantity,
-                'sold_quantity' => (float) $item->sold_quantity,
-                'remaining_quantity' => (float) $item->remaining_quantity,
+                'cartons' => $item->cartons,
+                'sold_cartons' => $item->sold_cartons,
+                'remaining_cartons' => $item->remaining_cartons, // Accessor
                 'wastage_quantity' => (float) $item->wastage_quantity,
-                'carryover_in' => (float) $item->carryover_in_quantity,
-                'carryover_out' => (float) $item->carryover_out_quantity,
+                'carryover_in_cartons' => $item->carryover_in_cartons,
+                'carryover_out_cartons' => $item->carryover_out_cartons,
             ];
         });
 
@@ -182,15 +182,15 @@ class ReportController extends Controller
         // Get invoices
         $invoicesQuery = $customer->invoices()
             ->where('status', 'active')
-            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'invoice_number', 'date', 'total', 'paid_amount', 'balance']);
 
         // Get collections
         $collectionsQuery = $customer->collections()
-            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'receipt_number', 'date', 'amount', 'payment_method']);
 
@@ -215,7 +215,7 @@ class ReportController extends Controller
                 'reference' => $collection->receipt_number,
                 'debit' => 0,
                 'credit' => (float) $collection->amount,
-                'description' => 'تحصيل '.($collection->payment_method === 'cash' ? 'نقدي' : 'بنكي'),
+                'description' => 'تحصيل ' . ($collection->payment_method === 'cash' ? 'نقدي' : 'بنكي'),
             ]);
         }
 
@@ -267,15 +267,15 @@ class ReportController extends Controller
 
         // Get shipments (debit - له)
         $shipmentsQuery = $supplier->shipments()
-            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'number', 'date', 'total_amount']);
 
         // Get expenses (credit - عليه/دفعنا له)
         $expensesQuery = $supplier->expenses()
-            ->when($dateFrom, fn ($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn ($q) => $q->whereDate('date', '<=', $dateTo))
+            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
             ->get(['id', 'expense_number', 'date', 'amount', 'description']);
 
@@ -352,7 +352,7 @@ class ReportController extends Controller
         $this->checkPermission('reports.export_pdf');
 
         // Validate date format
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -368,14 +368,14 @@ class ReportController extends Controller
             return $pdfService->download(
                 'reports.daily-closing',
                 $data,
-                'daily-report-'.$date
+                'daily-report-' . $date
             );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_003',
-                    'message' => 'PDF generation failed: '.$e->getMessage(),
+                    'message' => 'PDF generation failed: ' . $e->getMessage(),
                     'trace' => config('app.debug') ? $e->getTraceAsString() : null,
                 ],
             ], 500);
@@ -394,7 +394,7 @@ class ReportController extends Controller
         $this->checkPermission('reports.export_pdf');
 
         // Check if shipment is settled or being settled
-        if (! in_array($shipment->status, ['closed', 'settled'])) {
+        if (!in_array($shipment->status, ['closed', 'settled'])) {
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -410,14 +410,14 @@ class ReportController extends Controller
             return $pdfService->download(
                 'reports.shipment-settlement',
                 $data,
-                'settlement-'.$shipment->number
+                'settlement-' . $shipment->number
             );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => [
                     'code' => 'RPT_003',
-                    'message' => 'PDF generation failed: '.$e->getMessage(),
+                    'message' => 'PDF generation failed: ' . $e->getMessage(),
                     'trace' => config('app.debug') ? $e->getTraceAsString() : null,
                 ],
             ], 500);

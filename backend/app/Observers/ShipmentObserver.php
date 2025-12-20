@@ -82,9 +82,9 @@ class ShipmentObserver
      */
     public function deleting(Shipment $shipment): bool
     {
-        // Check if any items have been sold
+        // Check if any items have been sold (cartons-based)
         $hasSales = $shipment->items()
-            ->where('sold_quantity', '>', 0)
+            ->where('sold_cartons', '>', 0)
             ->exists();
 
         if ($hasSales) {

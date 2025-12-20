@@ -24,6 +24,8 @@ class DailyClosingReportService
         ];
 
         // 1. Invoice Items (on item level)
+        // cartons = عدد الكراتين المباعة
+        // quantity = الوزن الفعلي من الميزان (kg)
         $invoiceItems = InvoiceItem::whereHas('invoice', function ($q) use ($date) {
             $q->where('date', $date)->where('status', 'active');
         })
@@ -36,17 +38,51 @@ class DailyClosingReportService
                     'invoice_number' => $item->invoice->invoice_number,
                     'customer_name' => $item->invoice->customer->name,
                     'product_name' => $item->product->name ?? $item->product->name_en,
-                    'quantity' => $item->quantity,
-                    'weight_per_unit' => $weightPerUnit,
-                    'total_weight' => $item->quantity * $weightPerUnit,
+                    'cartons' => $item->cartons,                    // عدد الكراتين
+                    'weight_per_unit' => $weightPerUnit,            // وزن الكرتونة (من الشحنة)
+                    'total_weight' => $item->quantity,              // الوزن الفعلي (من الميزان)
+                    'price' => $item->unit_price,                   // سعر الكيلو
                     'subtotal' => $item->subtotal,
                 ];
             });
 
         $data['invoiceItems'] = $invoiceItems;
-        $data['totalQuantity'] = $invoiceItems->sum('quantity');
+        $data['totalCartons'] = $invoiceItems->sum('cartons');
         $data['totalWeight'] = $invoiceItems->sum('total_weight');
         $data['totalSales'] = $invoiceItems->sum('subtotal');
+
+        // Daily Wastage Calculation per product
+        // Wastage = (sold_cartons × weight_per_unit) - actual_sold_quantity
+        $wastageByProduct = InvoiceItem::whereHas('invoice', function ($q) use ($date) {
+            $q->where('date', $date)->where('status', 'active');
+        })
+            ->with(['product', 'shipmentItem'])
+            ->get()
+            ->groupBy('product_id')
+            ->map(function ($items, $productId) {
+                $product = $items->first()->product;
+
+                $totalCartonsSold = $items->sum('cartons');
+                $totalExpectedWeight = $items->sum(function ($item) {
+                    $weightPerUnit = $item->shipmentItem?->weight_per_unit ?? 0;
+                    return $item->cartons * $weightPerUnit;
+                });
+                $totalActualWeight = $items->sum('quantity');
+                $wastage = $totalExpectedWeight - $totalActualWeight;
+
+                return [
+                    'product_id' => $productId,
+                    'product_name' => $product->name ?? $product->name_en,
+                    'cartons_sold' => $totalCartonsSold,
+                    'expected_weight' => $totalExpectedWeight,
+                    'actual_weight' => $totalActualWeight,
+                    'wastage' => $wastage,
+                ];
+            })
+            ->values();
+
+        $data['wastageByProduct'] = $wastageByProduct;
+        $data['totalWastage'] = $wastageByProduct->sum('wastage');
 
         // 2. Collections
         $collections = Collection::where('date', $date)
@@ -83,25 +119,37 @@ class DailyClosingReportService
         $data['cashboxBalance'] = Account::where('type', 'cashbox')->first()?->balance ?? 0;
         $data['bankBalance'] = Account::where('type', 'bank')->first()?->balance ?? 0;
 
-        // 7. Remaining Stock - Fixed: selectRaw + groupBy doesn't work with with()
+        // 7. Remaining Stock (Cartons-Based)
+        // Use the remaining_cartons accessor which computes: cartons + carryover_in - sold - carryover_out
         $remainingStockRaw = ShipmentItem::whereHas('shipment', function ($q) {
             $q->whereIn('status', ['open', 'closed']);
         })
-            ->where('remaining_quantity', '>', 0)
-            ->selectRaw('
-                product_id,
-                SUM(remaining_quantity) as total_quantity,
-                SUM(remaining_quantity * weight_per_unit) as total_weight
-            ')
+            ->with('product')
+            ->get()
+            ->filter(fn($item) => $item->remaining_cartons > 0)
             ->groupBy('product_id')
-            ->get();
+            ->map(function ($items, $productId) {
+                $first = $items->first();
+                $totalCartons = $items->sum('remaining_cartons');
+                // Expected weight = cartons × average weight_per_unit
+                $totalWeight = $items->sum(fn($item) => $item->remaining_cartons * $item->weight_per_unit);
 
-        // Load products separately and attach
-        $productIds = $remainingStockRaw->pluck('product_id')->toArray();
-        $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
+                return (object) [
+                    'product_id' => $productId,
+                    'product' => $first->product,
+                    'remaining_cartons' => $totalCartons,
+                    'total_weight_kg' => $totalWeight,
+                ];
+            })
+            ->values();
 
-        $data['remainingStock'] = $remainingStockRaw->map(function ($item) use ($products) {
-            $item->product = $products->get($item->product_id);
+        // Convert wastageByProduct to keyed array for quick lookup
+        $wastageMap = $wastageByProduct->keyBy('product_id');
+
+        $data['remainingStock'] = $remainingStockRaw->map(function ($item) use ($wastageMap) {
+            // Attach daily wastage if exists
+            $wastageData = $wastageMap->get($item->product_id);
+            $item->daily_wastage = $wastageData['wastage'] ?? 0;
 
             return $item;
         });

@@ -39,14 +39,14 @@ class ReturnObserver
 
     /**
      * Handle return cancellation
-     * 1. Decrease inventory back
+     * 1. Re-increment sold_cartons (items go back to \"sold\" state)
      * 2. Increase customer balance back
      */
     private function handleCancellation(ReturnModel $return): void
     {
-        // Decrease inventory for each item
+        // Re-increment sold_cartons for each item (returns go back to sold)
         foreach ($return->items as $item) {
-            $item->targetShipmentItem->decrement('remaining_quantity', (float) $item->quantity);
+            $item->targetShipmentItem->increment('sold_cartons', (int) $item->quantity);
         }
 
         // Increase customer balance back

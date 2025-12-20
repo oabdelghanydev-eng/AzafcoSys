@@ -18,12 +18,15 @@ class ShipmentItemResource extends JsonResource
             'weight_per_unit' => (float) $this->weight_per_unit,
             'weight_label' => $this->weight_label,
             'cartons' => $this->cartons,
-            'initial_quantity' => (float) $this->initial_quantity,
-            'sold_quantity' => (float) $this->sold_quantity,
-            'remaining_quantity' => (float) $this->remaining_quantity,
+            'sold_cartons' => $this->sold_cartons,
+            'carryover_in_cartons' => $this->carryover_in_cartons,
+            'carryover_out_cartons' => $this->carryover_out_cartons,
+            'remaining_cartons' => $this->remaining_cartons,  // computed accessor
+            'expected_weight' => $this->expected_weight,      // computed accessor
             'wastage_quantity' => (float) $this->wastage_quantity,
             'unit_cost' => (float) $this->unit_cost,
             'total_cost' => (float) $this->total_cost,
         ];
     }
 }
+

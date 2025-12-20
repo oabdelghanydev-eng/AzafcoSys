@@ -39,11 +39,12 @@ class Product extends Model
         return $query->where('is_active', true);
     }
 
-    // Get current stock (sum of all remaining quantities)
-    public function getCurrentStockAttribute(): float
+    // Get current stock (sum of all remaining cartons)
+    public function getCurrentStockAttribute(): int
     {
         return $this->shipmentItems()
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
-            ->sum('remaining_quantity');
+            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->get()
+            ->sum('remaining_cartons'); // Use accessor
     }
 }

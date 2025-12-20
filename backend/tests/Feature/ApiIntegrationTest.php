@@ -162,6 +162,8 @@ class ApiIntegrationTest extends TestCase
         $supplier = Supplier::factory()->create();
         $product = Product::factory()->create();
 
+        // Note: initial_quantity is now auto-calculated = cartons × weight_per_unit
+        // 100 cartons × 10.5 kg = 1050 kg
         $response = $this->actingAs($this->admin)
             ->postJson('/api/shipments', [
                 'supplier_id' => $supplier->id,
@@ -172,7 +174,7 @@ class ApiIntegrationTest extends TestCase
                         'weight_per_unit' => 10.5,
                         'weight_label' => 'A10',
                         'cartons' => 100,
-                        'initial_quantity' => 1000,
+                        // initial_quantity is auto-calculated by backend
                         'unit_cost' => 50.00,
                     ],
                 ],
@@ -181,9 +183,10 @@ class ApiIntegrationTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('data.status', 'open');
 
+        // Verify shipment item was created with cartons
         $this->assertDatabaseHas('shipment_items', [
             'product_id' => $product->id,
-            'initial_quantity' => 1000,
+            'cartons' => 100,
         ]);
     }
 
@@ -202,7 +205,8 @@ class ApiIntegrationTest extends TestCase
         ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
             'product_id' => $product->id,
-            'remaining_quantity' => 500,
+            'cartons' => 50,
+            'sold_cartons' => 0,
         ]);
 
         $response = $this->actingAs($this->admin)

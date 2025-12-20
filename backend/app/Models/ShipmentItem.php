@@ -17,29 +17,29 @@ class ShipmentItem extends Model
         'weight_per_unit',
         'weight_label',
         'cartons',
-        'initial_quantity',
-        'sold_quantity',
-        'remaining_quantity',
+        'sold_cartons',
+        'carryover_in_cartons',
+        'carryover_out_cartons',
         'wastage_quantity',
-        'carryover_in_quantity',
-        'carryover_out_quantity',
         'unit_cost',
         'total_cost',
     ];
 
     protected $casts = [
         'weight_per_unit' => 'decimal:3',
-        'initial_quantity' => 'decimal:3',
-        'sold_quantity' => 'decimal:3',
-        'remaining_quantity' => 'decimal:3',
+        'cartons' => 'integer',
+        'sold_cartons' => 'integer',
+        'carryover_in_cartons' => 'integer',
+        'carryover_out_cartons' => 'integer',
         'wastage_quantity' => 'decimal:3',
-        'carryover_in_quantity' => 'decimal:3',
-        'carryover_out_quantity' => 'decimal:3',
         'unit_cost' => 'decimal:2',
         'total_cost' => 'decimal:2',
     ];
 
-    // Relationships
+    protected $appends = ['remaining_cartons', 'expected_weight'];
+
+    // ============ Relationships ============
+
     public function shipment(): BelongsTo
     {
         return $this->belongsTo(Shipment::class);
@@ -60,29 +60,71 @@ class ShipmentItem extends Model
         return $this->hasMany(ReturnItem::class, 'target_shipment_item_id');
     }
 
-    // Scopes
+    // ============ Accessors (Computed) ============
+
+    /**
+     * الكراتين المتبقية للبيع
+     * = الكراتين الأصلية + المرحل إليها - المباعة - المرحل منها
+     */
+    public function getRemainingCartonsAttribute(): int
+    {
+        return $this->cartons
+            + $this->carryover_in_cartons
+            - $this->sold_cartons
+            - $this->carryover_out_cartons;
+    }
+
+    /**
+     * الوزن المتوقع للكراتين المتبقية
+     */
+    public function getExpectedWeightAttribute(): float
+    {
+        return $this->remaining_cartons * (float) $this->weight_per_unit;
+    }
+
+    /**
+     * الوزن الفعلي المباع (من الميزان)
+     */
+    public function getActualSoldWeightAttribute(): float
+    {
+        return (float) $this->invoiceItems()->sum('quantity');
+    }
+
+    /**
+     * إجمالي الكراتين (الأصلية + المرحلة إليها)
+     */
+    public function getTotalCartonsAttribute(): int
+    {
+        return $this->cartons + $this->carryover_in_cartons;
+    }
+
+    // ============ Scopes ============
+
     public function scopeWithStock($query)
     {
-        return $query->where('remaining_quantity', '>', 0);
+        return $query->whereRaw(
+            '(cartons + carryover_in_cartons - sold_cartons - carryover_out_cartons) > 0'
+        );
     }
 
     public function scopeForFifo($query, int $productId)
     {
         return $query->where('product_id', $productId)
-            ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
+            ->whereRaw('(cartons + carryover_in_cartons - sold_cartons - carryover_out_cartons) > 0')
+            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->orderBy('created_at', 'asc');
     }
 
-    // Check if has available stock
+    // ============ Helper Methods ============
+
     public function hasStock(): bool
     {
-        return $this->remaining_quantity > 0;
+        return $this->remaining_cartons > 0;
     }
 
-    // Get available quantity for sale
-    public function getAvailableQuantity(): float
+    public function getAvailableCartons(): int
     {
-        return max(0, $this->remaining_quantity);
+        return max(0, $this->remaining_cartons);
     }
 }
+

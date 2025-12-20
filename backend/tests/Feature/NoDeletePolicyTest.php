@@ -14,8 +14,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Feature tests for No-Delete Policy
- * تحسين 2025-12-13: اختبارات سياسة عدم الحذف
+ * Feature tests for No-Delete Policy (Cartons-Based)
+ * Updated 2025-12-19: Uses sold_cartons instead of sold_quantity
  */
 class NoDeletePolicyTest extends TestCase
 {
@@ -114,10 +114,10 @@ class NoDeletePolicyTest extends TestCase
             'status' => 'open',
         ]);
 
-        // Add item with sales
+        // Add item with sales (sold_cartons > 0)
         ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
-            'sold_quantity' => 10,
+            'sold_cartons' => 10,
         ]);
 
         try {
@@ -142,7 +142,7 @@ class NoDeletePolicyTest extends TestCase
         // Add item with no sales
         ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
-            'sold_quantity' => 0,
+            'sold_cartons' => 0,
         ]);
 
         // This should not throw
@@ -152,3 +152,4 @@ class NoDeletePolicyTest extends TestCase
         $this->assertDatabaseMissing('shipments', ['id' => $shipment->id]);
     }
 }
+

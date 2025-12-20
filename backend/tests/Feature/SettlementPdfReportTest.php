@@ -60,8 +60,8 @@ class SettlementPdfReportTest extends TestCase
         ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
             'product_id' => $this->product->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 100,
+            'cartons' => 100,
+            'sold_cartons' => 0,
             'weight_per_unit' => 1.5,
         ]);
 

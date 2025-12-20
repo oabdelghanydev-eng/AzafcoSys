@@ -16,15 +16,16 @@ class Carryover extends Model
         'to_shipment_id',
         'to_shipment_item_id',
         'product_id',
-        'quantity',
+        'cartons',
         'reason',
         'notes',
         'created_by',
     ];
 
     protected $casts = [
-        'quantity' => 'decimal:3',
+        'cartons' => 'integer',
     ];
+
 
     // Relationships
     public function fromShipment(): BelongsTo

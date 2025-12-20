@@ -21,12 +21,15 @@ class StoreInvoiceRequest extends FormRequest
             'discount' => ['sometimes', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
 
-            // Items
+            // Items - Updated field names for clarity
+            // cartons = عدد الكراتين المباعة
+            // total_weight = الوزن الفعلي من الميزان (kg)
+            // price = سعر الكيلو
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
-            'items.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'items.*.cartons' => ['sometimes', 'integer', 'min:0'],
+            'items.*.cartons' => ['required', 'integer', 'min:1'],
+            'items.*.total_weight' => ['required', 'numeric', 'min:0.001'],
+            'items.*.price' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -40,9 +43,9 @@ class StoreInvoiceRequest extends FormRequest
             $discount = (float) $this->input('discount', 0);
             $items = $this->input('items', []);
 
-            // Calculate subtotal from items
+            // Calculate subtotal from items (total_weight × price)
             $subtotal = collect($items)->sum(function ($item) {
-                return (float) ($item['quantity'] ?? 0) * (float) ($item['unit_price'] ?? 0);
+                return (float) ($item['total_weight'] ?? 0) * (float) ($item['price'] ?? 0);
             });
 
             if ($discount > $subtotal) {
@@ -71,8 +74,11 @@ class StoreInvoiceRequest extends FormRequest
             'items.required' => 'يجب إضافة صنف واحد على الأقل',
             'items.min' => 'يجب إضافة صنف واحد على الأقل',
             'items.*.product_id.required' => 'الصنف مطلوب',
-            'items.*.quantity.required' => 'الكمية مطلوبة',
-            'items.*.unit_price.required' => 'السعر مطلوب',
+            'items.*.cartons.required' => 'عدد الكراتين مطلوب',
+            'items.*.cartons.min' => 'عدد الكراتين يجب أن يكون 1 على الأقل',
+            'items.*.total_weight.required' => 'الوزن الفعلي مطلوب',
+            'items.*.total_weight.min' => 'الوزن يجب أن يكون أكبر من صفر',
+            'items.*.price.required' => 'سعر الكيلو مطلوب',
         ];
     }
 }

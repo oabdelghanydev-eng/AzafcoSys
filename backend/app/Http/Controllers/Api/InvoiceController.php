@@ -87,18 +87,22 @@ class InvoiceController extends Controller
             ]);
 
             // Process items with FIFO
+            // cartons = عدد الكراتين المباعة - used for FIFO allocation
+            // total_weight = الوزن الفعلي من الميزان (kg) - for pricing
+            // price = سعر الكيلو
             $subtotal = 0;
             foreach ($validated['items'] as $item) {
                 $createdItems = $this->fifoService->allocateAndCreate(
                     $invoice->id,
                     $item['product_id'],
-                    $item['quantity'],
-                    $item['unit_price'],
-                    $item['cartons'] ?? 0
+                    $item['cartons'],       // FIFO allocation by cartons
+                    $item['total_weight'],  // Actual weight from scale
+                    $item['price']          // Price per KG
                 );
 
                 $subtotal += $createdItems->sum('subtotal');
             }
+
 
             // Update totals
             $total = $subtotal - ($validated['discount'] ?? 0);

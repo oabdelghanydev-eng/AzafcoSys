@@ -12,16 +12,17 @@ class InvoiceValidationLogicTest extends TestCase
 {
     /**
      * Test that discount validation logic works correctly
+     * Uses new field names: total_weight, price (instead of quantity, unit_price)
      */
     public function test_discount_exceeds_subtotal_calculation(): void
     {
         $items = [
-            ['quantity' => 10, 'unit_price' => 10],  // 100
-            ['quantity' => 5, 'unit_price' => 20],   // 100
+            ['total_weight' => 10, 'price' => 10],  // 100
+            ['total_weight' => 5, 'price' => 20],   // 100
         ];
 
         $subtotal = collect($items)->sum(function ($item) {
-            return ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+            return ($item['total_weight'] ?? 0) * ($item['price'] ?? 0);
         });
 
         $this->assertEquals(200, $subtotal);
@@ -60,12 +61,12 @@ class InvoiceValidationLogicTest extends TestCase
 
         // Zero total for 'sale' should fail
         $typeSale = 'sale';
-        $isValidForSale = ! ($total <= 0 && $typeSale !== 'wastage');
+        $isValidForSale = !($total <= 0 && $typeSale !== 'wastage');
         $this->assertFalse($isValidForSale, 'Zero total sale should be invalid');
 
         // Zero total for 'wastage' should pass
         $typeWastage = 'wastage';
-        $isValidForWastage = ! ($total <= 0 && $typeWastage !== 'wastage');
+        $isValidForWastage = !($total <= 0 && $typeWastage !== 'wastage');
         $this->assertTrue($isValidForWastage, 'Zero total wastage should be valid');
     }
 }

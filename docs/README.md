@@ -1,49 +1,96 @@
-# Documentation Index
+# 📚 Documentation Index
 
-Welcome to the **Inventory Management System** documentation.
+> **Inventory Management System** - نظام إدارة المخزون
+
+**Last Updated:** 2025-12-19
+
+---
 
 ## 📂 Documentation Structure
 
-### [00-Core](00-Core/)
-**The Source of Truth.** Start here.
-- **[Database Schema](00-Core/Database_Schema.md)**: The single source of truth for all data structures.
-- **[System Architecture](00-Core/System_Architecture.md)**: High-level infrastructure and stack.
-- **[Configuration Decisions](00-Core/Configuration_Decisions.md)**: Global project settings and decisions.
-
-### [01-Business Logic](01-Business_Logic/)
-**Functional Requirements & Rules.**
-- **[Business Rules Catalogue](01-Business_Logic/BR_Catalogue.md)**: Index of all business rules.
-- **[Process Flows](01-Business_Logic/Process_Flows.md)**: Visual diagrams of system workflows.
-- *Also contains detailed rules for Invoices, Collections, Shipments, FIFO, etc.*
-
-### [02-Technical Specs](02-Technical_Specs/)
-**Implementation Details.**
-- **[Backend Implementation](02-Technical_Specs/Backend_Implementation.md)**: Services, Observers, and Classes plan.
-- **[API Reference](02-Technical_Specs/API_Reference.md)**: Error codes and response formats.
-- **[Schema Compliance Matrix](02-Technical_Specs/Schema_Compliance_Matrix.md)**: Mapping schema to code enforcement.
-
-### [03-Security](03-Security/)
-**Safety & Compliance.**
-- **[Authorization Audit](03-Security/Authorization_Audit.md)**: Permission coverage and gaps.
-- **[Security & Recovery](03-Security/Security_Disaster_Recovery.md)**: Backup protocols and security measures.
-
-### [04-Operations](04-Operations/)
-**DevOps & Performance.**
-- **[DevOps & CI/CD](04-Operations/DevOps_CICD.md)**: Deployment pipelines.
-- **[Performance Tuning](04-Operations/Performance_Tuning.md)**: Caching and optimization.
-
-### [99-Reviews & Audit](99-Reviews_Audit/)
-**Historical Records.**
--Snapshots of compliance findings, expert reviews, and architecture logs.
+### [00-Core/](00-Core/) — **مصدر الحقيقة**
+| File | Description |
+|------|-------------|
+| [Database_Schema.md](00-Core/Database_Schema.md) | هيكل قاعدة البيانات الكامل |
+| [Architecture_plan.md](00-Core/Architecture_plan.md) | معمارية النظام |
+| [Configuration_Decisions.md](00-Core/Configuration_Decisions.md) | قرارات الإعدادات |
+| [ERD_Diagram.md](00-Core/ERD_Diagram.md) | مخطط العلاقات |
 
 ---
 
-## 🚀 Recommended Reading Path
-
-1.  **New Developers**: `00-Core/System_Architecture` → `00-Core/Database_Schema` → `02-Technical_Specs/Backend_Implementation`
-2.  **Product Managers**: `01-Business_Logic/process_flows` → `01-Business_Logic/BR_Catalogue`
-3.  **Auditors**: `00-Core/Database_Schema` → `03-Security/Authorization_Audit`
+### [01-Business_Logic/](01-Business_Logic/) — **قواعد العمل**
+| File | Description |
+|------|-------------|
+| [BR_Catalogue.md](01-Business_Logic/BR_Catalogue.md) | فهرس جميع قواعد العمل |
+| [Process_Flows.md](01-Business_Logic/Process_Flows.md) | مخططات سير العمل |
+| [BL_Invoices.md](01-Business_Logic/BL_Invoices.md) | الفواتير |
+| [BL_Collections.md](01-Business_Logic/BL_Collections.md) | التحصيلات |
+| [BL_Shipments.md](01-Business_Logic/BL_Shipments.md) | الشحنات |
+| [BL_Inventory_FIFO.md](01-Business_Logic/BL_Inventory_FIFO.md) | نظام FIFO |
+| [BL_DailyReports.md](01-Business_Logic/BL_DailyReports.md) | التقارير اليومية |
+| [BL_Reports.md](01-Business_Logic/BL_Reports.md) | التقارير العامة |
+| [BL_Users.md](01-Business_Logic/BL_Users.md) | المستخدمين |
+| [BL_Corrections.md](01-Business_Logic/BL_Corrections.md) | التصحيحات |
+| [BL_Refunds.md](01-Business_Logic/BL_Refunds.md) | المرتجعات |
 
 ---
 
-*Last Updated: 2025-12-13*
+### [02-Technical_Specs/](02-Technical_Specs/) — **المواصفات التقنية**
+| File | Description |
+|------|-------------|
+| [Backend_Implementation.md](02-Technical_Specs/Backend_Implementation.md) | تفاصيل التنفيذ |
+| [API_Reference.md](02-Technical_Specs/API_Reference.md) | مرجع الـ API |
+| [Schema_Compliance_Matrix.md](02-Technical_Specs/Schema_Compliance_Matrix.md) | مصفوفة التوافق |
+
+---
+
+### [03-Security/](03-Security/) — **الأمان**
+| File | Description |
+|------|-------------|
+| [Authorization_Audit.md](03-Security/Authorization_Audit.md) | تدقيق الصلاحيات |
+| [Security_Disaster_Recovery.md](03-Security/Security_Disaster_Recovery.md) | الأمان و النسخ الاحتياطي |
+
+---
+
+### [04-Operations/](04-Operations/) — **العمليات**
+| File | Description |
+|------|-------------|
+| [DevOps_CICD.md](04-Operations/DevOps_CICD.md) | CI/CD والنشر |
+| [Performance_Tuning.md](04-Operations/Performance_Tuning.md) | تحسين الأداء |
+| [env.production.template](04-Operations/env.production.template) | قالب متغيرات الإنتاج |
+
+---
+
+### [05-Development/](05-Development/) — **التطوير**
+| File | Description |
+|------|-------------|
+| [Epic_4_8_Roadmap.md](05-Development/Epic_4_8_Roadmap.md) | خارطة طريق المشروع |
+| [Testing_Guidelines.md](05-Development/Testing_Guidelines.md) | إرشادات الاختبار |
+
+---
+
+### [99-Reviews_Audit/](99-Reviews_Audit/) — **السجلات**
+| File | Description |
+|------|-------------|
+| [2025-12-19_Invoice_API_Changes.md](99-Reviews_Audit/2025-12-19_Invoice_API_Changes.md) | آخر تغييرات API |
+| [Backend_Compliance_Log.md](99-Reviews_Audit/Backend_Compliance_Log.md) | سجل توافق Backend |
+| [Frontend_Compliance_Log.md](99-Reviews_Audit/Frontend_Compliance_Log.md) | سجل توافق Frontend |
+| [_archive/](99-Reviews_Audit/_archive/) | ملفات مؤرشفة |
+
+---
+
+## 🚀 مسار القراءة الموصى
+
+| الدور | المسار |
+|-------|--------|
+| **مطور جديد** | `00-Core/Architecture` → `00-Core/Database_Schema` → `02-Technical/Backend` |
+| **مدير منتج** | `01-Business_Logic/Process_Flows` → `01-Business_Logic/BR_Catalogue` |
+| **مدقق** | `00-Core/Database_Schema` → `03-Security/Authorization_Audit` |
+
+---
+
+## 📊 إحصائيات
+
+- **إجمالي الملفات:** 25 ملف
+- **المجلدات:** 6 مجلدات رئيسية
+- **آخر تحديث:** 2025-12-19

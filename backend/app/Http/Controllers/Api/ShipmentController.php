@@ -45,10 +45,10 @@ class ShipmentController extends Controller
         $this->checkPermission('shipments.view');
 
         $query = Shipment::with(['supplier'])
-            ->when($request->supplier_id, fn ($q, $id) => $q->where('supplier_id', $id))
-            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->supplier_id, fn($q, $id) => $q->where('supplier_id', $id))
+            ->when($request->status, fn($q, $s) => $q->where('status', $s))
+            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -82,7 +82,9 @@ class ShipmentController extends Controller
             $totalCost = 0;
 
             foreach ($validated['items'] as $item) {
-                $itemCost = $item['initial_quantity'] * $item['unit_cost'];
+                $unitCost = $item['unit_cost'] ?? 0;
+                // Total cost = cartons × unit_cost (cost per carton)
+                $itemCost = $item['cartons'] * $unitCost;
 
                 ShipmentItem::create([
                     'shipment_id' => $shipment->id,
@@ -90,9 +92,10 @@ class ShipmentController extends Controller
                     'weight_per_unit' => $item['weight_per_unit'],
                     'weight_label' => $item['weight_label'] ?? null,
                     'cartons' => $item['cartons'],
-                    'initial_quantity' => $item['initial_quantity'],
-                    'remaining_quantity' => $item['initial_quantity'],
-                    'unit_cost' => $item['unit_cost'],
+                    'sold_cartons' => 0,
+                    'carryover_in_cartons' => 0,
+                    'carryover_out_cartons' => 0,
+                    'unit_cost' => $unitCost,
                     'total_cost' => $itemCost,
                 ]);
 
@@ -108,6 +111,7 @@ class ShipmentController extends Controller
             );
         });
     }
+
 
     /**
      * Show shipment details.
@@ -155,19 +159,16 @@ class ShipmentController extends Controller
                         ->where('shipment_id', $shipment->id)
                         ->firstOrFail();
 
-                    if (isset($itemData['initial_quantity'])) {
-                        if ($itemData['initial_quantity'] < $item->sold_quantity) {
+                    // Update cartons count
+                    if (isset($itemData['cartons'])) {
+                        if ($itemData['cartons'] < $item->sold_cartons) {
                             throw new BusinessException(
                                 'SHP_010',
-                                "لا يمكن تقليل الكمية أقل من المباع ({$item->sold_quantity})",
-                                "Cannot reduce quantity below sold amount ({$item->sold_quantity})"
+                                "لا يمكن تقليل الكراتين أقل من المباع ({$item->sold_cartons})",
+                                "Cannot reduce cartons below sold amount ({$item->sold_cartons})"
                             );
                         }
-
-                        // Adjust remaining_quantity proportionally
-                        $diff = $itemData['initial_quantity'] - $item->initial_quantity;
-                        $item->initial_quantity = $itemData['initial_quantity'];
-                        $item->remaining_quantity += $diff;
+                        $item->cartons = $itemData['cartons'];
                     }
 
                     if (isset($itemData['weight_per_unit'])) {
@@ -184,6 +185,7 @@ class ShipmentController extends Controller
             );
         });
     }
+
 
     /**
      * Delete shipment.
@@ -266,8 +268,8 @@ class ShipmentController extends Controller
             );
         }
 
-        // Check if there are remaining quantities
-        $hasRemaining = $shipment->items()->where('remaining_quantity', '>', 0)->exists();
+        // Check if there are remaining cartons
+        $hasRemaining = $shipment->items->contains(fn($item) => $item->remaining_cartons > 0);
 
         if ($hasRemaining) {
             // Carryover required - need next_shipment_id
@@ -370,12 +372,12 @@ class ShipmentController extends Controller
     public function stock(Request $request): JsonResponse
     {
         $items = ShipmentItem::with(['product', 'shipment:id,number,date'])
-            ->where('remaining_quantity', '>', 0)
-            ->whereHas('shipment', fn ($q) => $q->whereIn('status', ['open', 'closed']))
-            ->when($request->product_id, fn ($q, $id) => $q->where('product_id', $id))
+            ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
+            ->when($request->product_id, fn($q, $id) => $q->where('product_id', $id))
             ->orderBy('product_id')
             ->orderBy('created_at')
-            ->get();
+            ->get()
+            ->filter(fn($item) => $item->remaining_cartons > 0); // Use accessor
 
         // Group by product
         $grouped = $items->groupBy('product_id')->map(function ($productItems) {
@@ -384,7 +386,7 @@ class ShipmentController extends Controller
             return [
                 'product_id' => $first->product_id,
                 'product_name' => $first->product->name,
-                'total_quantity' => $productItems->sum('remaining_quantity'),
+                'total_quantity' => $productItems->sum('remaining_cartons'), // Sum cartons
                 'items' => ShipmentItemResource::collection($productItems),
             ];
         })->values();

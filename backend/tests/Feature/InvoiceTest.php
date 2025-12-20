@@ -14,7 +14,7 @@ use Tests\TestCase;
 
 /**
  * Feature Tests for Invoice Endpoints
- * Epic 5: Sales & Invoicing
+ * Epic 5: Sales & Invoicing (Cartons-Based FIFO)
  */
 class InvoiceTest extends TestCase
 {
@@ -50,11 +50,12 @@ class InvoiceTest extends TestCase
         $this->shipmentItem = ShipmentItem::factory()->create([
             'shipment_id' => $this->shipment->id,
             'product_id' => $this->product->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 100,
-            'sold_quantity' => 0,
+            'cartons' => 100,
+            'sold_cartons' => 0,
+            'weight_per_unit' => 5.0,
         ]);
     }
+
 
     /**
      * Helper to make invoice requests without working day middleware
@@ -62,7 +63,7 @@ class InvoiceTest extends TestCase
     private function invoiceRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 
@@ -78,8 +79,9 @@ class InvoiceTest extends TestCase
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 10,
-                    'unit_price' => 50,
+                    'cartons' => 2,
+                    'total_weight' => 10,
+                    'price' => 50,
                 ],
             ],
         ]);
@@ -101,8 +103,9 @@ class InvoiceTest extends TestCase
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 10,
-                    'unit_price' => 50,
+                    'cartons' => 2,
+                    'total_weight' => 10,
+                    'price' => 50,
                 ],
             ],
         ]);
@@ -115,7 +118,7 @@ class InvoiceTest extends TestCase
 
     public function test_invoice_uses_fifo_allocation(): void
     {
-        $initialRemaining = $this->shipmentItem->remaining_quantity;
+        $initialSoldCartons = $this->shipmentItem->sold_cartons;
 
         $this->invoiceRequest('postJson', '/api/invoices', [
             'customer_id' => $this->customer->id,
@@ -123,16 +126,18 @@ class InvoiceTest extends TestCase
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 30,
-                    'unit_price' => 50,
+                    'cartons' => 6,  // allocating 6 cartons
+                    'total_weight' => 30,
+                    'price' => 50,
                 ],
             ],
         ]);
 
         $this->shipmentItem->refresh();
-        $this->assertEquals($initialRemaining - 30, (float) $this->shipmentItem->remaining_quantity);
-        $this->assertEquals(30, (float) $this->shipmentItem->sold_quantity);
+        // FIFO now allocates by cartons, not weight
+        $this->assertEquals($initialSoldCartons + 6, $this->shipmentItem->sold_cartons);
     }
+
 
     // ============================================
     // Invoice Deletion Prevention
@@ -190,30 +195,33 @@ class InvoiceTest extends TestCase
         $response->assertJsonPath('error.code', 'INV_008');
     }
 
-    public function test_cancel_restores_fifo_quantities(): void
+    public function test_cancel_restores_fifo_cartons(): void
     {
-        // Create invoice that uses FIFO
+        // Create invoice that uses FIFO (allocates 4 cartons)
         $response = $this->invoiceRequest('postJson', '/api/invoices', [
             'customer_id' => $this->customer->id,
             'date' => now()->toDateString(),
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 20,
-                    'unit_price' => 50,
+                    'cartons' => 4,
+                    'total_weight' => 20,
+                    'price' => 50,
                 ],
             ],
         ]);
 
         $invoiceId = $response->json('data.id');
         $this->shipmentItem->refresh();
-        $remainingAfterSale = $this->shipmentItem->remaining_quantity;
+        $soldAfterInvoice = $this->shipmentItem->sold_cartons;
+        $this->assertEquals(4, $soldAfterInvoice);
 
         // Cancel the invoice
         $this->invoiceRequest('postJson', "/api/invoices/{$invoiceId}/cancel");
 
         $this->shipmentItem->refresh();
-        $this->assertEquals($remainingAfterSale + 20, (float) $this->shipmentItem->remaining_quantity);
+        // Sold cartons should be restored (was 4, now 0)
+        $this->assertEquals(0, $this->shipmentItem->sold_cartons);
     }
 
     // ============================================
@@ -231,8 +239,9 @@ class InvoiceTest extends TestCase
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 10,
-                    'unit_price' => 50,
+                    'cartons' => 2,
+                    'total_weight' => 10,
+                    'price' => 50,
                 ],
             ],
         ]);
@@ -243,7 +252,7 @@ class InvoiceTest extends TestCase
 
     public function test_wastage_invoice_still_allocates_fifo(): void
     {
-        $initialRemaining = $this->shipmentItem->remaining_quantity;
+        $initialSoldCartons = $this->shipmentItem->sold_cartons;
 
         $this->invoiceRequest('postJson', '/api/invoices', [
             'customer_id' => $this->customer->id,
@@ -252,14 +261,15 @@ class InvoiceTest extends TestCase
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 15,
-                    'unit_price' => 50,
+                    'cartons' => 3,
+                    'total_weight' => 15,
+                    'price' => 50,
                 ],
             ],
         ]);
 
         $this->shipmentItem->refresh();
-        $this->assertEquals($initialRemaining - 15, (float) $this->shipmentItem->remaining_quantity);
+        $this->assertEquals($initialSoldCartons + 3, $this->shipmentItem->sold_cartons);
     }
 
     // ============================================
@@ -275,8 +285,9 @@ class InvoiceTest extends TestCase
             'items' => [
                 [
                     'product_id' => $this->product->id,
-                    'quantity' => 10,
-                    'unit_price' => 50, // subtotal = 500
+                    'cartons' => 2,
+                    'total_weight' => 10,
+                    'price' => 50, // subtotal = 500
                 ],
             ],
         ]);

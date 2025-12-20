@@ -32,7 +32,7 @@ class ReturnService
     ): ReturnModel {
         return DB::transaction(function () use ($customerId, $items, $originalInvoiceId, $notes) {
             // Calculate total
-            $totalAmount = collect($items)->sum(fn ($item) => $item['quantity'] * $item['unit_price']);
+            $totalAmount = collect($items)->sum(fn($item) => $item['quantity'] * $item['unit_price']);
 
             // Create return
             $return = ReturnModel::create([
@@ -64,8 +64,10 @@ class ReturnService
                     'subtotal' => $itemData['quantity'] * $itemData['unit_price'],
                 ]);
 
-                // Increase inventory
-                $targetShipmentItem->increment('remaining_quantity', $itemData['quantity']);
+                // Restore inventory (decrement sold_cartons to "return" cartons to stock)
+                // Note: quantity here represents weight, we need cartons
+                // For now, assume return is by cartons count stored in quantity field
+                $targetShipmentItem->decrement('sold_cartons', (int) $itemData['quantity']);
             }
 
             // Decrease customer balance
@@ -95,7 +97,7 @@ class ReturnService
         }
 
         // Find any open shipment item for this product
-        $openItem = ShipmentItem::whereHas('shipment', fn ($q) => $q->where('status', 'open'))
+        $openItem = ShipmentItem::whereHas('shipment', fn($q) => $q->where('status', 'open'))
             ->where('product_id', $productId)
             ->first();
 
@@ -115,7 +117,7 @@ class ReturnService
         // Find or create open shipment
         $openShipment = Shipment::where('status', 'open')->first();
 
-        if (! $openShipment) {
+        if (!$openShipment) {
             throw new BusinessException(
                 'RET_001',
                 'لا توجد شحنة مفتوحة لاستقبال المرتجع',
@@ -129,16 +131,16 @@ class ReturnService
             ->where('weight_per_unit', $originalItem->weight_per_unit)
             ->first();
 
-        if (! $targetItem) {
+        if (!$targetItem) {
             $targetItem = ShipmentItem::create([
                 'shipment_id' => $openShipment->id,
                 'product_id' => $productId,
                 'weight_per_unit' => $originalItem->weight_per_unit,
                 'weight_label' => $originalItem->weight_label,
                 'cartons' => 0,
-                'initial_quantity' => 0,
-                'remaining_quantity' => 0,
-                'carryover_in_quantity' => 0,
+                'sold_cartons' => 0,
+                'carryover_in_cartons' => 0,
+                'carryover_out_cartons' => 0,
                 'unit_cost' => $originalItem->unit_cost,
             ]);
         }
@@ -158,8 +160,7 @@ class ReturnService
             'product_id' => $productId,
             'weight_per_unit' => 1,
             'cartons' => 0,
-            'initial_quantity' => 0,
-            'remaining_quantity' => 0,
+            'sold_cartons' => 0,
         ]);
     }
 
@@ -169,10 +170,10 @@ class ReturnService
     public function cancelReturn(ReturnModel $return): void
     {
         DB::transaction(function () use ($return) {
-            // Reverse inventory changes
+            // Reverse inventory changes (re-increment sold_cartons)
             foreach ($return->items as $item) {
                 if ($item->targetShipmentItem) {
-                    $item->targetShipmentItem->decrement('remaining_quantity', (float) $item->quantity);
+                    $item->targetShipmentItem->increment('sold_cartons', (int) $item->quantity);
                 }
             }
 

@@ -51,8 +51,8 @@
                             <span class="en">Unit Wt.</span>
                         </th>
                         <th class="text-center">
-                            <span class="ar">الوزن الكلي</span>
-                            <span class="en">Total Wt.</span>
+                            <span class="ar">سعر الكيلو</span>
+                            <span class="en">Price/KG</span>
                         </th>
                         <th class="text-left">
                             <span class="ar">المبلغ</span>
@@ -67,9 +67,9 @@
                             <td>{{ $item['invoice_number'] }}</td>
                             <td>{{ $item['customer_name'] }}</td>
                             <td>{{ $item['product_name'] }}</td>
-                            <td class="text-center">{{ number_format($item['quantity'], 2) }}</td>
+                            <td class="text-center">{{ number_format($item['cartons'], 0) }}</td>
                             <td class="text-center">{{ number_format($item['weight_per_unit'], 2) }} kg</td>
-                            <td class="text-center">{{ number_format($item['total_weight'], 2) }} kg</td>
+                            <td class="text-center">{{ $currency($item['price']) }}</td>
                             <td class="text-left money">{{ $currency($item['subtotal']) }}</td>
                         </tr>
                     @endforeach
@@ -80,9 +80,9 @@
                                 <span class="en" style="color: #718096;">Total</span>
                             </strong>
                         </td>
-                        <td class="text-center"><strong>{{ number_format($totalQuantity, 2) }}</strong></td>
+                        <td class="text-center"><strong>{{ number_format($totalCartons, 0) }}</strong></td>
                         <td></td>
-                        <td class="text-center"><strong>{{ number_format($totalWeight, 2) }} kg</strong></td>
+                        <td></td>
                         <td class="text-left money"><strong>{{ $currency($totalSales) }}</strong></td>
                     </tr>
                 </tbody>
@@ -318,35 +318,57 @@
                 <span class="ar">شحنات جديدة</span>
                 <span class="en">New Shipments</span>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 30px;">#</th>
-                        <th>
-                            <span class="ar">رقم الشحنة</span>
-                            <span class="en">Shipment #</span>
-                        </th>
-                        <th>
-                            <span class="ar">المورد</span>
-                            <span class="en">Supplier</span>
-                        </th>
-                        <th class="text-center">
-                            <span class="ar">الأصناف</span>
-                            <span class="en">Items</span>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($newShipments as $index => $shipment)
+
+            @foreach($newShipments as $shipment)
+                {{-- Shipment Header (Single Line) --}}
+                <div
+                    style="margin-bottom: 10px; background: #f8fafc; padding: 8px 15px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                    <span style="color: #718096;">Shipment #</span> <strong>{{ $shipment->number }}</strong>
+                    <span style="color: #cbd5e0; margin: 0 15px;">|</span>
+                    <span style="color: #718096;">Supplier</span> <strong>{{ $shipment->supplier->name }}</strong>
+                </div>
+
+                {{-- Shipment Items Table --}}
+                <table style="margin-bottom: 20px;">
+                    <thead>
                         <tr>
-                            <td class="text-center">{{ $index + 1 }}</td>
-                            <td>{{ $shipment->number }}</td>
-                            <td>{{ $shipment->supplier->name }}</td>
-                            <td class="text-center">{{ $shipment->items->count() }}</td>
+                            <th style="width: 30px;">#</th>
+                            <th>
+                                <span class="ar">الصنف</span>
+                                <span class="en">Product</span>
+                            </th>
+                            <th class="text-center">
+                                <span class="ar">الكراتين</span>
+                                <span class="en">Cartons</span>
+                            </th>
+                            <th class="text-center">
+                                <span class="ar">وزن الوحدة</span>
+                                <span class="en">Unit Wt.</span>
+                            </th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach($shipment->items as $index => $item)
+                            <tr>
+                                <td class="text-center">{{ $index + 1 }}</td>
+                                <td>{{ $item->product->name ?? $item->product->name_en }}</td>
+                                <td class="text-center">{{ number_format($item->cartons) }}</td>
+                                <td class="text-center">{{ number_format($item->weight_per_unit, 2) }} kg</td>
+                            </tr>
+                        @endforeach
+                        <tr class="total-row">
+                            <td colspan="2">
+                                <strong>
+                                    <span class="ar">الإجمالي</span>
+                                    <span class="en" style="color: #718096;">Total</span>
+                                </strong>
+                            </td>
+                            <td class="text-center"><strong>{{ number_format($shipment->items->sum('cartons')) }}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            @endforeach
         </div>
     @endif
 
@@ -433,23 +455,48 @@
                             <span class="en">Product</span>
                         </th>
                         <th class="text-center">
-                            <span class="ar">الكمية</span>
-                            <span class="en">Quantity</span>
+                            <span class="ar">الكراتين</span>
+                            <span class="en">Cartons</span>
                         </th>
                         <th class="text-center">
-                            <span class="ar">الوزن</span>
-                            <span class="en">Weight</span>
+                            <span class="ar">الوزن (كجم)</span>
+                            <span class="en">Weight (KG)</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">عجز اليوم</span>
+                            <span class="en">Today's Wastage</span>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($remainingStock as $stock)
                         <tr>
-                            <td>{{ $stock->product->name_ar ?? $stock->product->name_en }}</td>
-                            <td class="text-center">{{ number_format($stock->total_quantity, 2) }}</td>
-                            <td class="text-center">{{ number_format($stock->total_weight, 2) }} kg</td>
+                            <td>{{ $stock->product->name ?? $stock->product->name_en }}</td>
+                            <td class="text-center">{{ number_format($stock->remaining_cartons, 0) }}</td>
+                            <td class="text-center">{{ number_format($stock->total_weight_kg, 2) }} kg</td>
+                            <td
+                                class="text-center {{ $stock->daily_wastage > 0 ? 'negative' : ($stock->daily_wastage < 0 ? 'positive' : '') }}">
+                                @if($stock->daily_wastage != 0)
+                                    {{ $stock->daily_wastage > 0 ? '-' : '+' }}{{ number_format(abs($stock->daily_wastage), 2) }} kg
+                                @else
+                                    -
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
+                    @if($totalWastage != 0)
+                        <tr class="total-row">
+                            <td colspan="3">
+                                <strong>
+                                    <span class="ar">إجمالي العجز</span>
+                                    <span class="en" style="color: #718096;">Total Wastage</span>
+                                </strong>
+                            </td>
+                            <td class="text-center {{ $totalWastage > 0 ? 'negative' : 'positive' }}">
+                                <strong>{{ $totalWastage > 0 ? '-' : '+' }}{{ number_format(abs($totalWastage), 2) }} kg</strong>
+                            </td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
         </div>

@@ -40,18 +40,28 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Handle unauthenticated API requests - return JSON instead of redirect
+        // Handle unauthenticated API requests - ALWAYS return JSON, never redirect
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
+            // For API routes, always return JSON (don't try to redirect)
+            if ($request->is('api/*') || $request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'error' => [
                         'code' => ErrorCodes::AUTH_001,
-                        'message' => ErrorCodes::getMessageEn(ErrorCodes::AUTH_001),
-                        'message_ar' => ErrorCodes::getMessage(ErrorCodes::AUTH_001),
+                        'message' => ErrorCodes::getMessage(ErrorCodes::AUTH_001),
+                        'message_en' => ErrorCodes::getMessageEn(ErrorCodes::AUTH_001),
                     ],
                 ], 401);
             }
+
+            // For non-API routes, return a simple JSON (since we don't have web login page)
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'AUTH_001',
+                    'message' => 'Unauthenticated',
+                ],
+            ], 401);
         });
 
         // تحسين 2025-12-13: معالجة BusinessException بتنسيق JSON موحد

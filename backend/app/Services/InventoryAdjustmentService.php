@@ -47,8 +47,8 @@ class InventoryAdjustmentService
                 );
             }
 
-            // Validate: can't reduce below sold quantity
-            if ($newQuantity < $item->sold_quantity) {
+            // Validate: can't reduce below sold cartons
+            if ($newQuantity < $item->sold_cartons) {
                 throw new BusinessException(
                     'ADJ_003',
                     'لا يمكن تقليل الكمية لأقل من المباع',
@@ -56,13 +56,15 @@ class InventoryAdjustmentService
                 );
             }
 
-            $quantityChange = $newQuantity - $item->remaining_quantity;
+            // Calculate change based on cartons
+            $currentCartons = $item->cartons;
+            $quantityChange = $newQuantity - $currentCartons;
 
             $adjustment = InventoryAdjustment::create([
                 'adjustment_number' => $this->generateNumber(),
                 'shipment_item_id' => $item->id,
                 'product_id' => $item->product_id,
-                'quantity_before' => $item->remaining_quantity,
+                'quantity_before' => $currentCartons,
                 'quantity_after' => $newQuantity,
                 'quantity_change' => $quantityChange,
                 'adjustment_type' => $type,
@@ -116,14 +118,8 @@ class InventoryAdjustmentService
                 );
             }
 
-            // Apply the change
-            $item->remaining_quantity = $adjustment->quantity_after;
-
-            // Also update initial_quantity if it's an increase
-            if ($adjustment->isIncrease()) {
-                $item->initial_quantity += $adjustment->quantity_change;
-            }
-
+            // Apply the change to cartons
+            $item->cartons = $adjustment->quantity_after;
             $item->saveQuietly();
 
             // Update adjustment

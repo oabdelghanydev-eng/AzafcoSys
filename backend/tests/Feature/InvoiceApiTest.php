@@ -11,9 +11,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Invoice API Integration Tests
- * 
- * Tests full HTTP request/response cycle for invoice operations
+ * Invoice API Integration Tests (Cartons-Based)
+ * Updated 2025-12-19: FIFO allocates by cartons
  */
 class InvoiceApiTest extends TestCase
 {
@@ -27,7 +26,7 @@ class InvoiceApiTest extends TestCase
     {
         // Arrange
         $user = $this->actingAsUser(['invoices.create']);
-        $this->openWorkingDay(); // Use helper instead of API call
+        $this->openWorkingDay();
 
         $customer = Customer::factory()->create();
         $product = Product::factory()->create();
@@ -35,7 +34,8 @@ class InvoiceApiTest extends TestCase
         $shipmentItem = ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
             'product_id' => $product->id,
-            'remaining_quantity' => 100,
+            'cartons' => 100,
+            'sold_cartons' => 0,
             'weight_per_unit' => 5,
         ]);
 
@@ -45,9 +45,9 @@ class InvoiceApiTest extends TestCase
             'items' => [
                 [
                     'product_id' => $product->id,
-                    'shipment_item_id' => $shipmentItem->id,
-                    'quantity' => 10,
-                    'unit_price' => 50, // Changed from price_per_kg
+                    'cartons' => 2,           // عدد الكراتين
+                    'total_weight' => 10,      // الوزن الفعلي (kg)
+                    'price' => 50,             // سعر الكيلو
                 ],
             ],
             'discount' => 0,
@@ -66,8 +66,8 @@ class InvoiceApiTest extends TestCase
             'customer_id' => $customer->id,
         ]);
 
-        // Verify FIFO deduction
-        $this->assertEquals(90, $shipmentItem->fresh()->remaining_quantity);
+        // Verify FIFO deduction (2 cartons sold)
+        $this->assertEquals(2, $shipmentItem->fresh()->sold_cartons);
     }
 
     /**
@@ -78,7 +78,7 @@ class InvoiceApiTest extends TestCase
     {
         // Arrange
         $user = $this->actingAsUser([]); // No permissions
-        $this->openWorkingDay(); // Must open working day to test permission
+        $this->openWorkingDay();
 
         // Act
         $response = $this->postJson('/api/invoices', [
@@ -113,9 +113,9 @@ class InvoiceApiTest extends TestCase
 
     /**
      * @test
-     * Cannot create invoice when quantity exceeds available stock
+     * Cannot create invoice when cartons exceed available stock
      */
-    public function it_rejects_invoice_when_quantity_exceeds_stock(): void
+    public function it_rejects_invoice_when_cartons_exceed_stock(): void
     {
         // Arrange
         $user = $this->actingAsUser(['invoices.create']);
@@ -123,19 +123,20 @@ class InvoiceApiTest extends TestCase
 
         $customer = Customer::factory()->create();
         $shipmentItem = ShipmentItem::factory()->create([
-            'remaining_quantity' => 5, // Only 5kg available
+            'cartons' => 5, // Only 5 cartons available
+            'sold_cartons' => 0,
         ]);
 
-        // Act - Try to sell 10kg
+        // Act - Try to sell 10 cartons
         $response = $this->postJson('/api/invoices', [
             'customer_id' => $customer->id,
             'date' => today()->toDateString(),
             'items' => [
                 [
                     'product_id' => $shipmentItem->product_id,
-                    'shipment_item_id' => $shipmentItem->id,
-                    'quantity' => 10,
-                    'unit_price' => 50, // Changed from price_per_kg
+                    'cartons' => 10,           // 10 cartons > 5 available
+                    'total_weight' => 50,
+                    'price' => 50,
                 ],
             ],
         ]);
@@ -144,6 +145,7 @@ class InvoiceApiTest extends TestCase
         $response->assertStatus(422);
         $this->assertBusinessError($response, 'INV_005');
     }
+
 
     /**
      * @test

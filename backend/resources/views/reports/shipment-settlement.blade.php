@@ -176,66 +176,75 @@
             <span class="en">Inventory Movement</span>
         </div>
 
-        <p style="font-weight: bold; margin-bottom: 8px;">
-            <span class="ar">الوارد:</span>
-            <span class="en" style="color: #718096;">Incoming:</span>
-        </p>
-        <table>
-            <thead>
-                <tr>
-                    <th>
-                        <span class="ar">المنتج</span>
-                        <span class="en">Product</span>
-                    </th>
-                    <th class="text-center">
-                        <span class="ar">الكمية</span>
-                        <span class="en">Qty</span>
-                    </th>
-                    <th class="text-center">
-                        <span class="ar">الوزن</span>
-                        <span class="en">Weight</span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($shipment->items as $item)
-                    <tr>
-                        <td>{{ $item->product->name_ar ?? $item->product->name_en }}</td>
-                        <td class="text-center">{{ number_format($item->initial_quantity, 2) }}</td>
-                        <td class="text-center">{{ number_format($item->initial_quantity * $item->weight_per_unit, 2) }} kg</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
+        {{-- Carryover Out (Transferred to Next Shipment) --}}
         @if(isset($carryoverOut) && $carryoverOut->count() > 0)
-            <p style="font-weight: bold; margin: 15px 0 8px 0;">
-                <span class="ar">محوّل للشحنة التالية:</span>
+            <p style="font-weight: bold; margin-bottom: 8px;">
+                <span class="ar">الكمية المرحلة للشحنة التالية:</span>
                 <span class="en" style="color: #718096;">Carried Over to Next Shipment:</span>
             </p>
             <table>
                 <thead>
                     <tr>
                         <th>
-                            <span class="ar">المنتج</span>
+                            <span class="ar">الصنف</span>
                             <span class="en">Product</span>
                         </th>
                         <th class="text-center">
-                            <span class="ar">الكمية</span>
-                            <span class="en">Qty</span>
+                            <span class="ar">عدد الكراتين</span>
+                            <span class="en">Cartons</span>
                         </th>
                         <th class="text-center">
-                            <span class="ar">الوزن</span>
-                            <span class="en">Weight</span>
+                            <span class="ar">وزن الوحدة</span>
+                            <span class="en">Unit Weight</span>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($carryoverOut as $co)
                         <tr>
-                            <td>{{ $co->product->name_ar ?? 'N/A' }}</td>
-                            <td class="text-center">{{ number_format($co->quantity, 2) }}</td>
-                            <td class="text-center">{{ number_format($co->quantity * ($co->weight_per_unit ?? 0), 2) }} kg</td>
+                            <td>{{ $co->product->name ?? $co->product->name_en }}</td>
+                            <td class="text-center">{{ number_format($co->quantity, 0) }}</td>
+                            <td class="text-center">{{ number_format($co->fromShipmentItem->weight_per_unit ?? 0, 2) }} kg</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p style="color: #718096; font-style: italic;">
+                <span class="ar">لا توجد كمية مرحلة</span>
+                <span class="en">No carryover quantity</span>
+            </p>
+        @endif
+
+        {{-- Carryover In (Received from Previous Shipment) --}}
+        @if(isset($carryoverIn) && $carryoverIn->count() > 0)
+            <p style="font-weight: bold; margin: 15px 0 8px 0;">
+                <span class="ar">الكمية الواردة من الشحنة السابقة:</span>
+                <span class="en" style="color: #718096;">Received from Previous Shipment:</span>
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            <span class="ar">الصنف</span>
+                            <span class="en">Product</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">عدد الكراتين</span>
+                            <span class="en">Cartons</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">وزن الوحدة</span>
+                            <span class="en">Unit Weight</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($carryoverIn as $ci)
+                        <tr>
+                            <td>{{ $ci->product->name ?? $ci->product->name_en }}</td>
+                            <td class="text-center">{{ number_format($ci->quantity, 0) }}</td>
+                            <td class="text-center">{{ number_format($ci->fromShipmentItem->weight_per_unit ?? 0, 2) }} kg</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -252,39 +261,80 @@
             <span class="ar">تحليل الوزن</span>
             <span class="en">Weight Analysis</span>
         </div>
+
+        {{-- Per-Product Weight Analysis Table --}}
         <table>
-            <tr>
-                <td style="width: 60%;">
-                    <strong>
-                        <span class="ar">إجمالي الوزن الوارد</span>
-                        <span class="en" style="color: #718096;">Total Weight In</span>
-                    </strong>
-                </td>
-                <td class="text-left">{{ number_format($totalWeightIn, 2) }} kg</td>
-            </tr>
-            <tr>
-                <td>
-                    <strong>
-                        <span class="ar">إجمالي الوزن الصادر</span>
-                        <span class="en" style="color: #718096;">Total Weight Out</span>
-                    </strong>
-                </td>
-                <td class="text-left">{{ number_format($totalWeightOut, 2) }} kg</td>
-            </tr>
-            <tr class="{{ $weightDifference != 0 ? 'highlight' : '' }}">
-                <td>
-                    <strong>
-                        <span class="ar">الفرق</span>
-                        <span class="en" style="color: #718096;">Difference</span>
-                    </strong>
-                </td>
-                <td class="text-left {{ $weightDifference > 0 ? 'positive' : ($weightDifference < 0 ? 'negative' : '') }}">
-                    {{ number_format($weightDifference, 2) }} kg
-                    @if($weightDifference == 0)
-                        <span class="badge badge-success">✓</span>
-                    @endif
-                </td>
-            </tr>
+            <thead>
+                <tr>
+                    <th>
+                        <span class="ar">المنتج</span>
+                        <span class="en">Product</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الوزن الوارد</span>
+                        <span class="en">Weight In</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الوزن المباع</span>
+                        <span class="en">Weight Sold</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الفرق (الهالك)</span>
+                        <span class="en">Difference (Wastage)</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">نسبة الهالك</span>
+                        <span class="en">Wastage %</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($shipment->items as $item)
+                    @php
+                        $weightIn = $item->cartons * $item->weight_per_unit;
+                        $weightOut = $salesByProduct->where('product_id', $item->product_id)->first()->weight ?? 0;
+                        $diff = $weightIn - $weightOut;
+                        $wastagePercent = $weightIn > 0 ? ($diff / $weightIn) * 100 : 0;
+                    @endphp
+                    <tr>
+                        <td>{{ $item->product->name ?? $item->product->name_en }}</td>
+                        <td class="text-center">{{ number_format($weightIn, 2) }} kg</td>
+                        <td class="text-center">{{ number_format($weightOut, 2) }} kg</td>
+                        <td class="text-center {{ $diff > 0 ? 'negative' : ($diff < 0 ? 'positive' : '') }}">
+                            {{ number_format($diff, 2) }} kg
+                        </td>
+                        <td
+                            class="text-center {{ $wastagePercent > 5 ? 'negative' : ($wastagePercent > 0 ? 'highlight' : '') }}">
+                            {{ number_format($wastagePercent, 1) }}%
+                        </td>
+                    </tr>
+                @endforeach
+                <tr class="total-row">
+                    <td>
+                        <strong>
+                            <span class="ar">الإجمالي</span>
+                            <span class="en" style="color: #718096;">Total</span>
+                        </strong>
+                    </td>
+                    <td class="text-center"><strong>{{ number_format($totalWeightIn, 2) }} kg</strong></td>
+                    <td class="text-center"><strong>{{ number_format($totalWeightOut, 2) }} kg</strong></td>
+                    <td
+                        class="text-center {{ $weightDifference > 0 ? 'negative' : ($weightDifference < 0 ? 'positive' : '') }}">
+                        <strong>{{ number_format($weightDifference, 2) }} kg</strong>
+                        @if($weightDifference == 0)
+                            <span class="badge badge-success">✓</span>
+                        @elseif($weightDifference > 0)
+                            <span class="badge badge-danger">هالك</span>
+                        @endif
+                    </td>
+                    @php
+                        $totalWastagePercent = $totalWeightIn > 0 ? ($weightDifference / $totalWeightIn) * 100 : 0;
+                    @endphp
+                    <td class="text-center {{ $totalWastagePercent > 5 ? 'negative' : '' }}">
+                        <strong>{{ number_format($totalWastagePercent, 1) }}%</strong>
+                    </td>
+                </tr>
+            </tbody>
         </table>
     </div>
 
@@ -348,6 +398,7 @@
             <span class="en">Supplier Financial Summary</span>
         </h3>
 
+        {{-- 1. Total Sales --}}
         <div class="summary-row">
             <span class="summary-label">
                 <span class="ar">إجمالي المبيعات</span>
@@ -356,6 +407,7 @@
             <span class="summary-value money">{{ $currency($totalSales) }}</span>
         </div>
 
+        {{-- 2. Returns Deduction --}}
         <div class="summary-row">
             <span class="summary-label">
                 <span class="ar">(-) خصم مرتجعات الشحنة السابقة</span>
@@ -364,16 +416,7 @@
             <span class="summary-value money negative">-{{ $currency($previousReturnsDeduction) }}</span>
         </div>
 
-        <div class="summary-row" style="border-top: 2px solid #3182ce; padding-top: 10px;">
-            <span class="summary-label">
-                <strong>
-                    <span class="ar">صافي المبيعات</span>
-                    <span class="en">Net Sales</span>
-                </strong>
-            </span>
-            <span class="summary-value money"><strong>{{ $currency($netSales) }}</strong></span>
-        </div>
-
+        {{-- 3. Commission --}}
         <div class="summary-row">
             <span class="summary-label">
                 <span class="ar">(-) عمولة الشركة ({{ config('settings.company_commission_rate', 6) }}%)</span>
@@ -382,6 +425,7 @@
             <span class="summary-value money negative">-{{ $currency($companyCommission) }}</span>
         </div>
 
+        {{-- 4. Supplier Expenses --}}
         <div class="summary-row">
             <span class="summary-label">
                 <span class="ar">(-) مصروفات المورد</span>
@@ -390,6 +434,7 @@
             <span class="summary-value money negative">-{{ $currency($supplierExpensesDeduction) }}</span>
         </div>
 
+        {{-- 5. Previous Balance --}}
         <div class="summary-row">
             <span class="summary-label">
                 <span class="ar">(+) الرصيد السابق</span>
@@ -398,6 +443,7 @@
             <span class="summary-value money positive">+{{ $currency($previousBalance) }}</span>
         </div>
 
+        {{-- 6. Payments to Supplier --}}
         <div class="summary-row">
             <span class="summary-label">
                 <span class="ar">(-) مدفوعات للمورد</span>
@@ -406,6 +452,7 @@
             <span class="summary-value money negative">-{{ $currency($supplierPayments) }}</span>
         </div>
 
+        {{-- FINAL BALANCE --}}
         <div class="final-total">
             <span class="summary-label">
                 <strong>

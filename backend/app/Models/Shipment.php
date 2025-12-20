@@ -104,9 +104,9 @@ class Shipment extends Model
         return $this->status !== 'settled';
     }
 
-    // Check if all items are sold
+    // Check if all items are sold (cartons-based)
     public function isFullySold(): bool
     {
-        return $this->items()->where('remaining_quantity', '>', 0)->doesntExist();
+        return $this->items->every(fn($item) => $item->remaining_cartons <= 0);
     }
 }

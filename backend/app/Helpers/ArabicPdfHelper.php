@@ -19,13 +19,18 @@ class ArabicPdfHelper
     }
 
     /**
-     * Format currency with Egyptian Pound symbol
+     * Format currency with symbol from settings
      */
     public static function formatCurrency(float $amount, bool $showSymbol = true): string
     {
         $formatted = number_format($amount, 2);
 
-        return $showSymbol ? $formatted.' ج.م' : $formatted;
+        if ($showSymbol) {
+            $currencySymbol = \App\Models\Setting::getValue('currency_symbol', 'ر.ق');
+            return $formatted . ' ' . $currencySymbol;
+        }
+
+        return $formatted;
     }
 
     /**
@@ -137,7 +142,7 @@ class ArabicPdfHelper
     {
         $labels = self::getLabels();
 
-        if (! isset($labels[$key])) {
+        if (!isset($labels[$key])) {
             return $key;
         }
 
@@ -146,7 +151,7 @@ class ArabicPdfHelper
         return match ($lang) {
             'ar' => $label['ar'],
             'en' => $label['en'],
-            'both' => $label['ar'].' / '.$label['en'],
+            'both' => $label['ar'] . ' / ' . $label['en'],
             default => $label['ar']
         };
     }
@@ -156,11 +161,11 @@ class ArabicPdfHelper
      */
     public static function wrapRtl(string $text): string
     {
-        if (! self::isArabic($text)) {
+        if (!self::isArabic($text)) {
             return $text;
         }
 
-        return '<span style="direction: rtl; unicode-bidi: bidi-override;">'.$text.'</span>';
+        return '<span style="direction: rtl; unicode-bidi: bidi-override;">' . $text . '</span>';
     }
 
     /**

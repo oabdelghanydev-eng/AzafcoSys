@@ -101,8 +101,8 @@ class DailyPdfReportTest extends TestCase
         $shipmentItem = ShipmentItem::factory()->create([
             'shipment_id' => $shipment->id,
             'product_id' => $product->id,
-            'initial_quantity' => 100,
-            'remaining_quantity' => 80,
+            'cartons' => 100,
+            'sold_cartons' => 20,
             'weight_per_unit' => 1.5,
         ]);
 
@@ -135,7 +135,7 @@ class DailyPdfReportTest extends TestCase
 
         // Create expense directly to avoid factory constraints
         \DB::table('expenses')->insert([
-            'expense_number' => 'EXP-'.rand(1000, 9999),
+            'expense_number' => 'EXP-' . rand(1000, 9999),
             'type' => 'company',
             'category' => 'other',
             'date' => $this->testDate,

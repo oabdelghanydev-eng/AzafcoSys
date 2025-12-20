@@ -65,19 +65,20 @@ class DailyReportWorkflowTest extends TestCase
 
         $customer = \App\Models\Customer::factory()->create();
         $shipmentItem = \App\Models\ShipmentItem::factory()->create([
-            'remaining_quantity' => 100,
+            'cartons' => 100,
+            'sold_cartons' => 0,
         ]);
 
         // Act - Create invoice with working_date
         $response = $this->postJson('/api/invoices', [
             'customer_id' => $customer->id,
-            'date' => $workingDate, // Use the working date
+            'date' => $workingDate,
             'items' => [
                 [
                     'product_id' => $shipmentItem->product_id,
-                    'shipment_item_id' => $shipmentItem->id,
-                    'quantity' => 10,
-                    'unit_price' => 50, // Changed from price_per_kg
+                    'cartons' => 2,
+                    'total_weight' => 10,
+                    'price' => 50,
                 ],
             ],
         ]);
@@ -217,18 +218,19 @@ class DailyReportWorkflowTest extends TestCase
         // Step 2: Create invoice (should succeed)
         $customer = \App\Models\Customer::factory()->create();
         $shipmentItem = \App\Models\ShipmentItem::factory()->create([
-            'remaining_quantity' => 100,
+            'cartons' => 100,
+            'sold_cartons' => 0,
         ]);
 
         $response = $this->postJson('/api/invoices', [
             'customer_id' => $customer->id,
-            'date' => $date, // Add date
+            'date' => $date,
             'items' => [
                 [
                     'product_id' => $shipmentItem->product_id,
-                    'shipment_item_id' => $shipmentItem->id,
-                    'quantity' => 10,
-                    'unit_price' => 50, // Changed from price_per_kg
+                    'cartons' => 2,
+                    'total_weight' => 10,
+                    'price' => 50,
                 ],
             ],
         ]);
@@ -255,13 +257,13 @@ class DailyReportWorkflowTest extends TestCase
         // Step 6: Create invoice (should succeed again)
         $response = $this->postJson('/api/invoices', [
             'customer_id' => $customer->id,
-            'date' => $date, // Add date
+            'date' => $date,
             'items' => [
                 [
                     'product_id' => $shipmentItem->product_id,
-                    'shipment_item_id' => $shipmentItem->id,
-                    'quantity' => 5,
-                    'unit_price' => 50, // Changed from price_per_kg
+                    'cartons' => 1,
+                    'total_weight' => 5,
+                    'price' => 50,
                 ],
             ],
         ]);
