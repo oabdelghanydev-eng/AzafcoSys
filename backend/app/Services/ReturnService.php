@@ -22,7 +22,7 @@ class ReturnService
     /**
      * Create a return and update inventory + customer balance
      *
-     * @param  array  $items  [{product_id, quantity, unit_price, shipment_item_id?, original_invoice_item_id?}]
+     * @param  array  $items  [{product_id, cartons, unit_price, shipment_item_id?, original_invoice_item_id?}]
      */
     public function createReturn(
         int $customerId,
@@ -31,8 +31,8 @@ class ReturnService
         ?string $notes = null
     ): ReturnModel {
         return DB::transaction(function () use ($customerId, $items, $originalInvoiceId, $notes) {
-            // Calculate total
-            $totalAmount = collect($items)->sum(fn($item) => $item['quantity'] * $item['unit_price']);
+            // Calculate total (cartons * unit_price per carton)
+            $totalAmount = collect($items)->sum(fn($item) => $item['cartons'] * $item['unit_price']);
 
             // Create return
             $return = ReturnModel::create([
@@ -53,21 +53,24 @@ class ReturnService
                     $itemData['shipment_item_id'] ?? null
                 );
 
-                // Create return item
+                $cartons = (int) $itemData['cartons'];
+                $weightPerUnit = $targetShipmentItem->weight_per_unit;
+                $actualWeight = $cartons * $weightPerUnit;
+
+                // Create return item with proper cartons and weight
                 ReturnItem::create([
                     'return_id' => $return->id,
                     'product_id' => $itemData['product_id'],
                     'original_invoice_item_id' => $itemData['original_invoice_item_id'] ?? null,
                     'target_shipment_item_id' => $targetShipmentItem->id,
-                    'quantity' => $itemData['quantity'],
+                    'cartons' => $cartons,
+                    'quantity' => $actualWeight,  // Actual weight = cartons * weight_per_unit
                     'unit_price' => $itemData['unit_price'],
-                    'subtotal' => $itemData['quantity'] * $itemData['unit_price'],
+                    'subtotal' => $cartons * $itemData['unit_price'],
                 ]);
 
                 // Restore inventory (decrement sold_cartons to "return" cartons to stock)
-                // Note: quantity here represents weight, we need cartons
-                // For now, assume return is by cartons count stored in quantity field
-                $targetShipmentItem->decrement('sold_cartons', (int) $itemData['quantity']);
+                $targetShipmentItem->decrement('sold_cartons', $cartons);
             }
 
             // Decrease customer balance
@@ -173,7 +176,7 @@ class ReturnService
             // Reverse inventory changes (re-increment sold_cartons)
             foreach ($return->items as $item) {
                 if ($item->targetShipmentItem) {
-                    $item->targetShipmentItem->increment('sold_cartons', (int) $item->quantity);
+                    $item->targetShipmentItem->increment('sold_cartons', $item->cartons);
                 }
             }
 

@@ -37,7 +37,7 @@ class DailyClosingReportService
                 return [
                     'invoice_number' => $item->invoice->invoice_number,
                     'customer_name' => $item->invoice->customer->name,
-                    'product_name' => $item->product->name ?? $item->product->name_en,
+                    'product_name' => $item->product->bilingual_name,
                     'cartons' => $item->cartons,                    // عدد الكراتين
                     'weight_per_unit' => $weightPerUnit,            // وزن الكرتونة (من الشحنة)
                     'total_weight' => $item->quantity,              // الوزن الفعلي (من الميزان)
@@ -72,7 +72,7 @@ class DailyClosingReportService
 
                 return [
                     'product_id' => $productId,
-                    'product_name' => $product->name ?? $product->name_en,
+                    'product_name' => $product->bilingual_name,
                     'cartons_sold' => $totalCartonsSold,
                     'expected_weight' => $totalExpectedWeight,
                     'actual_weight' => $totalActualWeight,

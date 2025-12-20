@@ -15,12 +15,14 @@ class ReturnItem extends Model
         'product_id',
         'original_invoice_item_id',
         'target_shipment_item_id',
-        'quantity',
+        'cartons',      // Number of cartons returned
+        'quantity',     // Actual weight returned (cartons * weight_per_unit)
         'unit_price',
         'subtotal',
     ];
 
     protected $casts = [
+        'cartons' => 'integer',
         'quantity' => 'decimal:3',
         'unit_price' => 'decimal:2',
         'subtotal' => 'decimal:2',

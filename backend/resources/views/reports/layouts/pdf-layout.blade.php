@@ -354,7 +354,7 @@
 <body>
     {{-- Header --}}
     <div class="header">
-        <div class="company-name">{{ config('app.name', 'نظام إدارة المخزون') }}</div>
+        <div class="company-name"> الكواتيحي/ ElKawatihy </div>
         <div class="report-title">@yield('report-title')</div>
         <div class="report-date">@yield('report-date')</div>
     </div>

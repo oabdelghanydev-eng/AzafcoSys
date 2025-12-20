@@ -351,7 +351,7 @@
                         @foreach($shipment->items as $index => $item)
                             <tr>
                                 <td class="text-center">{{ $index + 1 }}</td>
-                                <td>{{ $item->product->name ?? $item->product->name_en }}</td>
+                                <td>{{ $item->product->bilingual_name }}</td>
                                 <td class="text-center">{{ number_format($item->cartons) }}</td>
                                 <td class="text-center">{{ number_format($item->weight_per_unit, 2) }} kg</td>
                             </tr>
@@ -471,7 +471,7 @@
                 <tbody>
                     @foreach($remainingStock as $stock)
                         <tr>
-                            <td>{{ $stock->product->name ?? $stock->product->name_en }}</td>
+                            <td>{{ $stock->product->bilingual_name }}</td>
                             <td class="text-center">{{ number_format($stock->remaining_cartons, 0) }}</td>
                             <td class="text-center">{{ number_format($stock->total_weight_kg, 2) }} kg</td>
                             <td

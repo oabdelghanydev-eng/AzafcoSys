@@ -81,9 +81,10 @@ class ShipmentSettlementReportService
         $data['totalWeightOut'] = $this->calculateTotalWeightOut($shipment, $data);
         $data['weightDifference'] = $data['totalWeightIn'] - $data['totalWeightOut'];
 
-        // 6. Supplier Expenses
-        $supplierExpenses = Expense::where('shipment_id', $shipment->id)
+        // 6. Supplier Expenses (during shipment period)
+        $supplierExpenses = Expense::where('supplier_id', $shipment->supplier_id)
             ->where('type', 'supplier')
+            ->whereBetween('date', [$shipment->date, now()])
             ->get();
         $data['supplierExpenses'] = $supplierExpenses;
         $data['totalSupplierExpenses'] = $supplierExpenses->sum('amount');
@@ -112,7 +113,7 @@ class ShipmentSettlementReportService
      */
     private function getSalesByProduct(Shipment $shipment)
     {
-        return DB::table('invoice_items')
+        $sales = DB::table('invoice_items')
             ->join('shipment_items', 'invoice_items.shipment_item_id', '=', 'shipment_items.id')
             ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'shipment_items.product_id', '=', 'products.id')
@@ -120,14 +121,21 @@ class ShipmentSettlementReportService
             ->where('invoices.status', 'active')
             ->selectRaw('
                 products.id as product_id,
-                COALESCE(products.name, products.name_en) as product_name,
-                SUM(invoice_items.quantity) as quantity,
-                SUM(invoice_items.quantity * shipment_items.weight_per_unit) as weight,
+                products.name as name_ar,
+                products.name_en as name_en,
+                SUM(invoice_items.cartons) as quantity,
+                SUM(invoice_items.quantity) as weight,
                 SUM(invoice_items.subtotal) as total,
                 AVG(invoice_items.unit_price) as avg_price
             ')
             ->groupBy('products.id', 'products.name', 'products.name_en')
             ->get();
+
+        // Add bilingual product_name
+        return $sales->map(function ($sale) {
+            $sale->product_name = trim($sale->name_ar) . ' / ' . trim($sale->name_en);
+            return $sale;
+        });
     }
 
     /**
@@ -158,7 +166,7 @@ class ShipmentSettlementReportService
     private function calculateTotalWeightIn(Shipment $shipment, array $data): float
     {
         $incomingWeight = $shipment->items->sum(function ($item) {
-            return $item->initial_quantity * $item->weight_per_unit;
+            return $item->cartons * $item->weight_per_unit;
         });
 
         // Get weight_per_unit from fromShipmentItem relationship

@@ -39,6 +39,22 @@ class Product extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Get bilingual name (Arabic / English)
+     * Example: سيلفر / SILVER
+     */
+    public function getBilingualNameAttribute(): string
+    {
+        $arabic = $this->name ?? '';
+        $english = $this->name_en ?? '';
+
+        if ($arabic && $english) {
+            return "{$arabic} / {$english}";
+        }
+
+        return $arabic ?: $english ?: 'N/A';
+    }
+
     // Get current stock (sum of all remaining cartons)
     public function getCurrentStockAttribute(): int
     {

@@ -145,7 +145,7 @@
                 <tbody>
                     @foreach($previousShipmentReturns as $return)
                         <tr>
-                            <td>{{ $return->product->name_ar ?? 'N/A' }}</td>
+                            <td>{{ $return->product->bilingual_name }}</td>
                             <td class="text-center">{{ number_format($return->quantity, 2) }}</td>
                             <td class="text-center">{{ number_format($return->quantity * ($return->weight_per_unit ?? 0), 2) }} kg
                             </td>
@@ -202,7 +202,7 @@
                 <tbody>
                     @foreach($carryoverOut as $co)
                         <tr>
-                            <td>{{ $co->product->name ?? $co->product->name_en }}</td>
+                            <td>{{ $co->product->bilingual_name }}</td>
                             <td class="text-center">{{ number_format($co->quantity, 0) }}</td>
                             <td class="text-center">{{ number_format($co->fromShipmentItem->weight_per_unit ?? 0, 2) }} kg</td>
                         </tr>
@@ -242,7 +242,7 @@
                 <tbody>
                     @foreach($carryoverIn as $ci)
                         <tr>
-                            <td>{{ $ci->product->name ?? $ci->product->name_en }}</td>
+                            <td>{{ $ci->product->bilingual_name }}</td>
                             <td class="text-center">{{ number_format($ci->quantity, 0) }}</td>
                             <td class="text-center">{{ number_format($ci->fromShipmentItem->weight_per_unit ?? 0, 2) }} kg</td>
                         </tr>
@@ -292,12 +292,13 @@
                 @foreach($shipment->items as $item)
                     @php
                         $weightIn = $item->cartons * $item->weight_per_unit;
-                        $weightOut = $salesByProduct->where('product_id', $item->product_id)->first()->weight ?? 0;
+                        $saleData = $salesByProduct->where('product_id', $item->product_id)->first();
+                        $weightOut = $saleData ? ($saleData->weight ?? 0) : 0;
                         $diff = $weightIn - $weightOut;
                         $wastagePercent = $weightIn > 0 ? ($diff / $weightIn) * 100 : 0;
                     @endphp
                     <tr>
-                        <td>{{ $item->product->name ?? $item->product->name_en }}</td>
+                        <td>{{ $item->product->bilingual_name }}</td>
                         <td class="text-center">{{ number_format($weightIn, 2) }} kg</td>
                         <td class="text-center">{{ number_format($weightOut, 2) }} kg</td>
                         <td class="text-center {{ $diff > 0 ? 'negative' : ($diff < 0 ? 'positive' : '') }}">
