@@ -75,7 +75,6 @@
 | [2025-12-19_Invoice_API_Changes.md](99-Reviews_Audit/2025-12-19_Invoice_API_Changes.md) | آخر تغييرات API |
 | [Backend_Compliance_Log.md](99-Reviews_Audit/Backend_Compliance_Log.md) | سجل توافق Backend |
 | [Frontend_Compliance_Log.md](99-Reviews_Audit/Frontend_Compliance_Log.md) | سجل توافق Frontend |
-| [_archive/](99-Reviews_Audit/_archive/) | ملفات مؤرشفة |
 
 ---
 
@@ -91,6 +90,6 @@
 
 ## 📊 إحصائيات
 
-- **إجمالي الملفات:** 25 ملف
-- **المجلدات:** 6 مجلدات رئيسية
-- **آخر تحديث:** 2025-12-19
+- **إجمالي الملفات:** 38 ملف
+- **المجلدات:** 7 مجلدات رئيسية
+- **آخر تحديث:** 2025-12-22

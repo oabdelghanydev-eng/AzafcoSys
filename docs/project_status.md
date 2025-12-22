@@ -99,11 +99,17 @@
 ### Documentation
 ```
 docs/
+├── 00-Core/                       ← Database Schema, Architecture
+├── 01-Business_Logic/             ← Business rules
+├── 02-Technical_Specs/            ← Backend Implementation, API
+├── 03-Security/                   ← Authorization, Disaster Recovery
+├── 04-Operations/                 ← DevOps, Performance
+├── 05-Development/                ← Epic Roadmap, Testing
+├── 99-Reviews_Audit/              ← Compliance Logs
 ├── frontend_developer_guide.md    ← دليل الـ Frontend الكامل
-├── مهام_لم_تكتمل/
-│   └── pending_reports.md         ← المهام المؤجلة
-├── business_logic/                ← Business rules
-└── epics/                         ← Feature specifications
+├── project_status.md              ← هذا الملف
+└── مهام_لم_تكتمل/
+    └── pending_reports.md         ← المهام المؤجلة
 ```
 
 ### Configuration
@@ -213,7 +219,7 @@ Hostinger Startup Cloud
 | API Docs (Live) | http://localhost:8001/docs/api |
 | Frontend Guide | docs/frontend_developer_guide.md |
 | Pending Tasks | docs/مهام_لم_تكتمل/pending_reports.md |
-| Business Logic | docs/business_logic/ |
+| Business Logic | docs/01-Business_Logic/ |
 
 ---
 
@@ -236,5 +242,5 @@ php artisan test
 
 ---
 
-**Last Updated:** 2025-12-20 22:06
+**Last Updated:** 2025-12-22
 **Status:** ✅ Backend Complete → 🚀 Ready for Frontend
