@@ -1,0 +1,311 @@
+⚠️ READ ALL ATTACHED FILES BEFORE RESPONDING.
+Do not assume anything not specified in the files.
+Follow the Architecture and Design Tokens strictly - do not invent!
+
+1. **Dark Mode**: Light mode only for now. No dark mode toggle needed.
+2. **Mobile Optimization**: 
+   - ALL pages must be mobile responsive using Tailwind responsive classes (sm:, md:, lg:)
+   - DataTables should switch to card layout on mobile
+   - Transaction entry forms (Invoices, Collections, Expenses, Transfers) should be mobile-OPTIMIZED with:
+     - Sticky submit button fixed at bottom
+     - Numeric keyboard trigger (inputMode="decimal") for all money/quantity inputs
+     - Large touch targets (minimum 44px height)
+   
+   **Invoice Creation Form - Special Design:**
+   - NO step wizard needed - use single page layout
+   - Product selection: Show ONLY products with available stock as buttons (from GET /api/shipments/stock)
+   - Each product button shows: Product name + remaining cartons
+   - Layout: 3 buttons per row on mobile
+   - When product is selected:
+     - Weight field auto-fills from shipment data (editable if needed)
+     - Show max available cartons as hint
+     - Validate cartons doesn't exceed available stock
+   - Cart section shows added items with delete option
+   - Sticky total + save button at bottom
+3. **Framer Motion**: Skip animations for now. Focus on functionality first. We can add animations later.
+
+---
+
+You are an expert Next.js 14 developer.
+Your task: Build a complete Next.js frontend following the architecture defined in the attached `architecture.md`.
+
+## Context:
+- Backend is 100% complete (Laravel API at http://localhost:8001/api)
+- Types are ready in attached `index.ts`
+- Design tokens in attached `design-tokens.css`
+- UX patterns in attached `patterns.md`
+- Component interfaces in attached `components-inventory.md`
+
+## Tech Stack:
+- Next.js 14 (App Router)
+- TypeScript (strict mode)
+- Tailwind CSS + shadcn/ui
+- TanStack Query v5 (React Query)
+- React Hook Form + Zod
+- Zustand (client state)
+- next-intl (for i18n - English/Arabic)
+
+## Golden Rules (DO NOT BREAK):
+1. **Use Design Tokens** - import CSS variables from design-tokens.css, no hardcoded colors
+2. **Components are dumb, logic in hooks** - components for UI only
+3. **API is source of truth** - do NOT duplicate business logic
+4. **Follow component inventory** - use interfaces from components-inventory.md
+5. **Use TypeScript types** - import from types/index.ts
+6. **Bilingual** - Support English (default, LTR) and Arabic (RTL) with language toggle
+
+## Auth Configuration:
+```typescript
+// Cookie-based auth (Laravel Sanctum)
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api';
+
+// CSRF flow:
+// 1. GET /sanctum/csrf-cookie first
+// 2. All requests with credentials: 'include'
+// 3. Handle 401 → redirect to login
+```
+
+---
+
+## API ENDPOINTS REFERENCE:
+
+### Authentication:
+```
+POST /api/auth/login          - { email, password } → { token, user }
+POST /api/auth/logout         - Logout
+GET  /api/auth/me             - Get current user with permissions
+GET  /api/auth/google/redirect - Google OAuth redirect
+```
+
+### Dashboard:
+```
+GET /api/dashboard            - Stats: customers_count, suppliers_count, today_sales, today_collections, etc.
+GET /api/dashboard/activity   - Recent invoices, collections, expenses
+```
+
+### Daily Report:
+```
+GET  /api/daily/current       - Current open day
+GET  /api/daily/available     - Available dates to open
+POST /api/daily/open          - { date } → Open day
+POST /api/daily/close         - Close current day
+GET  /api/reports/daily/{date}/pdf - Download PDF
+```
+
+### Invoices:
+```
+GET    /api/invoices              - List (filters: customer_id, date_from, date_to, status, unpaid_only)
+POST   /api/invoices              - Create { customer_id, items: [{product_id, cartons, total_weight, price}], discount }
+GET    /api/invoices/{id}         - Detail
+POST   /api/invoices/{id}/cancel  - Cancel invoice
+```
+
+### Collections:
+```
+GET    /api/collections                    - List
+POST   /api/collections                    - Create { customer_id, amount, payment_method, distribution_method }
+GET    /api/collections/{id}               - Detail with allocations
+POST   /api/collections/{id}/cancel        - Cancel
+GET    /api/collections/unpaid-invoices?customer_id=1 - Get unpaid invoices for customer
+```
+
+### Shipments:
+```
+GET    /api/shipments              - List (filters: status, supplier_id)
+POST   /api/shipments              - Create { supplier_id, date, items: [{product_id, cartons, weight_per_unit}] }
+GET    /api/shipments/{id}         - Detail
+POST   /api/shipments/{id}/close   - Close shipment
+POST   /api/shipments/{id}/settle  - Settle { next_shipment_id }
+POST   /api/shipments/{id}/unsettle - Unsettle
+GET    /api/shipments/stock        - Current stock for FIFO
+```
+
+### Customers:
+```
+GET    /api/customers       - List (filters: search, is_active)
+POST   /api/customers       - Create { name, phone, address, opening_balance }
+GET    /api/customers/{id}  - Detail
+PUT    /api/customers/{id}  - Update
+DELETE /api/customers/{id}  - Delete
+GET    /api/reports/customer/{id} - Statement
+```
+
+### Suppliers:
+```
+GET    /api/suppliers       - List
+POST   /api/suppliers       - Create { name, phone, opening_balance }
+GET    /api/suppliers/{id}  - Detail
+PUT    /api/suppliers/{id}  - Update
+GET    /api/reports/supplier/{id} - Statement
+```
+
+### Expenses:
+```
+GET    /api/expenses       - List (filters: type, supplier_id)
+POST   /api/expenses       - Create { type, supplier_id?, amount, description, payment_method }
+GET    /api/expenses/{id}  - Detail
+POST   /api/expenses/{id}/cancel - Cancel
+```
+Types: 'company', 'supplier', 'supplier_payment'
+
+### Returns:
+```
+GET    /api/returns        - List
+POST   /api/returns        - Create { customer_id, original_invoice_id?, items: [{invoice_item_id, cartons}] }
+GET    /api/returns/{id}   - Detail
+POST   /api/returns/{id}/cancel - Cancel
+```
+
+### Accounts/Treasury:
+```
+GET  /api/accounts/summary      - { cashbox: {balance}, bank: {balance}, total }
+GET  /api/cashbox               - Cashbox balance
+GET  /api/cashbox/transactions  - Cashbox transactions
+POST /api/cashbox/deposit       - { amount, notes }
+POST /api/cashbox/withdraw      - { amount, notes }
+GET  /api/bank                  - Bank balance
+GET  /api/bank/transactions     - Bank transactions
+POST /api/bank/deposit          - { amount, notes }
+POST /api/bank/withdraw         - { amount, notes }
+POST /api/transfers             - { from_account_id, to_account_id, amount, notes }
+```
+
+### Products:
+```
+GET  /api/products  - List all products
+```
+
+### Settings:
+```
+GET  /api/settings  - { company_name, currency_symbol, etc. }
+PUT  /api/settings  - Update settings
+```
+
+---
+
+## REQUIRED PAGES:
+
+### 1. Project Setup
+```bash
+npx create-next-app@latest . --typescript --tailwind --app --src-dir --use-npm
+npx shadcn@latest init
+npx shadcn@latest add button card input label select table tabs toast sheet dialog dropdown-menu avatar badge skeleton
+npm install @tanstack/react-query zustand react-hook-form @hookform/resolvers zod lucide-react next-intl
+```
+
+### 2. Layout System
+
+#### Root Layout:
+- Language toggle (English/Arabic)
+- When English: LTR direction
+- When Arabic: RTL direction
+- Cairo font for Arabic, Inter for English
+- Toast provider (sonner)
+- React Query provider
+
+#### Dashboard Layout:
+- Collapsible sidebar (280px expanded, 64px collapsed)
+- Header with: language toggle, user avatar, working date display, logout button
+- Permission-based menu items (hide if no permission)
+- Mobile: drawer sidebar with hamburger menu
+
+### 3. Auth
+
+#### Login Page (/login):
+- Email/Password form with validation
+- Google OAuth button
+- Error display for failed login
+- Redirect to dashboard after success
+- Store token in Zustand store + localStorage
+
+### 4. Dashboard (/)
+- 4 Summary cards: Today's Sales, Today's Collections, Invoices Count, Cashbox Balance
+- Quick action buttons: New Invoice, New Collection, Open Day
+- Recent activity list (last 5 invoices, collections, expenses)
+
+### 5. Daily Report (/daily)
+- Available dates dropdown
+- "Open Day" button
+- Current day summary if open
+- "Close Day" button with confirmation
+- PDF download button
+
+### 6. Invoices Module (/invoices)
+- List: DataTable with Invoice#, Customer, Date, Total, Paid, Balance, Status
+- Create: Customer select, dynamic items table, discount, calculated totals
+- Details: Header info, items table, payment history, cancel button
+
+### 7. Collections Module (/collections)
+- List: Receipt#, Customer, Date, Amount, Payment Method, Distribution, Status
+- Create: Customer, Amount, Payment Method, Distribution Method
+- Details: Allocations breakdown, cancel action
+
+### 8. Shipments Module (/shipments)
+- List with status badges (open=blue, closed=yellow, settled=green)
+- Create: Supplier, Date, Items (product, cartons, weight)
+- Details: Items with remaining quantities, Close/Settle/Unsettle actions
+
+### 9. Other Modules:
+- Customers (/customers) - CRUD + balance display + statement link
+- Suppliers (/suppliers) - CRUD + statement link
+- Expenses (/expenses) - CRUD with type filter
+- Returns (/returns) - CRUD
+- Accounts (/accounts) - Cashbox/Bank balances, transactions, Transfer form
+
+### 10. Reports Module (/reports)
+- Reports index page with cards linking to:
+  - Daily Closing Report (date picker → PDF download)
+  - Customer Statement (customer select → date range → PDF)
+  - Supplier Statement (supplier select → date range → PDF)
+  - Shipment Settlement Report (shipment select → PDF)
+- Show "Coming soon" toast if report not available
+
+---
+
+## Component Patterns:
+
+### Loading:
+```tsx
+<LoadingState message="Loading..." />
+```
+
+### Empty:
+```tsx
+<EmptyState
+  icon={<FileX className="h-12 w-12" />}
+  title="No invoices found"
+  description="Create a new invoice to get started"
+  action={{ label: "New Invoice", href: "/invoices/new" }}
+/>
+```
+
+### Error:
+```tsx
+<ErrorState
+  title="Error"
+  message={error.message}
+  retry={() => refetch()}
+/>
+```
+
+---
+
+## OUTPUT REQUIREMENTS:
+
+Create a complete, working Next.js project with:
+✅ All pages listed above
+✅ API integration with React Query
+✅ Error handling (toast notifications)
+✅ Loading states (spinner)
+✅ Empty states
+✅ Permission-based UI (hide buttons if no permission)
+✅ Responsive design (mobile-first)
+✅ Bilingual (English default + Arabic with RTL)
+✅ Language toggle in header
+
+File structure must follow attached `architecture.md`.
+Use types from attached `index.ts`.
+Follow patterns from attached `patterns.md`.
+Use component interfaces from attached `components-inventory.md`.
+Apply design tokens from attached `design-tokens.css`.
+
+

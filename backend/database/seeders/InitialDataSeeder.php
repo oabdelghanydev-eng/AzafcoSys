@@ -11,12 +11,13 @@ class InitialDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // 9 Fixed Products (الأصناف الثابتة)
+        // 10 Fixed Products (الأصناف الثابتة)
         $products = [
             ['name' => 'بلطي', 'name_en' => 'TILAPIA', 'category' => 'سمك'],
             ['name' => 'مبروكة', 'name_en' => 'ROHO', 'category' => 'سمك'],
             ['name' => 'بني', 'name_en' => 'KATLA', 'category' => 'سمك'],
-            ['name' => 'بوري', 'name_en' => 'BIAH', 'category' => 'سمك'],
+            ['name' => 'البياح', 'name_en' => 'BAYAH', 'category' => 'سمك'],
+            ['name' => 'بوري', 'name_en' => 'BOORI', 'category' => 'سمك'],
             ['name' => 'بليمي', 'name_en' => 'BALIMI', 'category' => 'سمك'],
             ['name' => 'سيلفر', 'name_en' => 'SELVER', 'category' => 'سمك'],
             ['name' => 'قاروص', 'name_en' => 'SEA BASS', 'category' => 'سمك'],
@@ -79,8 +80,8 @@ class InitialDataSeeder extends Seeder
         }
 
         $this->command->info('✅ Initial data seeded successfully!');
-        $this->command->info('   - 9 Products');
+        $this->command->info('   - 10 Products');
         $this->command->info('   - 2 Accounts (Cashbox + Bank)');
-        $this->command->info('   - '.count($settings).' Settings');
+        $this->command->info('   - ' . count($settings) . ' Settings');
     }
 }

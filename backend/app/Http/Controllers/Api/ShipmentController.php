@@ -385,11 +385,11 @@ class ShipmentController extends Controller
 
             return [
                 'product_id' => $first->product_id,
-                'product_name' => $first->product->name,
+                'product_name' => $first->product->name_en ?? $first->product->name,
                 'total_quantity' => $productItems->sum('remaining_cartons'), // Sum cartons
                 'items' => ShipmentItemResource::collection($productItems),
             ];
-        })->values();
+        })->sortBy('product_id')->values();
 
         return $this->success($grouped);
     }

@@ -1,0 +1,151 @@
+﻿
+D:\System\nextjs-app\src\app\customers\[id]\edit\page.tsx
+  34:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\System\nextjs-app\src\app\customers\[id]\edit\page.tsx:34:13
+  32 |     useEffect(() => {
+  33 |         if (customer) {
+> 34 |             setName(customer.name || '');
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  35 |             setPhone(customer.phone || '');
+  36 |             setAddress(customer.address || '');
+  37 |             setIsActive(customer.is_active ?? true);  react-hooks/set-state-in-effect
+
+D:\System\nextjs-app\src\app\customers\[id]\page.tsx
+  21:11  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\app\expenses\[id]\page.tsx
+   6:24  warning  'Loader2' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  22:11  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\app\invoices\[id]\page.tsx
+    5:33  warning  'Loader2' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+   35:11  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   48:25  error    Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  172:63  error    Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+  194:92  error    Unexpected any. Specify a different type                                           @typescript-eslint/no-explicit-any
+
+D:\System\nextjs-app\src\app\invoices\new\page.tsx
+  38:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\System\nextjs-app\src\app\invoices\page.tsx
+  38:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\System\nextjs-app\src\app\page.tsx
+  19:38  warning  'formatDateShort' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\app\returns\[id]\page.tsx
+   6:24  warning  'Loader2' is defined but never used. Allowed unused vars must match /^_/u          @typescript-eslint/no-unused-vars
+  29:11  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\app\settings\page.tsx
+  27:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\System\nextjs-app\src\app\settings\page.tsx:27:13
+  25 |     useEffect(() => {
+  26 |         if (settings) {
+> 27 |             setCompanyName(settings.company_name || '');
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  28 |             setPhone(settings.phone || '');
+  29 |             setAddress(settings.address || '');
+  30 |             setCurrencySymbol(settings.currency_symbol || 'QAR');  react-hooks/set-state-in-effect
+  45:25  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-explicit-any
+
+D:\System\nextjs-app\src\app\shipments\[id]\page.tsx
+  20:15  warning  'Shipment' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\app\suppliers\[id]\edit\page.tsx
+  34:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\System\nextjs-app\src\app\suppliers\[id]\edit\page.tsx:34:13
+  32 |     useEffect(() => {
+  33 |         if (supplier) {
+> 34 |             setName(supplier.name || '');
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  35 |             setPhone(supplier.phone || '');
+  36 |             setAddress(supplier.address || '');
+  37 |             setIsActive(supplier.is_active ?? true);  react-hooks/set-state-in-effect
+
+D:\System\nextjs-app\src\app\suppliers\[id]\page.tsx
+  20:11  warning  'router' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\components\layout\dashboard-shell.tsx
+  42:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\System\nextjs-app\src\components\layout\dashboard-shell.tsx:42:9
+  40 |     // Prevent hydration mismatch by only rendering after mount
+  41 |     useEffect(() => {
+> 42 |         setMounted(true);
+     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  43 |     }, []);
+  44 |
+  45 |     // Auth check for protected routes  react-hooks/set-state-in-effect
+
+D:\System\nextjs-app\src\components\layout\header.tsx
+  49:18  warning  'error' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+
+D:\System\nextjs-app\src\components\shared\language-toggle.tsx
+  21:11  warning  'pathname' is assigned a value but never used. Allowed unused vars must match /^_/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  32:9   error    Error: This value cannot be modified
+
+Modifying a variable defined outside a component or hook is not allowed. Consider using an effect.
+
+D:\System\nextjs-app\src\components\shared\language-toggle.tsx:32:9
+  30 |     const handleLocaleChange = (locale: string) => {
+  31 |         // Set cookie
+> 32 |         document.cookie = `locale=${locale}; path=/; max-age=31536000`;
+     |         ^^^^^^^^ value cannot be modified
+  33 |
+  34 |         // Update HTML dir attribute
+  35 |         const dir = locales.find(l => l.code === locale)?.dir || 'ltr';  react-hooks/immutability
+  36:9   error    Error: This value cannot be modified
+
+Modifying a variable defined outside a component or hook is not allowed. Consider using an effect.
+
+D:\System\nextjs-app\src\components\shared\language-toggle.tsx:36:9
+  34 |         // Update HTML dir attribute
+  35 |         const dir = locales.find(l => l.code === locale)?.dir || 'ltr';
+> 36 |         document.documentElement.dir = dir;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^ value cannot be modified
+  37 |         document.documentElement.lang = locale;
+  38 |
+  39 |         setCurrentLocale(locale);       react-hooks/immutability
+  37:9   error    Error: This value cannot be modified
+
+Modifying a variable defined outside a component or hook is not allowed. Consider using an effect.
+
+D:\System\nextjs-app\src\components\shared\language-toggle.tsx:37:9
+  35 |         const dir = locales.find(l => l.code === locale)?.dir || 'ltr';
+  36 |         document.documentElement.dir = dir;
+> 37 |         document.documentElement.lang = locale;
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^ value cannot be modified
+  38 |
+  39 |         setCurrentLocale(locale);
+  40 |                                            react-hooks/immutability
+
+ظ£û 25 problems (13 errors, 12 warnings)
+
