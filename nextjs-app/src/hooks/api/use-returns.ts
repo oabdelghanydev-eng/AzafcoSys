@@ -65,6 +65,8 @@ export function useCreateReturn() {
             queryClient.invalidateQueries({ queryKey: ['returns'] });
             queryClient.invalidateQueries({ queryKey: ['customers'] }); // Balance changes
             queryClient.invalidateQueries({ queryKey: ['shipments'] }); // Stock may be restored
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }
@@ -81,6 +83,9 @@ export function useCancelReturn() {
             queryClient.invalidateQueries({ queryKey: ['returns'] });
             queryClient.invalidateQueries({ queryKey: ['return', id] });
             queryClient.invalidateQueries({ queryKey: ['customers'] });
+            queryClient.invalidateQueries({ queryKey: ['shipments'] }); // Stock changes
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }

@@ -65,6 +65,8 @@ export function useCreateCollection() {
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
             queryClient.invalidateQueries({ queryKey: ['customers'] });
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }
@@ -82,6 +84,9 @@ export function useCancelCollection() {
             queryClient.invalidateQueries({ queryKey: ['collection', id] });
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
             queryClient.invalidateQueries({ queryKey: ['customers'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] }); // Account balance
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }

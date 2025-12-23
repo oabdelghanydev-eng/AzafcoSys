@@ -68,6 +68,8 @@ export function useCreateShipment() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['shipments'] });
             queryClient.invalidateQueries({ queryKey: ['stock'] });
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] }); // Supplier balance
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
         },
     });
 }
@@ -83,6 +85,8 @@ export function useCloseShipment() {
         onSuccess: (_, id) => {
             queryClient.invalidateQueries({ queryKey: ['shipments'] });
             queryClient.invalidateQueries({ queryKey: ['shipment', id] });
+            queryClient.invalidateQueries({ queryKey: ['stock'] }); // Stock becomes available
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
         },
     });
 }
@@ -99,6 +103,8 @@ export function useSettleShipment() {
             queryClient.invalidateQueries({ queryKey: ['shipments'] });
             queryClient.invalidateQueries({ queryKey: ['shipment', id] });
             queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] }); // Account balance
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
         },
     });
 }

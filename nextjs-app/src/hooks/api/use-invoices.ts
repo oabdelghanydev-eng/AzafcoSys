@@ -74,6 +74,9 @@ export function useCreateInvoice() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
             queryClient.invalidateQueries({ queryKey: ['shipments'] }); // Stock changes
+            queryClient.invalidateQueries({ queryKey: ['customers'] }); // Balance changes
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }
@@ -91,6 +94,9 @@ export function useCancelInvoice() {
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
             queryClient.invalidateQueries({ queryKey: ['invoice', id] });
             queryClient.invalidateQueries({ queryKey: ['shipments'] }); // Stock restored
+            queryClient.invalidateQueries({ queryKey: ['customers'] }); // Balance changes
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }

@@ -57,6 +57,8 @@ export function useCreateExpense() {
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
             queryClient.invalidateQueries({ queryKey: ['suppliers'] }); // Balance changes for supplier expenses
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }
@@ -73,6 +75,9 @@ export function useCancelExpense() {
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
             queryClient.invalidateQueries({ queryKey: ['expense', id] });
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['suppliers'] }); // Balance changes
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['daily'] }); // Daily report
         },
     });
 }

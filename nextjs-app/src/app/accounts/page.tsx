@@ -2,51 +2,58 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Wallet, Building2, ArrowRightLeft, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import {
+    Wallet,
+    Building2,
+    ArrowRight,
+    ArrowLeft,
+    TrendingUp,
+    TrendingDown,
+    Loader2,
+    ArrowRightLeft,
+    RefreshCw
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
-    Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatCard } from '@/components/shared/stat-card';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
 import { useAccountsSummary, useCashboxTransactions, useTransfer } from '@/hooks/api/use-accounts';
+import { cn } from '@/lib/utils';
 
-function TransferDialog() {
+// Quick amount buttons
+const QUICK_AMOUNTS = [100, 500, 1000, 5000];
+
+function TransferSection({ cashboxBalance, bankBalance }: { cashboxBalance: number; bankBalance: number }) {
     const [amount, setAmount] = useState('');
-    const [fromAccount, setFromAccount] = useState('');
-    const [toAccount, setToAccount] = useState('');
+    const [direction, setDirection] = useState<'to_bank' | 'to_cashbox'>('to_bank');
     const [notes, setNotes] = useState('');
-    const [open, setOpen] = useState(false);
     const transfer = useTransfer();
 
     const handleTransfer = async () => {
-        if (!amount || !fromAccount || !toAccount) {
-            toast.error('Please fill all fields');
+        const transferAmount = parseFloat(amount);
+        if (!transferAmount || transferAmount <= 0) {
+            toast.error('Please enter a valid amount');
             return;
         }
-        if (fromAccount === toAccount) {
-            toast.error('Cannot transfer to the same account');
+
+        const fromBalance = direction === 'to_bank' ? cashboxBalance : bankBalance;
+        if (transferAmount > fromBalance) {
+            toast.error(`Insufficient balance. Maximum: ${formatMoney(fromBalance)}`);
             return;
         }
 
         try {
             await transfer.mutateAsync({
-                from_account_id: fromAccount === 'cashbox' ? 1 : 2,
-                to_account_id: toAccount === 'cashbox' ? 1 : 2,
-                amount: parseFloat(amount),
-                notes,
+                from_account_id: direction === 'to_bank' ? 1 : 2,
+                to_account_id: direction === 'to_bank' ? 2 : 1,
+                amount: transferAmount,
+                notes: notes || `Transfer ${direction === 'to_bank' ? 'to Bank' : 'to Cashbox'}`,
             });
-            toast.success('Transfer completed');
-            setOpen(false);
+            toast.success('Transfer completed!');
             setAmount('');
             setNotes('');
         } catch (err) {
@@ -55,76 +62,169 @@ function TransferDialog() {
         }
     };
 
+    const handleQuickAmount = (value: number) => {
+        setAmount(value.toString());
+    };
+
+    const toggleDirection = () => {
+        setDirection(prev => prev === 'to_bank' ? 'to_cashbox' : 'to_bank');
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="touch-target">
-                    <ArrowRightLeft className="mr-2 h-4 w-4" />
-                    Transfer
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Transfer Funds</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                        <Label>From Account</Label>
-                        <Select value={fromAccount} onValueChange={setFromAccount}>
-                            <SelectTrigger className="touch-target">
-                                <SelectValue placeholder="Select account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="cashbox">Cashbox</SelectItem>
-                                <SelectItem value="bank">Bank</SelectItem>
-                            </SelectContent>
-                        </Select>
+        <Card className="overflow-hidden">
+            <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-primary/10">
+                <CardTitle className="flex items-center gap-2">
+                    <ArrowRightLeft className="h-5 w-5" />
+                    Quick Transfer
+                </CardTitle>
+                <CardDescription>Transfer funds between accounts instantly</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                {/* Account Cards with Direction Control */}
+                <div className="flex items-center gap-2 sm:gap-4 mb-6">
+                    {/* From Account */}
+                    <div
+                        className={cn(
+                            "flex-1 p-4 rounded-xl border-2 transition-all duration-300",
+                            direction === 'to_bank'
+                                ? "bg-green-50 border-green-300 shadow-md"
+                                : "bg-blue-50 border-blue-300 shadow-md"
+                        )}
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            {direction === 'to_bank' ? (
+                                <Wallet className="h-5 w-5 text-green-600" />
+                            ) : (
+                                <Building2 className="h-5 w-5 text-blue-600" />
+                            )}
+                            <span className="text-sm font-medium text-muted-foreground">From</span>
+                        </div>
+                        <p className="font-bold text-lg">
+                            {direction === 'to_bank' ? 'Cashbox' : 'Bank'}
+                        </p>
+                        <p className={cn(
+                            "text-sm font-semibold money",
+                            direction === 'to_bank' ? "text-green-600" : "text-blue-600"
+                        )}>
+                            {formatMoney(direction === 'to_bank' ? cashboxBalance : bankBalance)}
+                        </p>
                     </div>
-                    <div className="space-y-2">
-                        <Label>To Account</Label>
-                        <Select value={toAccount} onValueChange={setToAccount}>
-                            <SelectTrigger className="touch-target">
-                                <SelectValue placeholder="Select account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="cashbox">Cashbox</SelectItem>
-                                <SelectItem value="bank">Bank</SelectItem>
-                            </SelectContent>
-                        </Select>
+
+                    {/* Direction Toggle Button */}
+                    <button
+                        onClick={toggleDirection}
+                        className="group relative flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 active:scale-95"
+                    >
+                        <RefreshCw className="h-5 w-5 sm:h-6 sm:w-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 group-hover:rotate-180 transition-transform duration-500" />
+                    </button>
+
+                    {/* To Account */}
+                    <div
+                        className={cn(
+                            "flex-1 p-4 rounded-xl border-2 transition-all duration-300",
+                            direction === 'to_bank'
+                                ? "bg-blue-50 border-blue-300 shadow-md"
+                                : "bg-green-50 border-green-300 shadow-md"
+                        )}
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            {direction === 'to_bank' ? (
+                                <Building2 className="h-5 w-5 text-blue-600" />
+                            ) : (
+                                <Wallet className="h-5 w-5 text-green-600" />
+                            )}
+                            <span className="text-sm font-medium text-muted-foreground">To</span>
+                        </div>
+                        <p className="font-bold text-lg">
+                            {direction === 'to_bank' ? 'Bank' : 'Cashbox'}
+                        </p>
+                        <p className={cn(
+                            "text-sm font-semibold money",
+                            direction === 'to_bank' ? "text-blue-600" : "text-green-600"
+                        )}>
+                            {formatMoney(direction === 'to_bank' ? bankBalance : cashboxBalance)}
+                        </p>
                     </div>
-                    <div className="space-y-2">
-                        <Label>Amount</Label>
+                </div>
+
+                {/* Arrow Indicator */}
+                <div className="flex justify-center mb-4">
+                    <div className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
+                        "bg-muted"
+                    )}>
+                        {direction === 'to_bank' ? (
+                            <>
+                                <Wallet className="h-4 w-4 text-green-600" />
+                                <ArrowRight className="h-4 w-4 animate-pulse" />
+                                <Building2 className="h-4 w-4 text-blue-600" />
+                            </>
+                        ) : (
+                            <>
+                                <Building2 className="h-4 w-4 text-blue-600" />
+                                <ArrowLeft className="h-4 w-4 animate-pulse" />
+                                <Wallet className="h-4 w-4 text-green-600" />
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Quick Amount Buttons */}
+                <div className="flex gap-2 mb-4 flex-wrap">
+                    {QUICK_AMOUNTS.map((value) => (
+                        <Button
+                            key={value}
+                            variant={amount === value.toString() ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleQuickAmount(value)}
+                            className="flex-1 min-w-[70px]"
+                        >
+                            {value.toLocaleString()}
+                        </Button>
+                    ))}
+                </div>
+
+                {/* Amount Input */}
+                <div className="space-y-4">
+                    <div className="relative">
                         <Input
                             type="number"
                             inputMode="decimal"
-                            placeholder="0.00"
+                            placeholder="Enter amount..."
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
-                            className="touch-target"
+                            className="text-lg h-14 pr-16 text-center font-semibold"
                         />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                            QAR
+                        </span>
                     </div>
-                    <div className="space-y-2">
-                        <Label>Notes (optional)</Label>
-                        <Input
-                            placeholder="Transfer notes"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            className="touch-target"
-                        />
-                    </div>
+
+                    {/* Notes Input */}
+                    <Input
+                        placeholder="Add a note (optional)..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="h-12"
+                    />
+
+                    {/* Transfer Button */}
                     <Button
                         onClick={handleTransfer}
-                        disabled={transfer.isPending}
-                        className="w-full touch-target"
+                        disabled={transfer.isPending || !amount}
+                        className="w-full h-14 text-lg font-semibold"
+                        size="lg"
                     >
                         {transfer.isPending ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Transfer
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                            <ArrowRightLeft className="mr-2 h-5 w-5" />
+                        )}
+                        Transfer {amount ? formatMoney(parseFloat(amount) || 0) : ''}
                     </Button>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -133,7 +233,6 @@ export default function AccountsPage() {
     const { data: transactionsData } = useCashboxTransactions();
 
     const summary = summaryData?.data || { cashbox: { balance: 0 }, bank: { balance: 0 }, total: 0 };
-    // Extract transactions and ensure it's always an array
     const transactionsRaw = transactionsData?.data || transactionsData || [];
     const transactions = Array.isArray(transactionsRaw) ? transactionsRaw : [];
 
@@ -153,12 +252,10 @@ export default function AccountsPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold">Accounts</h1>
-                    <p className="text-muted-foreground">Treasury management</p>
-                </div>
-                <TransferDialog />
+            {/* Header */}
+            <div>
+                <h1 className="text-2xl font-bold">Accounts</h1>
+                <p className="text-muted-foreground">Treasury management & transfers</p>
             </div>
 
             {/* Balance Cards */}
@@ -167,21 +264,27 @@ export default function AccountsPage() {
                     title="Cashbox"
                     value={formatMoney(summary.cashbox?.balance || 0)}
                     icon={<Wallet className="h-5 w-5" />}
-                    className="bg-green-50 border-green-200"
+                    className="bg-gradient-to-br from-green-50 to-green-100 border-green-200"
                 />
                 <StatCard
                     title="Bank"
                     value={formatMoney(summary.bank?.balance || 0)}
                     icon={<Building2 className="h-5 w-5" />}
-                    className="bg-blue-50 border-blue-200"
+                    className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200"
                 />
                 <StatCard
                     title="Total"
                     value={formatMoney(summary.total || 0)}
                     icon={<Wallet className="h-5 w-5" />}
-                    className="bg-purple-50 border-purple-200"
+                    className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
                 />
             </div>
+
+            {/* Transfer Section */}
+            <TransferSection
+                cashboxBalance={summary.cashbox?.balance || 0}
+                bankBalance={summary.bank?.balance || 0}
+            />
 
             {/* Transactions */}
             <Card>
@@ -202,28 +305,34 @@ export default function AccountsPage() {
                                 transactions.slice(0, 10).map((t: { id: number; date: string; type: string; amount: number; notes?: string }) => (
                                     <div key={t.id} className="flex items-center justify-between py-3 border-b last:border-0">
                                         <div className="flex items-center gap-3">
-                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${t.type === 'deposit' ? 'bg-green-100 text-green-600' :
+                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${t.type === 'deposit' ? 'bg-green-100 text-green-600' :
                                                 t.type === 'withdraw' ? 'bg-red-100 text-red-600' :
                                                     'bg-blue-100 text-blue-600'
                                                 }`}>
-                                                {t.type === 'deposit' ? <TrendingUp className="h-4 w-4" /> :
-                                                    t.type === 'withdraw' ? <TrendingDown className="h-4 w-4" /> :
-                                                        <ArrowRightLeft className="h-4 w-4" />}
+                                                {t.type === 'deposit' ? <TrendingUp className="h-5 w-5" /> :
+                                                    t.type === 'withdraw' ? <TrendingDown className="h-5 w-5" /> :
+                                                        <ArrowRightLeft className="h-5 w-5" />}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-sm">{t.notes || t.type}</p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="font-medium">{t.notes || t.type}</p>
+                                                <p className="text-sm text-muted-foreground">
                                                     {formatDateShort(t.date)}
                                                 </p>
                                             </div>
                                         </div>
-                                        <p className={`font-semibold money ${t.type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                                        <p className={`font-semibold text-lg money ${t.type === 'deposit' ? 'text-green-600' : 'text-red-600'
                                             }`}>
                                             {t.type === 'deposit' ? '+' : '-'}{formatMoney(t.amount)}
                                         </p>
                                     </div>
                                 ))
                             )}
+                        </TabsContent>
+                        <TabsContent value="cashbox" className="py-8 text-center text-muted-foreground">
+                            Filter coming soon...
+                        </TabsContent>
+                        <TabsContent value="bank" className="py-8 text-center text-muted-foreground">
+                            Filter coming soon...
                         </TabsContent>
                     </Tabs>
                 </CardContent>
