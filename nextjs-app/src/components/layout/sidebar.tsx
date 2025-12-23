@@ -21,6 +21,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Calendar,
+    UserCog,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -101,6 +102,12 @@ const navItems: NavItem[] = [
         href: '/settings',
         icon: <Settings className="h-5 w-5" />,
         permission: 'settings.view',
+    },
+    {
+        title: 'Users',
+        href: '/users',
+        icon: <UserCog className="h-5 w-5" />,
+        permission: 'users.view',
     },
 ];
 

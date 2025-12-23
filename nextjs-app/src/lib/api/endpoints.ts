@@ -125,5 +125,23 @@ export const endpoints = {
         get: '/settings',
         update: '/settings',
     },
+
+    // Users
+    users: {
+        list: '/users',
+        create: '/users',
+        detail: (id: number) => `/users/${id}`,
+        update: (id: number) => `/users/${id}`,
+        delete: (id: number) => `/users/${id}`,
+        permissions: (id: number) => `/users/${id}/permissions`,
+        password: (id: number) => `/users/${id}/password`,
+        lock: (id: number) => `/users/${id}/lock`,
+        unlock: (id: number) => `/users/${id}/unlock`,
+    },
+
+    // Permissions
+    permissions: {
+        list: '/permissions',
+    },
 } as const;
 

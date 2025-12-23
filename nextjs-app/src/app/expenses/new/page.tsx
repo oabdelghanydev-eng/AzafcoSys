@@ -13,6 +13,7 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { LoadingState } from '@/components/shared/loading-state';
+import { RequireOpenDay } from '@/components/shared/require-open-day';
 import { formatMoney } from '@/lib/formatters';
 import { useSuppliers } from '@/hooks/api/use-suppliers';
 import { useCreateExpense } from '@/hooks/api/use-expenses';
@@ -79,126 +80,128 @@ export default function NewExpensePage() {
     }
 
     return (
-        <div className="space-y-6 pb-24">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/expenses">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Link>
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold">New Expense</h1>
-                    <p className="text-muted-foreground">Record a new expense</p>
-                </div>
-            </div>
-
-            {/* Form */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Expense Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {/* Type */}
-                    <div className="space-y-2">
-                        <Label>Expense Type *</Label>
-                        <Select value={type} onValueChange={setType}>
-                            <SelectTrigger className="touch-target">
-                                <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="company">Company Expense</SelectItem>
-                                <SelectItem value="supplier">Supplier Expense</SelectItem>
-                                <SelectItem value="supplier_payment">Supplier Payment</SelectItem>
-                            </SelectContent>
-                        </Select>
+        <RequireOpenDay>
+            <div className="space-y-6 pb-24">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/expenses">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold">New Expense</h1>
+                        <p className="text-muted-foreground">Record a new expense</p>
                     </div>
+                </div>
 
-                    {/* Supplier (conditional) */}
-                    {showSupplierSelect && (
+                {/* Form */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Expense Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {/* Type */}
                         <div className="space-y-2">
-                            <Label>Supplier *</Label>
-                            <Select value={supplierId} onValueChange={setSupplierId}>
+                            <Label>Expense Type *</Label>
+                            <Select value={type} onValueChange={setType}>
                                 <SelectTrigger className="touch-target">
-                                    <SelectValue placeholder="Select supplier" />
+                                    <SelectValue placeholder="Select type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {Array.isArray(suppliers) && suppliers.map((s: { id: number; name: string }) => (
-                                        <SelectItem key={s.id} value={s.id.toString()}>
-                                            {s.name}
-                                        </SelectItem>
-                                    ))}
+                                    <SelectItem value="company">Company Expense</SelectItem>
+                                    <SelectItem value="supplier">Supplier Expense</SelectItem>
+                                    <SelectItem value="supplier_payment">Supplier Payment</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                    )}
 
-                    {/* Description */}
-                    <div className="space-y-2">
-                        <Label>Description *</Label>
-                        <Input
-                            placeholder="e.g. Fuel, Office supplies"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="touch-target"
-                        />
-                    </div>
-
-                    {/* Amount */}
-                    <div className="space-y-2">
-                        <Label>Amount *</Label>
-                        <Input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            className="touch-target text-lg"
-                        />
-                    </div>
-
-                    {/* Payment Method */}
-                    <div className="space-y-2">
-                        <Label>Payment Method</Label>
-                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                            <SelectTrigger className="touch-target">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="cash">Cash</SelectItem>
-                                <SelectItem value="bank">Bank Transfer</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Sticky Bottom */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t lg:left-[280px]">
-                <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-                    <div>
-                        <p className="text-sm text-muted-foreground">Amount</p>
-                        <p className="text-2xl font-bold text-red-600 money">
-                            {formatMoney(parseFloat(amount) || 0)}
-                        </p>
-                    </div>
-                    <Button
-                        size="lg"
-                        onClick={handleSubmit}
-                        disabled={createExpense.isPending || !type || !amount || !description}
-                        className="touch-target px-8"
-                    >
-                        {createExpense.isPending ? (
-                            <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                            </>
-                        ) : (
-                            'Save Expense'
+                        {/* Supplier (conditional) */}
+                        {showSupplierSelect && (
+                            <div className="space-y-2">
+                                <Label>Supplier *</Label>
+                                <Select value={supplierId} onValueChange={setSupplierId}>
+                                    <SelectTrigger className="touch-target">
+                                        <SelectValue placeholder="Select supplier" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Array.isArray(suppliers) && suppliers.map((s: { id: number; name: string }) => (
+                                            <SelectItem key={s.id} value={s.id.toString()}>
+                                                {s.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         )}
-                    </Button>
+
+                        {/* Description */}
+                        <div className="space-y-2">
+                            <Label>Description *</Label>
+                            <Input
+                                placeholder="e.g. Fuel, Office supplies"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="touch-target"
+                            />
+                        </div>
+
+                        {/* Amount */}
+                        <div className="space-y-2">
+                            <Label>Amount *</Label>
+                            <Input
+                                type="number"
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                className="touch-target text-lg"
+                            />
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className="space-y-2">
+                            <Label>Payment Method</Label>
+                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                                <SelectTrigger className="touch-target">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="cash">Cash</SelectItem>
+                                    <SelectItem value="bank">Bank Transfer</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Sticky Bottom */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t lg:left-[280px]">
+                    <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Amount</p>
+                            <p className="text-2xl font-bold text-red-600 money">
+                                {formatMoney(parseFloat(amount) || 0)}
+                            </p>
+                        </div>
+                        <Button
+                            size="lg"
+                            onClick={handleSubmit}
+                            disabled={createExpense.isPending || !type || !amount || !description}
+                            className="touch-target px-8"
+                        >
+                            {createExpense.isPending ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Expense'
+                            )}
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </RequireOpenDay>
     );
 }
