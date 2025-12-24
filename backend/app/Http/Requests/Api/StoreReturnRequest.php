@@ -29,21 +29,18 @@ class StoreReturnRequest extends FormRequest
 
     /**
      * Configure the validator instance.
-     * تصحيح 2025-12-23: التحقق من وجود يومية مفتوحة
+     * التحقق من وجود يومية مفتوحة (استخدام تاريخها تلقائياً)
      */
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // Returns use today's date if not specified
-            $date = $this->input('date', now()->toDateString());
-            $dailyReport = \App\Models\DailyReport::where('date', $date)
-                ->where('status', 'open')
-                ->first();
+            // Check for ANY open daily report
+            $dailyReport = \App\Models\DailyReport::where('status', 'open')->first();
 
             if (!$dailyReport) {
                 $validator->errors()->add(
-                    'date',
-                    "لا توجد يومية مفتوحة لهذا التاريخ ({$date}). يجب فتح اليومية أولاً."
+                    'daily_report',
+                    'يجب فتح يومية أولاً قبل تسجيل المرتجعات.'
                 );
             }
         });

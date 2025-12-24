@@ -16,7 +16,8 @@ class StoreInvoiceRequest extends FormRequest
     {
         return [
             'customer_id' => ['required', 'exists:customers,id'],
-            'date' => ['required', 'date'],
+            // date is optional - will use open daily report date
+            'date' => ['nullable', 'date'],
             'type' => ['sometimes', Rule::in(['sale', 'wastage'])],
             'discount' => ['sometimes', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -35,22 +36,18 @@ class StoreInvoiceRequest extends FormRequest
 
     /**
      * Configure the validator instance.
-     * تصحيح 2025-12-13: التحقق من أن الخصم لا يتجاوز subtotal
-     * تصحيح 2025-12-23: التحقق من وجود يومية مفتوحة
+     * التحقق من وجود يومية مفتوحة والتحقق من الخصم
      */
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            // Check for open daily report
-            $date = $this->input('date');
-            $dailyReport = \App\Models\DailyReport::where('date', $date)
-                ->where('status', 'open')
-                ->first();
+            // Check for ANY open daily report
+            $dailyReport = \App\Models\DailyReport::where('status', 'open')->first();
 
             if (!$dailyReport) {
                 $validator->errors()->add(
-                    'date',
-                    "لا توجد يومية مفتوحة لهذا التاريخ ({$date}). يجب فتح اليومية أولاً."
+                    'daily_report',
+                    'يجب فتح يومية أولاً قبل تسجيل الفواتير.'
                 );
                 return; // Stop further validation if no daily report
             }

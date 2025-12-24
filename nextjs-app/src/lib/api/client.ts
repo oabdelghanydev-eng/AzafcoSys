@@ -68,8 +68,13 @@ class ApiClient {
 
             // Handle 401 - Unauthorized (only redirect if not already on login page)
             if (response.status === 401) {
-                if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-                    window.location.href = '/login';
+                if (typeof window !== 'undefined') {
+                    // Clear auth storage to prevent redirect loop
+                    localStorage.removeItem('auth-storage');
+
+                    if (window.location.pathname !== '/login') {
+                        window.location.href = '/login';
+                    }
                 }
                 throw new Error('Session expired');
             }

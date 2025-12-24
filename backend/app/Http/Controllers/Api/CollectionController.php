@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreCollectionRequest;
 use App\Http\Resources\CollectionResource;
 use App\Models\Collection;
 use App\Services\CollectionDistributorService;
+use App\Services\DailyReportService;
 use App\Services\NumberGeneratorService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -20,15 +21,17 @@ class CollectionController extends Controller
     use ApiResponse;
 
     private NumberGeneratorService $numberGenerator;
-
     private CollectionDistributorService $distributorService;
+    private DailyReportService $dailyReportService;
 
     public function __construct(
         NumberGeneratorService $numberGenerator,
-        CollectionDistributorService $distributorService
+        CollectionDistributorService $distributorService,
+        DailyReportService $dailyReportService
     ) {
         $this->numberGenerator = $numberGenerator;
         $this->distributorService = $distributorService;
+        $this->dailyReportService = $dailyReportService;
     }
 
     /**
@@ -40,10 +43,10 @@ class CollectionController extends Controller
         $this->checkPermission('collections.view');
 
         $query = Collection::with(['customer'])
-            ->when($request->customer_id, fn ($q, $id) => $q->where('customer_id', $id))
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
-            ->when($request->payment_method, fn ($q, $m) => $q->where('payment_method', $m))
+            ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
+            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->payment_method, fn($q, $m) => $q->where('payment_method', $m))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -65,10 +68,14 @@ class CollectionController extends Controller
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
+            // Get open daily report (throws exception if none open)
+            $dailyReport = $this->dailyReportService->ensureOpenReport();
+            $workingDate = $dailyReport->date;
+
             $collection = Collection::create([
                 'receipt_number' => $this->numberGenerator->generate('collection'),
                 'customer_id' => $validated['customer_id'],
-                'date' => $validated['date'],
+                'date' => $workingDate,  // Use daily report date
                 'amount' => $validated['amount'],
                 'payment_method' => $validated['payment_method'],
                 'distribution_method' => $validated['distribution_method'] ?? 'auto',
@@ -77,7 +84,7 @@ class CollectionController extends Controller
             ]);
 
             // Manual distribution if provided
-            if (! empty($validated['allocations'])) {
+            if (!empty($validated['allocations'])) {
                 $allocations = collect($validated['allocations'])
                     ->pluck('amount', 'invoice_id')
                     ->toArray();

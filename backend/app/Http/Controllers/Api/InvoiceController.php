@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreInvoiceRequest;
 use App\Http\Resources\InvoiceResource;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Services\DailyReportService;
 use App\Services\FifoAllocatorService;
 use App\Services\NumberGeneratorService;
 use App\Traits\ApiResponse;
@@ -22,15 +23,17 @@ class InvoiceController extends Controller
     use ApiResponse;
 
     private NumberGeneratorService $numberGenerator;
-
     private FifoAllocatorService $fifoService;
+    private DailyReportService $dailyReportService;
 
     public function __construct(
         NumberGeneratorService $numberGenerator,
-        FifoAllocatorService $fifoService
+        FifoAllocatorService $fifoService,
+        DailyReportService $dailyReportService
     ) {
         $this->numberGenerator = $numberGenerator;
         $this->fifoService = $fifoService;
+        $this->dailyReportService = $dailyReportService;
     }
 
     /**
@@ -74,11 +77,15 @@ class InvoiceController extends Controller
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
-            // Create invoice
+            // Get open daily report (throws exception if none open)
+            $dailyReport = $this->dailyReportService->ensureOpenReport();
+            $workingDate = $dailyReport->date;
+
+            // Create invoice with working date from daily report
             $invoice = Invoice::create([
                 'invoice_number' => $this->numberGenerator->generate('invoice'),
                 'customer_id' => $validated['customer_id'],
-                'date' => $validated['date'],
+                'date' => $workingDate,  // Use daily report date
                 'type' => $validated['type'] ?? 'sale',
                 'status' => 'active',
                 'discount' => $validated['discount'] ?? 0,

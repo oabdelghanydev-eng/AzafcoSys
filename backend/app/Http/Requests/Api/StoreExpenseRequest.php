@@ -14,7 +14,8 @@ class StoreExpenseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => 'required|date',
+            // date is optional - will use open daily report date
+            'date' => 'nullable|date',
             'amount' => 'required|numeric|min:0.01',
             'type' => 'required|in:supplier,company,supplier_payment',
             'payment_method' => 'required|in:cash,bank',
@@ -26,20 +27,18 @@ class StoreExpenseRequest extends FormRequest
 
     /**
      * Configure the validator instance.
-     * تصحيح 2025-12-23: التحقق من وجود يومية مفتوحة
+     * التحقق من وجود يومية مفتوحة (استخدام تاريخها تلقائياً)
      */
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $date = $this->input('date');
-            $dailyReport = \App\Models\DailyReport::where('date', $date)
-                ->where('status', 'open')
-                ->first();
+            // Check for ANY open daily report
+            $dailyReport = \App\Models\DailyReport::where('status', 'open')->first();
 
             if (!$dailyReport) {
                 $validator->errors()->add(
-                    'date',
-                    "لا توجد يومية مفتوحة لهذا التاريخ ({$date}). يجب فتح اليومية أولاً."
+                    'daily_report',
+                    'يجب فتح يومية أولاً قبل تسجيل المصروفات.'
                 );
             }
         });

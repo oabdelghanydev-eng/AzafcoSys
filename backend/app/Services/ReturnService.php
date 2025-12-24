@@ -13,10 +13,14 @@ use Illuminate\Support\Facades\DB;
 class ReturnService
 {
     private NumberGeneratorService $numberGenerator;
+    private DailyReportService $dailyReportService;
 
-    public function __construct(NumberGeneratorService $numberGenerator)
-    {
+    public function __construct(
+        NumberGeneratorService $numberGenerator,
+        DailyReportService $dailyReportService
+    ) {
         $this->numberGenerator = $numberGenerator;
+        $this->dailyReportService = $dailyReportService;
     }
 
     /**
@@ -31,15 +35,19 @@ class ReturnService
         ?string $notes = null
     ): ReturnModel {
         return DB::transaction(function () use ($customerId, $items, $originalInvoiceId, $notes) {
+            // Get open daily report (throws BusinessException if none open)
+            $dailyReport = $this->dailyReportService->ensureOpenReport();
+            $workingDate = $dailyReport->date;
+
             // Calculate total (cartons * unit_price per carton)
             $totalAmount = collect($items)->sum(fn($item) => $item['cartons'] * $item['unit_price']);
 
-            // Create return
+            // Create return with working date from daily report
             $return = ReturnModel::create([
                 'return_number' => $this->numberGenerator->generate('return'),
                 'customer_id' => $customerId,
                 'original_invoice_id' => $originalInvoiceId,
-                'date' => now()->toDateString(),
+                'date' => $workingDate,  // Use daily report date
                 'total_amount' => $totalAmount,
                 'status' => 'active',
                 'notes' => $notes,

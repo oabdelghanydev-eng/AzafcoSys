@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ExpenseResource;
 use App\Models\Expense;
+use App\Services\DailyReportService;
 use App\Services\NumberGeneratorService;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,13 +17,17 @@ use Illuminate\Support\Facades\DB;
  */
 class ExpenseController extends Controller
 {
-    use \App\Traits\ApiResponse;
+    use ApiResponse;
 
     private NumberGeneratorService $numberGenerator;
+    private DailyReportService $dailyReportService;
 
-    public function __construct(NumberGeneratorService $numberGenerator)
-    {
+    public function __construct(
+        NumberGeneratorService $numberGenerator,
+        DailyReportService $dailyReportService
+    ) {
         $this->numberGenerator = $numberGenerator;
+        $this->dailyReportService = $dailyReportService;
     }
 
     /**
@@ -33,12 +39,12 @@ class ExpenseController extends Controller
         $this->checkPermission('expenses.view');
 
         $query = Expense::with(['supplier', 'shipment', 'createdBy'])
-            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
-            ->when($request->supplier_id, fn ($q, $id) => $q->where('supplier_id', $id))
-            ->when($request->shipment_id, fn ($q, $id) => $q->where('shipment_id', $id))
-            ->when($request->payment_method, fn ($q, $m) => $q->where('payment_method', $m))
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->type, fn($q, $t) => $q->where('type', $t))
+            ->when($request->supplier_id, fn($q, $id) => $q->where('supplier_id', $id))
+            ->when($request->shipment_id, fn($q, $id) => $q->where('shipment_id', $id))
+            ->when($request->payment_method, fn($q, $m) => $q->where('payment_method', $m))
+            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
             ->orderByDesc('date')
             ->orderByDesc('id');
 
@@ -61,13 +67,16 @@ class ExpenseController extends Controller
             'type' => 'required|in:supplier,company',
             'supplier_id' => 'required_if:type,supplier|nullable|exists:suppliers,id',
             'shipment_id' => 'nullable|exists:shipments,id',
-            'date' => 'required|date',
+            'date' => 'nullable|date',  // Optional - will use daily report date
             'amount' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:500',
             'payment_method' => 'required|in:cash,bank',
             'category' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
         ]);
+
+        // Get open daily report (throws BusinessException if none open)
+        $dailyReport = $this->dailyReportService->ensureOpenReport();
 
         // Validate: if type is supplier, supplier_id is required
         if ($validated['type'] === 'supplier' && empty($validated['supplier_id'])) {
@@ -81,9 +90,10 @@ class ExpenseController extends Controller
             ], 422);
         }
 
-        return DB::transaction(function () use ($validated) {
+        return DB::transaction(function () use ($validated, $dailyReport) {
             $validated['expense_number'] = $this->numberGenerator->generate('expense');
             $validated['created_by'] = auth()->id();
+            $validated['date'] = $dailyReport->date;  // Use daily report date
 
             $expense = Expense::create($validated);
 
