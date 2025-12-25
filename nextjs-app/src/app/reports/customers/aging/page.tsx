@@ -1,20 +1,22 @@
 'use client';
 
-import { Download, Users, AlertTriangle, Clock } from 'lucide-react';
+import { Download, Users, AlertTriangle, Clock, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useCustomerAgingReport } from '@/hooks/api/use-reports';
+import { usePdfDownload } from '@/hooks/use-pdf-download';
 import { formatCurrency } from '@/lib/utils';
 import { endpoints } from '@/lib/api/endpoints';
 
 export default function CustomerAgingPage() {
     const { data, isLoading, error } = useCustomerAgingReport();
     const report = data?.data;
+    const { downloadPdf, isDownloading } = usePdfDownload();
 
     const handleDownloadPdf = () => {
-        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.customerAgingPdf}`, '_blank');
+        downloadPdf(endpoints.reports.customerAgingPdf, 'customer-aging-report');
     };
 
     return (
@@ -24,9 +26,9 @@ export default function CustomerAgingPage() {
                     <h1 className="text-2xl font-bold">Customer Aging Report</h1>
                     <p className="text-muted-foreground">Outstanding invoices by age</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
+                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 

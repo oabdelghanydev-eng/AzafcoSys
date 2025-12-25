@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, ArrowUpRight, ArrowDownRight, RefreshCw, Package } from 'lucide-react';
+import { Download, ArrowUpRight, ArrowDownRight, RefreshCw, Package, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
+import { usePdfDownload } from '@/hooks/use-pdf-download';
 import type { ApiResponse } from '@/types/api';
 
 interface ProductMovement {
@@ -55,11 +56,13 @@ export default function StockMovementPage() {
     });
     const report = data?.data;
 
+    const { downloadPdf, isDownloading } = usePdfDownload();
+
     const handleDownloadPdf = () => {
         const pdfParams = new URLSearchParams();
         if (dateFrom) pdfParams.append('date_from', dateFrom);
         if (dateTo) pdfParams.append('date_to', dateTo);
-        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.inventoryMovementPdf}?${pdfParams}`, '_blank');
+        downloadPdf(`${endpoints.reports.inventoryMovementPdf}?${pdfParams}`, 'stock-movement-report');
     };
 
     return (
@@ -69,9 +72,9 @@ export default function StockMovementPage() {
                     <h1 className="text-2xl font-bold">Stock Movement</h1>
                     <p className="text-muted-foreground">Inventory in/out movements by product</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
+                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 

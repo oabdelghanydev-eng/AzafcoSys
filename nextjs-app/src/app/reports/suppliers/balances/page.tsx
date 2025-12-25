@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Building2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, Building2, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { formatCurrency } from '@/lib/utils';
+import { usePdfDownload } from '@/hooks/use-pdf-download';
 import type { ApiResponse } from '@/types/api';
 
 interface SupplierBalance {
@@ -58,8 +59,10 @@ export default function SupplierBalancesPage() {
         }
     };
 
+    const { downloadPdf, isDownloading } = usePdfDownload();
+
     const handleDownloadPdf = () => {
-        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.supplierBalancesPdf}`, '_blank');
+        downloadPdf(endpoints.reports.supplierBalancesPdf, 'supplier-balances-report');
     };
 
     return (
@@ -69,9 +72,9 @@ export default function SupplierBalancesPage() {
                     <h1 className="text-2xl font-bold">Supplier Balances</h1>
                     <p className="text-muted-foreground">All supplier balances summary</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
+                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 

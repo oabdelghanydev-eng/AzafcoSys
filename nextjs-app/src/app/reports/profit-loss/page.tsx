@@ -1,18 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, DollarSign, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useProfitLossReport } from '@/hooks/api/use-reports';
+import { usePdfDownload } from '@/hooks/use-pdf-download';
 import { formatCurrency } from '@/lib/utils';
 import { endpoints } from '@/lib/api/endpoints';
 
 export default function ProfitLossPage() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const { downloadPdf, isDownloading } = usePdfDownload();
 
     const { data, isLoading, error } = useProfitLossReport(dateFrom, dateTo);
     const report = data?.data;
@@ -21,7 +23,8 @@ export default function ProfitLossPage() {
         const params = new URLSearchParams();
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
-        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.profitLossPdf}?${params}`, '_blank');
+        const endpoint = `${endpoints.reports.profitLossPdf}?${params}`;
+        downloadPdf(endpoint, 'profit-loss-report');
     };
 
     return (
@@ -31,9 +34,13 @@ export default function ProfitLossPage() {
                     <h1 className="text-2xl font-bold">Profit & Loss Report</h1>
                     <p className="text-muted-foreground">Revenue, expenses, and net profit analysis</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
+                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                    {isDownloading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Download className="mr-2 h-4 w-4" />
+                    )}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 

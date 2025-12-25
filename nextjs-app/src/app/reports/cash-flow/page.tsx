@@ -1,18 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, ArrowUpRight, ArrowDownRight, Wallet, Building2 } from 'lucide-react';
+import { Download, ArrowUpRight, ArrowDownRight, Wallet, Building2, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCashFlowReport } from '@/hooks/api/use-reports';
+import { usePdfDownload } from '@/hooks/use-pdf-download';
 import { formatCurrency } from '@/lib/utils';
 import { endpoints } from '@/lib/api/endpoints';
 
 export default function CashFlowPage() {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
+    const { downloadPdf, isDownloading } = usePdfDownload();
 
     const { data, isLoading, error } = useCashFlowReport(dateFrom, dateTo);
     const report = data?.data;
@@ -21,7 +23,7 @@ export default function CashFlowPage() {
         const params = new URLSearchParams();
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
-        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.cashFlowPdf}?${params}`, '_blank');
+        downloadPdf(`${endpoints.reports.cashFlowPdf}?${params}`, 'cash-flow-report');
     };
 
     return (
@@ -31,9 +33,9 @@ export default function CashFlowPage() {
                     <h1 className="text-2xl font-bold">Cash Flow Report</h1>
                     <p className="text-muted-foreground">Cash inflows and outflows analysis</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
+                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 
