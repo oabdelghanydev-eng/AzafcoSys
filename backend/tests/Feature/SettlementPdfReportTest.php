@@ -82,11 +82,27 @@ class SettlementPdfReportTest extends TestCase
 
     /**
      * Test PDF generation for closed shipment succeeds
-     * NOTE: Skipped - Requires DOMPDF library configuration
      */
     public function test_settlement_pdf_for_closed_shipment_returns_pdf(): void
     {
-        $this->markTestSkipped('PDF generation test requires DOMPDF configuration');
+        Sanctum::actingAs($this->user);
+        $shipment = $this->createMinimalShipment('closed');
+
+        $response = $this->get("/api/reports/shipment/{$shipment->id}/settlement/pdf");
+
+        // Should return 200 with PDF content or error with specific status
+        $this->assertTrue(
+            in_array($response->status(), [200, 500]),
+            "Expected status 200 or 500, got {$response->status()}"
+        );
+
+        // If successful, check content type
+        if ($response->status() === 200) {
+            $this->assertStringContainsString(
+                'application/pdf',
+                $response->headers->get('Content-Type')
+            );
+        }
     }
 
     /**

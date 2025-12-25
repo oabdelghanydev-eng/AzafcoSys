@@ -4,7 +4,7 @@ namespace Tests\Unit;
 
 use App\Exceptions\BusinessException;
 use App\Exceptions\ErrorCodes;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 /**
  * Unit tests for Error Codes and Business Exception
@@ -62,8 +62,13 @@ class ErrorCodesTest extends TestCase
      */
     public function test_business_exception_stores_all_properties(): void
     {
-        // Skip this test in unit testing - BusinessException needs Laravel app context
-        $this->markTestSkipped('BusinessException requires Laravel app context for translation');
+        $code = ErrorCodes::INV_001;
+        $exception = new BusinessException($code);
+
+        $this->assertEquals($code, $exception->getErrorCode());
+        $this->assertNotEmpty($exception->getMessage());
+        $this->assertNotEmpty($exception->getMessageAr());
+        $this->assertNotEmpty($exception->getMessageEn());
     }
 
     /**
@@ -71,8 +76,16 @@ class ErrorCodesTest extends TestCase
      */
     public function test_business_exception_to_array(): void
     {
-        // Skip this test in unit testing - BusinessException needs Laravel app context
-        $this->markTestSkipped('BusinessException requires Laravel app context for translation');
+        $code = ErrorCodes::INV_001;
+        $exception = new BusinessException($code);
+
+        $array = $exception->toArray();
+
+        $this->assertIsArray($array);
+        $this->assertArrayHasKey('code', $array);
+        $this->assertArrayHasKey('message', $array);
+        $this->assertArrayHasKey('message_en', $array);
+        $this->assertEquals($code, $array['code']);
     }
 
     /**
@@ -93,3 +106,4 @@ class ErrorCodesTest extends TestCase
         $this->assertStringContainsString('المخزون', ErrorCodes::getMessage(ErrorCodes::INV_001));
     }
 }
+
