@@ -146,8 +146,9 @@
                     @foreach($previousShipmentReturns as $return)
                         <tr>
                             <td>{{ $return->product->bilingual_name }}</td>
-                            <td class="text-center">{{ number_format($return->quantity, 2) }}</td>
-                            <td class="text-center">{{ number_format($return->quantity * ($return->weight_per_unit ?? 0), 2) }} kg
+                            <td class="text-center">{{ number_format($return->cartons, 0) }}</td>
+                            <td class="text-center">
+                                {{ number_format($return->cartons * ($return->fromShipmentItem->weight_per_unit ?? 0), 2) }} kg
                             </td>
                         </tr>
                     @endforeach
@@ -176,6 +177,47 @@
             <span class="en">Inventory Movement</span>
         </div>
 
+        {{-- Incoming Items (Original Shipment Cartons) --}}
+        @if(isset($incomingItems) && $incomingItems->count() > 0)
+            <p style="font-weight: bold; margin-bottom: 8px;">
+                <span class="ar">الوارد من الشحنة (الأصلي):</span>
+                <span class="en" style="color: #718096;">Incoming (Original Shipment):</span>
+            </p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            <span class="ar">الصنف</span>
+                            <span class="en">Product</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">عدد الكراتين</span>
+                            <span class="en">Cartons</span>
+                        </th>
+                        <th class="text-center">
+                            <span class="ar">وزن الوحدة</span>
+                            <span class="en">Unit Weight</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($incomingItems as $item)
+                        <tr>
+                            <td>{{ $item->product->bilingual_name }}</td>
+                            <td class="text-center">{{ number_format($item->cartons, 0) }}</td>
+                            <td class="text-center">{{ number_format($item->weight_per_unit ?? 0, 2) }} kg</td>
+                        </tr>
+                    @endforeach
+                    <tr class="total-row">
+                        <td><strong><span class="ar">إجمالي الوارد</span> <span class="en" style="color: #718096;">Total
+                                    Incoming</span></strong></td>
+                        <td class="text-center"><strong>{{ number_format($totalIncomingCartons ?? 0, 0) }}</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        @endif
+
         {{-- Carryover Out (Transferred to Next Shipment) --}}
         @if(isset($carryoverOut) && $carryoverOut->count() > 0)
             <p style="font-weight: bold; margin-bottom: 8px;">
@@ -203,7 +245,7 @@
                     @foreach($carryoverOut as $co)
                         <tr>
                             <td>{{ $co->product->bilingual_name }}</td>
-                            <td class="text-center">{{ number_format($co->quantity, 0) }}</td>
+                            <td class="text-center">{{ number_format($co->cartons, 0) }}</td>
                             <td class="text-center">{{ number_format($co->fromShipmentItem->weight_per_unit ?? 0, 2) }} kg</td>
                         </tr>
                     @endforeach
@@ -243,7 +285,7 @@
                     @foreach($carryoverIn as $ci)
                         <tr>
                             <td>{{ $ci->product->bilingual_name }}</td>
-                            <td class="text-center">{{ number_format($ci->quantity, 0) }}</td>
+                            <td class="text-center">{{ number_format($ci->cartons, 0) }}</td>
                             <td class="text-center">{{ number_format($ci->fromShipmentItem->weight_per_unit ?? 0, 2) }} kg</td>
                         </tr>
                     @endforeach
@@ -275,34 +317,66 @@
                         <span class="en">Weight In</span>
                     </th>
                     <th class="text-center">
+                        <span class="ar">الوزن المرحل</span>
+                        <span class="en">Carryover Out</span>
+                    </th>
+                    <th class="text-center">
+                        <span class="ar">الوزن الفعلي</span>
+                        <span class="en">Effective</span>
+                    </th>
+                    <th class="text-center">
                         <span class="ar">الوزن المباع</span>
                         <span class="en">Weight Sold</span>
                     </th>
                     <th class="text-center">
-                        <span class="ar">الفرق (الهالك)</span>
-                        <span class="en">Difference (Wastage)</span>
+                        <span class="ar">الهالك</span>
+                        <span class="en">Wastage</span>
                     </th>
                     <th class="text-center">
-                        <span class="ar">نسبة الهالك</span>
-                        <span class="en">Wastage %</span>
+                        <span class="ar">نسبة %</span>
+                        <span class="en">%</span>
                     </th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($shipment->items as $item)
                     @php
-                        $weightIn = $item->cartons * $item->weight_per_unit;
+                        // الوزن الوارد من الشحنة الحالية
+                        $originalWeight = $item->cartons * $item->weight_per_unit;
+
+                        // الوزن المرحل للداخل (من الشحنة السابقة - بالوزن الأصلي)
+                        // نحصل عليه من سجلات الترحيل مع الوزن الأصلي
+                        $carryoverInWeight = $carryoverIn->where('product_id', $item->product_id)->sum(function ($co) {
+                            return $co->cartons * ($co->fromShipmentItem?->weight_per_unit ?? 0);
+                        });
+
+                        // الوزن الوارد الكلي = الأصلي + المرحل للداخل (كل بوزنه)
+                        $weightIn = $originalWeight + $carryoverInWeight;
+
+                        // الوزن المرحل للخارج (من سجلات الترحيل بالوزن الفعلي)
+                        $carryoverOutWeight = $carryoverOut->where('product_id', $item->product_id)->sum(function ($co) {
+                            return $co->cartons * ($co->fromShipmentItem?->weight_per_unit ?? 0);
+                        });
+
+                        // الوزن الوارد الفعلي = الوارد - المرحل للخارج
+                        $effectiveWeightIn = $weightIn - $carryoverOutWeight;
+
+                        // الوزن المباع
                         $saleData = $salesByProduct->where('product_id', $item->product_id)->first();
                         $weightOut = $saleData ? ($saleData->weight ?? 0) : 0;
-                        $diff = $weightIn - $weightOut;
-                        $wastagePercent = $weightIn > 0 ? ($diff / $weightIn) * 100 : 0;
+
+                        // الهالك = الفعلي - المباع
+                        $wastage = $effectiveWeightIn - $weightOut;
+                        $wastagePercent = $effectiveWeightIn > 0 ? ($wastage / $effectiveWeightIn) * 100 : 0;
                     @endphp
                     <tr>
                         <td>{{ $item->product->bilingual_name }}</td>
-                        <td class="text-center">{{ number_format($weightIn, 2) }} kg</td>
-                        <td class="text-center">{{ number_format($weightOut, 2) }} kg</td>
-                        <td class="text-center {{ $diff > 0 ? 'negative' : ($diff < 0 ? 'positive' : '') }}">
-                            {{ number_format($diff, 2) }} kg
+                        <td class="text-center">{{ number_format($weightIn, 2) }}</td>
+                        <td class="text-center">{{ number_format($carryoverOutWeight, 2) }}</td>
+                        <td class="text-center"><strong>{{ number_format($effectiveWeightIn, 2) }}</strong></td>
+                        <td class="text-center">{{ number_format($weightOut, 2) }}</td>
+                        <td class="text-center {{ $wastage > 0 ? 'negative' : ($wastage < 0 ? 'positive' : '') }}">
+                            {{ number_format($wastage, 2) }}
                         </td>
                         <td
                             class="text-center {{ $wastagePercent > 5 ? 'negative' : ($wastagePercent > 0 ? 'highlight' : '') }}">
@@ -318,6 +392,8 @@
                         </strong>
                     </td>
                     <td class="text-center"><strong>{{ number_format($totalWeightIn, 2) }} kg</strong></td>
+                    <td class="text-center"><strong>{{ number_format($totalCarryoverOutWeight ?? 0, 2) }} kg</strong></td>
+                    <td class="text-center"><strong>{{ number_format($effectiveWeightIn ?? 0, 2) }} kg</strong></td>
                     <td class="text-center"><strong>{{ number_format($totalWeightOut, 2) }} kg</strong></td>
                     <td
                         class="text-center {{ $weightDifference > 0 ? 'negative' : ($weightDifference < 0 ? 'positive' : '') }}">
@@ -329,7 +405,7 @@
                         @endif
                     </td>
                     @php
-                        $totalWastagePercent = $totalWeightIn > 0 ? ($weightDifference / $totalWeightIn) * 100 : 0;
+                        $totalWastagePercent = ($effectiveWeightIn ?? 0) > 0 ? ($weightDifference / ($effectiveWeightIn ?? 1)) * 100 : 0;
                     @endphp
                     <td class="text-center {{ $totalWastagePercent > 5 ? 'negative' : '' }}">
                         <strong>{{ number_format($totalWastagePercent, 1) }}%</strong>

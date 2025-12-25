@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Truck, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,7 @@ function ShipmentCard({ shipment }: { shipment: Shipment }) {
 }
 
 export default function ShipmentsPage() {
+    const router = useRouter();
     const { data, isLoading, error, refetch } = useShipments();
 
     const shipments = data?.data || [];
@@ -118,12 +120,12 @@ export default function ShipmentsPage() {
                             </TableHeader>
                             <TableBody>
                                 {shipments.map((s: Shipment) => (
-                                    <TableRow key={s.id} className="cursor-pointer hover:bg-muted/50">
-                                        <TableCell>
-                                            <Link href={`/shipments/${s.id}`} className="font-medium hover:underline">
-                                                #{s.id}
-                                            </Link>
-                                        </TableCell>
+                                    <TableRow
+                                        key={s.id}
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => router.push(`/shipments/${s.id}`)}
+                                    >
+                                        <TableCell className="font-medium">#{s.id}</TableCell>
                                         <TableCell>{formatDateShort(s.date)}</TableCell>
                                         <TableCell>{s.supplier?.name}</TableCell>
                                         <TableCell>{s.items?.length || 0}</TableCell>

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Collection;
 use App\Models\Customer;
+use App\Models\DailyReport;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +29,12 @@ class CollectionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Create open daily report for today
+        DailyReport::factory()->create([
+            'date' => now()->toDateString(),
+            'status' => 'open',
+        ]);
 
         $this->user = User::factory()->create([
             'permissions' => ['collections.view', 'collections.create', 'collections.delete'],
@@ -65,7 +72,7 @@ class CollectionTest extends TestCase
     private function collectionRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 
@@ -107,7 +114,7 @@ class CollectionTest extends TestCase
     {
         $response = $this->collectionRequest(
             'getJson',
-            '/api/collections/unpaid-invoices?customer_id='.$this->customer->id
+            '/api/collections/unpaid-invoices?customer_id=' . $this->customer->id
         );
 
         $response->assertStatus(200);

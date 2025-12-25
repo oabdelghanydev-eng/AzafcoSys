@@ -12,6 +12,7 @@ export const endpoints = {
     dashboard: {
         stats: '/dashboard',
         activity: '/dashboard/activity',
+        financialSummary: '/dashboard/financial-summary',
     },
 
     // Daily Report
@@ -124,6 +125,7 @@ export const endpoints = {
     settings: {
         get: '/settings',
         update: '/settings',
+        resetDatabase: '/settings/reset-database',
     },
 
     // Users

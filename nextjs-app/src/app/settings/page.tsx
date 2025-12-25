@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { DatabaseResetCard } from '@/components/settings/database-reset-card';
 import { useSettings, useUpdateSettings } from '@/hooks/api/use-settings';
 
 export default function SettingsPage() {
@@ -172,6 +173,9 @@ export default function SettingsPage() {
                     </>
                 )}
             </Button>
+
+            {/* Danger Zone - Admin Only */}
+            <DatabaseResetCard />
         </div>
     );
 }

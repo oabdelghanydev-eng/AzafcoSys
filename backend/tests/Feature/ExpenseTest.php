@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\DailyReport;
 use App\Models\Expense;
 use App\Models\Supplier;
 use App\Models\User;
@@ -28,6 +29,12 @@ class ExpenseTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Create open daily report for today
+        DailyReport::factory()->create([
+            'date' => now()->toDateString(),
+            'status' => 'open',
+        ]);
 
         $this->user = User::factory()->create([
             'permissions' => ['expenses.view', 'expenses.create', 'expenses.edit', 'expenses.delete'],
@@ -59,7 +66,7 @@ class ExpenseTest extends TestCase
     private function expenseRequest(string $method, string $uri, array $data = [])
     {
         return $this->actingAs($this->user)
-            ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
+                    ->withoutMiddleware(\App\Http\Middleware\EnsureWorkingDay::class)
             ->{$method}($uri, $data);
     }
 

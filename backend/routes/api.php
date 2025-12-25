@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/dashboard/activity', [DashboardController::class, 'recentActivity']);
+    Route::get('/dashboard/financial-summary', [DashboardController::class, 'financialSummary']);
 
     // Customers
     Route::apiResource('customers', CustomerController::class);
@@ -128,13 +129,44 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/shipment/{shipment}', [ReportController::class, 'shipmentSettlement']);
         Route::get('/shipment/{shipment}/settlement/pdf', [ReportController::class, 'settlementPdf']);
         Route::get('/customer/{customer}', [ReportController::class, 'customerStatement']);
+        Route::get('/customer/{customer}/pdf', [ReportController::class, 'customerStatementPdf']);
         Route::get('/supplier/{supplier}', [ReportController::class, 'supplierStatement']);
+        Route::get('/supplier/{supplier}/pdf', [ReportController::class, 'supplierStatementPdf']);
+
+        // Financial Reports
+        Route::get('/profit-loss', [ReportController::class, 'profitLoss']);
+        Route::get('/cash-flow', [ReportController::class, 'cashFlow']);
+
+        // Sales Reports
+        Route::get('/sales/by-product', [ReportController::class, 'salesByProduct']);
+        Route::get('/sales/by-customer', [ReportController::class, 'salesByCustomer']);
+
+        // Customer Reports
+        Route::get('/customers/aging', [ReportController::class, 'customerAging']);
+        Route::get('/customers/balances', [ReportController::class, 'customerBalances']);
+
+        // Inventory Reports
+        Route::get('/inventory/stock', [ReportController::class, 'currentStock']);
+        Route::get('/inventory/movement', [ReportController::class, 'stockMovement']);
+        Route::get('/inventory/wastage', [ReportController::class, 'wastage']);
+
+        // Supplier Reports
+        Route::get('/suppliers/balances', [ReportController::class, 'supplierBalances']);
+        Route::get('/suppliers/performance', [ReportController::class, 'supplierPerformance']);
+        Route::get('/suppliers/payments', [ReportController::class, 'supplierPayments']);
+
+        // PDF Downloads
+        Route::get('/profit-loss/pdf', [ReportController::class, 'profitLossPdf']);
+        Route::get('/cash-flow/pdf', [ReportController::class, 'cashFlowPdf']);
+        Route::get('/customers/aging/pdf', [ReportController::class, 'customerAgingPdf']);
+        Route::get('/sales/by-product/pdf', [ReportController::class, 'salesByProductPdf']);
     });
 
     // Settings
     Route::get('/settings', [SettingController::class, 'index']);
     Route::get('/settings/{key}', [SettingController::class, 'show']);
     Route::put('/settings', [SettingController::class, 'update']);
+    Route::post('/settings/reset-database', [SettingController::class, 'resetDatabase']);
 
     // Users Management
     Route::get('/permissions', [UserController::class, 'permissions']);

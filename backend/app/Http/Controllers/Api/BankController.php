@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\BusinessException;
+use App\DTOs\TransactionDTO;
 use App\Http\Controllers\Controller;
-use App\Models\Account;
-use App\Models\BankTransaction;
+use App\Http\Requests\Api\StoreAccountTransactionRequest;
+use App\Services\AccountService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * BankController
  *
- * Handles bank deposit/withdraw operations with permission checks
+ * Handles bank deposit/withdraw operations with permission checks.
+ * Delegates business logic to AccountService.
  */
 /**
  * @tags Bank
@@ -22,6 +22,11 @@ use Illuminate\Support\Facades\DB;
 class BankController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(
+        private AccountService $accountService
+    ) {
+    }
 
     /**
      * Get bank balance and recent transactions
@@ -31,112 +36,52 @@ class BankController extends Controller
     {
         $this->checkPermission('bank.view');
 
-        $bank = Account::bank()->active()->first();
+        $data = $this->accountService->getAccountWithTransactions(
+            AccountService::TYPE_BANK,
+            limit: 20
+        );
 
-        if (! $bank) {
-            return $this->error('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found', 404);
-        }
-
-        $transactions = $bank->bankTransactions()
-            ->with('createdBy:id,name')
-            ->orderByDesc('created_at')
-            ->take(20)
-            ->get();
-
-        return $this->success([
-            'balance' => (float) $bank->balance,
-            'transactions' => $transactions,
-        ]);
+        return $this->success($data);
     }
 
     /**
      * Deposit to bank
      * Permission: bank.deposit
      */
-    public function deposit(Request $request): JsonResponse
+    public function deposit(StoreAccountTransactionRequest $request): JsonResponse
     {
         $this->checkPermission('bank.deposit');
 
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'required|string|max:500',
-            'reference_type' => 'nullable|string',
-            'reference_id' => 'nullable|integer',
-        ]);
+        $dto = TransactionDTO::deposit(
+            amount: (float) $request->validated('amount'),
+            description: $request->validated('description'),
+            referenceType: $request->validated('reference_type'),
+            referenceId: $request->validated('reference_id'),
+        );
 
-        return DB::transaction(function () use ($validated) {
-            $bank = Account::bank()->active()->lockForUpdate()->first();
+        $result = $this->accountService->deposit(AccountService::TYPE_BANK, $dto);
 
-            if (! $bank) {
-                throw new BusinessException('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found');
-            }
-
-            $newBalance = $bank->balance + $validated['amount'];
-
-            BankTransaction::create([
-                'account_id' => $bank->id,
-                'type' => 'in',
-                'amount' => $validated['amount'],
-                'balance_after' => $newBalance,
-                'reference_type' => $validated['reference_type'] ?? null,
-                'reference_id' => $validated['reference_id'] ?? null,
-                'description' => $validated['description'],
-                'created_by' => auth()->id(),
-            ]);
-
-            $bank->update(['balance' => $newBalance]);
-
-            return $this->success([
-                'new_balance' => (float) $newBalance,
-            ], 'تم الإيداع بنجاح');
-        });
+        return $this->success(['new_balance' => $result['new_balance']], 'تم الإيداع بنجاح');
     }
 
     /**
      * Withdraw from bank
      * Permission: bank.withdraw
      */
-    public function withdraw(Request $request): JsonResponse
+    public function withdraw(StoreAccountTransactionRequest $request): JsonResponse
     {
         $this->checkPermission('bank.withdraw');
 
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'required|string|max:500',
-            'reference_type' => 'nullable|string',
-            'reference_id' => 'nullable|integer',
-        ]);
+        $dto = TransactionDTO::withdraw(
+            amount: (float) $request->validated('amount'),
+            description: $request->validated('description'),
+            referenceType: $request->validated('reference_type'),
+            referenceId: $request->validated('reference_id'),
+        );
 
-        return DB::transaction(function () use ($validated) {
-            $bank = Account::bank()->active()->lockForUpdate()->first();
+        $result = $this->accountService->withdraw(AccountService::TYPE_BANK, $dto);
 
-            if (! $bank) {
-                throw new BusinessException('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found');
-            }
-
-            if ($bank->balance < $validated['amount']) {
-                throw new BusinessException('FIN_002', 'الرصيد غير كافي', 'Insufficient balance');
-            }
-
-            $newBalance = $bank->balance - $validated['amount'];
-
-            BankTransaction::create([
-                'account_id' => $bank->id,
-                'type' => 'out',
-                'amount' => $validated['amount'],
-                'balance_after' => $newBalance,
-                'reference_type' => $validated['reference_type'] ?? null,
-                'reference_id' => $validated['reference_id'] ?? null,
-                'description' => $validated['description'],
-                'created_by' => auth()->id(),
-            ]);
-
-            $bank->update(['balance' => $newBalance]);
-
-            return $this->success([
-                'new_balance' => (float) $newBalance,
-            ], 'تم السحب بنجاح');
-        });
+        return $this->success(['new_balance' => $result['new_balance']], 'تم السحب بنجاح');
     }
 
     /**
@@ -147,19 +92,15 @@ class BankController extends Controller
     {
         $this->checkPermission('bank.view');
 
-        $bank = Account::bank()->active()->first();
-
-        if (! $bank) {
-            return $this->error('FIN_003', 'الحساب البنكي غير موجود', 'Bank account not found', 404);
-        }
-
-        $transactions = $bank->bankTransactions()
-            ->with('createdBy:id,name')
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
-            ->orderByDesc('created_at')
-            ->paginate($request->per_page ?? 50);
+        $transactions = $this->accountService->getTransactionHistory(
+            AccountService::TYPE_BANK,
+            filters: [
+                'date_from' => $request->date_from,
+                'date_to' => $request->date_to,
+                'type' => $request->type,
+            ],
+            perPage: $request->per_page ?? 50
+        );
 
         return $this->success($transactions);
     }

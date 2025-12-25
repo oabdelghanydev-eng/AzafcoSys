@@ -95,6 +95,18 @@ class ExpenseController extends Controller
             $validated['created_by'] = auth()->id();
             $validated['date'] = $dailyReport->date;  // Use daily report date
 
+            // Auto-link supplier expenses to oldest open shipment if not specified
+            if ($validated['type'] === 'supplier' && empty($validated['shipment_id'])) {
+                $oldestOpenShipment = \App\Models\Shipment::where('supplier_id', $validated['supplier_id'])
+                    ->whereIn('status', ['open', 'closed'])
+                    ->orderBy('id', 'asc')
+                    ->first();
+
+                if ($oldestOpenShipment) {
+                    $validated['shipment_id'] = $oldestOpenShipment->id;
+                }
+            }
+
             $expense = Expense::create($validated);
 
             return response()->json([

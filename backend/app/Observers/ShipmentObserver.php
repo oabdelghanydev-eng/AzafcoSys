@@ -35,12 +35,14 @@ class ShipmentObserver
                 [
                     'updated_at',
                     'status',
-                    'settled_at',               // Settlement timestamp
-                    'settled_by',               // Settlement user
-                    'total_sales',              // Settlement calculated fields
-                    'total_wastage',            // Settlement calculated fields
-                    'total_carryover_out',      // Settlement calculated fields
-                    'total_supplier_expenses',  // Settlement calculated fields
+                    'settled_at',                   // Settlement timestamp
+                    'settled_by',                   // Settlement user
+                    'total_sales',                  // Settlement calculated fields
+                    'total_wastage',                // Settlement calculated fields
+                    'total_carryover_out',          // Settlement calculated fields
+                    'total_supplier_expenses',      // Settlement calculated fields
+                    'previous_supplier_balance',    // Balance tracking (can be backfilled)
+                    'final_supplier_balance',       // Balance tracking (can be backfilled)
                 ]
             );
 

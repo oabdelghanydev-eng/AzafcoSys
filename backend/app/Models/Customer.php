@@ -16,12 +16,14 @@ class Customer extends Model
         'phone',
         'address',
         'balance',
+        'opening_balance',
         'notes',
         'is_active',
     ];
 
     protected $casts = [
         'balance' => 'decimal:2',
+        'opening_balance' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -58,6 +60,6 @@ class Customer extends Model
         $balance = (float) $this->balance;
         $prefix = $balance >= 0 ? 'مديون' : 'دائن';
 
-        return number_format(abs($balance), 2).' ج.م ('.$prefix.')';
+        return number_format(abs($balance), 2) . ' ج.م (' . $prefix . ')';
     }
 }

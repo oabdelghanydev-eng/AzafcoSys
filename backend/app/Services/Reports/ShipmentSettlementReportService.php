@@ -56,35 +56,60 @@ class ShipmentSettlementReportService
         }
 
         $data['previousShipmentReturns'] = $previousReturns;
-        $data['totalReturnsQuantity'] = $previousReturns->sum('quantity');
+        $data['totalReturnsQuantity'] = $previousReturns->sum('cartons');
         $data['totalReturnsWeight'] = 0; // Calculate if needed
         $data['totalReturnsValue'] = $totalReturnsValue;
 
         // 4. Inventory Movement - Load with fromShipmentItem for weight_per_unit
+
+        // 4.1 Incoming Items (الوارد الأصلي من الشحنة)
+        $data['incomingItems'] = $shipment->items->map(function ($item) {
+            return (object) [
+                'product' => $item->product,
+                'cartons' => $item->cartons,
+                'weight_per_unit' => $item->weight_per_unit,
+                'weight_label' => $item->weight_label,
+            ];
+        });
+        $data['totalIncomingCartons'] = $shipment->items->sum('cartons');
+
+        // 4.2 Carryover In (المرحل من الشحنة السابقة)
         $data['carryoverIn'] = Carryover::where('to_shipment_id', $shipment->id)
             ->where('reason', 'end_of_shipment')
             ->with(['product', 'fromShipmentItem'])
             ->get();
 
+        // 4.3 Returns In (مرتجعات من شحنة سابقة)
         $data['returnsIn'] = Carryover::where('to_shipment_id', $shipment->id)
             ->where('reason', 'late_return')
             ->with(['product', 'fromShipmentItem'])
             ->get();
 
+        // 4.4 Carryover Out (المرحل للشحنة التالية)
         $data['carryoverOut'] = Carryover::where('from_shipment_id', $shipment->id)
             ->where('reason', 'end_of_shipment')
             ->with(['product', 'fromShipmentItem'])
             ->get();
 
-        // 5. Weight Difference
+        // 5. Weight Analysis
+        // الوزن الوارد الكلي (الأصلي + المرحل للداخل + المرتجعات)
         $data['totalWeightIn'] = $this->calculateTotalWeightIn($shipment, $data);
-        $data['totalWeightOut'] = $this->calculateTotalWeightOut($shipment, $data);
-        $data['weightDifference'] = $data['totalWeightIn'] - $data['totalWeightOut'];
 
-        // 6. Supplier Expenses (during shipment period)
-        $supplierExpenses = Expense::where('supplier_id', $shipment->supplier_id)
+        // الوزن المرحل للخارج
+        $data['totalCarryoverOutWeight'] = $this->calculateCarryoverOutWeight($data);
+
+        // الوزن الوارد الفعلي = الوزن الوارد - المرحل للخارج
+        $data['effectiveWeightIn'] = $data['totalWeightIn'] - $data['totalCarryoverOutWeight'];
+
+        // الوزن المباع فعلياً
+        $data['totalWeightOut'] = $data['totalSoldWeight'];
+
+        // الهالك = الوزن الوارد الفعلي - الوزن المباع
+        $data['weightDifference'] = $data['effectiveWeightIn'] - $data['totalWeightOut'];
+
+        // 6. Supplier Expenses (linked to this shipment only)
+        $supplierExpenses = Expense::where('shipment_id', $shipment->id)
             ->where('type', 'supplier')
-            ->whereBetween('date', [$shipment->date, now()])
             ->get();
         $data['supplierExpenses'] = $supplierExpenses;
         $data['totalSupplierExpenses'] = $supplierExpenses->sum('amount');
@@ -113,7 +138,11 @@ class ShipmentSettlementReportService
         $data['netSales'] = $data['totalSales'] - $data['previousReturnsDeduction'] + $data['priceAdjustments'];
         $data['companyCommission'] = $data['netSales'] * $this->getCommissionRate();
         $data['supplierExpensesDeduction'] = $data['totalSupplierExpenses'];
-        $data['previousBalance'] = $shipment->supplier->balance;
+
+        // Get previous balance from last settled shipment of this supplier
+        // This ensures the balance chain is maintained correctly
+        $data['previousBalance'] = $this->getPreviousSupplierBalance($shipment);
+
         $data['supplierPayments'] = $this->getSupplierPayments($shipment);
 
         $data['finalSupplierBalance'] =
@@ -191,13 +220,13 @@ class ShipmentSettlementReportService
         $carryoverInWeight = $data['carryoverIn']->sum(function ($co) {
             $weightPerUnit = $co->fromShipmentItem?->weight_per_unit ?? 0;
 
-            return $co->quantity * $weightPerUnit;
+            return $co->cartons * $weightPerUnit;
         });
 
         $returnsInWeight = $data['returnsIn']->sum(function ($ret) {
             $weightPerUnit = $ret->fromShipmentItem?->weight_per_unit ?? 0;
 
-            return $ret->quantity * $weightPerUnit;
+            return $ret->cartons * $weightPerUnit;
         });
 
         return $incomingWeight + $carryoverInWeight + $returnsInWeight;
@@ -213,10 +242,23 @@ class ShipmentSettlementReportService
         $carryoverOutWeight = $data['carryoverOut']->sum(function ($co) {
             $weightPerUnit = $co->fromShipmentItem?->weight_per_unit ?? 0;
 
-            return $co->quantity * $weightPerUnit;
+            return $co->cartons * $weightPerUnit;
         });
 
         return $soldWeight + $carryoverOutWeight;
+    }
+
+    /**
+     * Calculate carryover out weight only
+     * الوزن المرحل للخارج فقط
+     */
+    private function calculateCarryoverOutWeight(array $data): float
+    {
+        return $data['carryoverOut']->sum(function ($co) {
+            $weightPerUnit = $co->fromShipmentItem?->weight_per_unit ?? 0;
+
+            return $co->cartons * $weightPerUnit;
+        });
     }
 
     /**
@@ -228,5 +270,27 @@ class ShipmentSettlementReportService
             ->where('type', 'supplier_payment')
             ->whereBetween('date', [$shipment->date, now()])
             ->sum('amount');
+    }
+
+    /**
+     * Get the previous balance from last settled shipment
+     * This creates a chain of balances for accurate reporting
+     */
+    private function getPreviousSupplierBalance(Shipment $shipment): float
+    {
+        // Find the previous settled shipment for this supplier
+        $previousSettledShipment = Shipment::where('supplier_id', $shipment->supplier_id)
+            ->where('id', '<', $shipment->id)
+            ->where('status', 'settled')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($previousSettledShipment) {
+            // Return the stored final balance from previous shipment
+            return (float) ($previousSettledShipment->final_supplier_balance ?? 0);
+        }
+
+        // No previous shipment - use supplier's opening balance
+        return (float) ($shipment->supplier->opening_balance ?? 0);
     }
 }

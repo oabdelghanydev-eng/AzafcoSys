@@ -2,27 +2,41 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
-use App\Models\Collection;
 use App\Models\Customer;
 use App\Models\Expense;
-use App\Models\Invoice;
 use App\Models\Shipment;
 use App\Models\Supplier;
+use App\Services\Reports\CustomerStatementService;
 use App\Services\Reports\DailyClosingReportService;
+use App\Services\Reports\DailyReportQueryService;
 use App\Services\Reports\PdfGeneratorService;
 use App\Services\Reports\ShipmentSettlementReportService;
+use App\Services\Reports\SupplierStatementService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
+ * ReportController
+ *
+ * Handles report generation with business logic delegated to services.
+ */
+/**
  * @tags Report
  */
 class ReportController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(
+        private DailyReportQueryService $dailyQueryService,
+        private CustomerStatementService $customerStatementService,
+        private SupplierStatementService $supplierStatementService
+    ) {
+    }
 
     /**
      * Get daily report for a specific date
@@ -31,84 +45,12 @@ class ReportController extends Controller
     public function daily(Request $request, string $date): JsonResponse
     {
         $this->checkPermission('reports.daily');
-        // Validate date format
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'RPT_001',
-                    'message' => 'صيغة التاريخ غير صحيحة',
-                    'message_en' => 'Invalid date format',
-                ],
-            ], 422);
-        }
 
-        // Get daily sales
-        $sales = Invoice::where('date', $date)
-            ->where('status', 'active')
-            ->selectRaw('
-                COUNT(*) as count,
-                COALESCE(SUM(total), 0) as total,
-                COALESCE(SUM(discount), 0) as total_discount
-            ')
-            ->first();
+        $this->validateDateFormat($date);
 
-        // Get daily collections by payment method
-        $collections = Collection::where('date', $date)
-            ->selectRaw('
-                COUNT(*) as count,
-                COALESCE(SUM(amount), 0) as total,
-                COALESCE(SUM(CASE WHEN payment_method = "cash" THEN amount ELSE 0 END), 0) as cash_total,
-                COALESCE(SUM(CASE WHEN payment_method = "bank" THEN amount ELSE 0 END), 0) as bank_total
-            ')
-            ->first();
+        $data = $this->dailyQueryService->getDailySummary($date);
 
-        // Get daily expenses by type and payment method
-        $expenses = Expense::where('date', $date)
-            ->selectRaw('
-                COUNT(*) as count,
-                COALESCE(SUM(amount), 0) as total,
-                COALESCE(SUM(CASE WHEN payment_method = "cash" THEN amount ELSE 0 END), 0) as cash_total,
-                COALESCE(SUM(CASE WHEN payment_method = "bank" THEN amount ELSE 0 END), 0) as bank_total,
-                COALESCE(SUM(CASE WHEN type = "supplier" THEN amount ELSE 0 END), 0) as supplier_total,
-                COALESCE(SUM(CASE WHEN type = "company" THEN amount ELSE 0 END), 0) as company_total
-            ')
-            ->first();
-
-        // Cash balance calculation
-        $cashIn = (float) $collections->cash_total;
-        $cashOut = (float) $expenses->cash_total;
-        $netCash = $cashIn - $cashOut;
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'date' => $date,
-                'sales' => [
-                    'count' => (int) $sales->count,
-                    'total' => (float) $sales->total,
-                    'discount' => (float) $sales->total_discount,
-                ],
-                'collections' => [
-                    'count' => (int) $collections->count,
-                    'total' => (float) $collections->total,
-                    'cash' => (float) $collections->cash_total,
-                    'bank' => (float) $collections->bank_total,
-                ],
-                'expenses' => [
-                    'count' => (int) $expenses->count,
-                    'total' => (float) $expenses->total,
-                    'cash' => (float) $expenses->cash_total,
-                    'bank' => (float) $expenses->bank_total,
-                    'supplier' => (float) $expenses->supplier_total,
-                    'company' => (float) $expenses->company_total,
-                ],
-                'net' => [
-                    'cash' => $netCash,
-                    'sales_vs_collections' => (float) $sales->total - (float) $collections->total,
-                ],
-            ],
-        ]);
+        return $this->success($data);
     }
 
     /**
@@ -118,6 +60,7 @@ class ReportController extends Controller
     public function shipmentSettlement(Shipment $shipment): JsonResponse
     {
         $this->checkPermission('reports.settlement');
+
         $shipment->load(['supplier', 'items.product']);
 
         // Get sales from this shipment
@@ -135,37 +78,32 @@ class ReportController extends Controller
         // Get expenses for this shipment
         $expensesTotal = Expense::where('shipment_id', $shipment->id)->sum('amount');
 
-        // Items breakdown (cartons-based)
-        $itemsBreakdown = $shipment->items->map(function ($item) {
-            return [
-                'product' => $item->product->name,
-                'cartons' => $item->cartons,
-                'sold_cartons' => $item->sold_cartons,
-                'remaining_cartons' => $item->remaining_cartons, // Accessor
-                'wastage_quantity' => (float) $item->wastage_quantity,
-                'carryover_in_cartons' => $item->carryover_in_cartons,
-                'carryover_out_cartons' => $item->carryover_out_cartons,
-            ];
-        });
+        // Items breakdown
+        $itemsBreakdown = $shipment->items->map(fn($item) => [
+            'product' => $item->product->name,
+            'cartons' => $item->cartons,
+            'sold_cartons' => $item->sold_cartons,
+            'remaining_cartons' => $item->remaining_cartons,
+            'wastage_quantity' => (float) $item->wastage_quantity,
+            'carryover_in_cartons' => $item->carryover_in_cartons,
+            'carryover_out_cartons' => $item->carryover_out_cartons,
+        ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'shipment' => [
-                    'id' => $shipment->id,
-                    'number' => $shipment->number,
-                    'date' => $shipment->date->format('Y-m-d'),
-                    'status' => $shipment->status,
-                    'supplier' => $shipment->supplier->name,
-                ],
-                'summary' => [
-                    'total_sales' => (float) $salesData->total_sales,
-                    'total_quantity_sold' => (float) $salesData->total_quantity,
-                    'total_expenses' => (float) $expensesTotal,
-                    'net_profit' => (float) $salesData->total_sales - (float) $expensesTotal,
-                ],
-                'items' => $itemsBreakdown,
+        return $this->success([
+            'shipment' => [
+                'id' => $shipment->id,
+                'number' => $shipment->number,
+                'date' => $shipment->date->format('Y-m-d'),
+                'status' => $shipment->status,
+                'supplier' => $shipment->supplier->name,
             ],
+            'summary' => [
+                'total_sales' => (float) $salesData->total_sales,
+                'total_quantity_sold' => (float) $salesData->total_quantity,
+                'total_expenses' => (float) $expensesTotal,
+                'net_profit' => (float) $salesData->total_sales - (float) $expensesTotal,
+            ],
+            'items' => $itemsBreakdown,
         ]);
     }
 
@@ -176,83 +114,14 @@ class ReportController extends Controller
     public function customerStatement(Request $request, Customer $customer): JsonResponse
     {
         $this->checkPermission('reports.customers');
-        $dateFrom = $request->date_from;
-        $dateTo = $request->date_to;
 
-        // Get invoices
-        $invoicesQuery = $customer->invoices()
-            ->where('status', 'active')
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
-            ->orderBy('date')
-            ->get(['id', 'invoice_number', 'date', 'total', 'paid_amount', 'balance']);
+        $data = $this->customerStatementService->generateStatement(
+            $customer,
+            $request->date_from,
+            $request->date_to
+        );
 
-        // Get collections
-        $collectionsQuery = $customer->collections()
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
-            ->orderBy('date')
-            ->get(['id', 'receipt_number', 'date', 'amount', 'payment_method']);
-
-        // Build timeline
-        $timeline = collect();
-
-        foreach ($invoicesQuery as $invoice) {
-            $timeline->push([
-                'type' => 'invoice',
-                'date' => $invoice->date->format('Y-m-d'),
-                'reference' => $invoice->invoice_number,
-                'debit' => (float) $invoice->total,
-                'credit' => 0,
-                'description' => 'فاتورة',
-            ]);
-        }
-
-        foreach ($collectionsQuery as $collection) {
-            $timeline->push([
-                'type' => 'collection',
-                'date' => $collection->date->format('Y-m-d'),
-                'reference' => $collection->receipt_number,
-                'debit' => 0,
-                'credit' => (float) $collection->amount,
-                'description' => 'تحصيل ' . ($collection->payment_method === 'cash' ? 'نقدي' : 'بنكي'),
-            ]);
-        }
-
-        // Sort by date
-        $timeline = $timeline->sortBy('date')->values();
-
-        // Calculate running balance
-        $runningBalance = 0;
-        $timeline = $timeline->map(function ($item) use (&$runningBalance) {
-            $runningBalance += $item['debit'] - $item['credit'];
-            $item['balance'] = $runningBalance;
-
-            return $item;
-        });
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'customer' => [
-                    'id' => $customer->id,
-                    'code' => $customer->code,
-                    'name' => $customer->name,
-                    'current_balance' => (float) $customer->balance,
-                ],
-                'period' => [
-                    'from' => $dateFrom,
-                    'to' => $dateTo,
-                ],
-                'summary' => [
-                    'total_invoices' => $invoicesQuery->sum('total'),
-                    'total_collections' => $collectionsQuery->sum('amount'),
-                    'invoices_count' => $invoicesQuery->count(),
-                    'collections_count' => $collectionsQuery->count(),
-                ],
-                'transactions' => $timeline,
-            ],
-        ]);
+        return $this->success($data);
     }
 
     /**
@@ -262,82 +131,194 @@ class ReportController extends Controller
     public function supplierStatement(Request $request, Supplier $supplier): JsonResponse
     {
         $this->checkPermission('reports.suppliers');
-        $dateFrom = $request->date_from;
-        $dateTo = $request->date_to;
 
-        // Get shipments (debit - له)
-        $shipmentsQuery = $supplier->shipments()
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
-            ->orderBy('date')
-            ->get(['id', 'number', 'date', 'total_amount']);
+        $data = $this->supplierStatementService->generateStatement(
+            $supplier,
+            $request->date_from,
+            $request->date_to
+        );
 
-        // Get expenses (credit - عليه/دفعنا له)
-        $expensesQuery = $supplier->expenses()
-            ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
-            ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
-            ->orderBy('date')
-            ->get(['id', 'expense_number', 'date', 'amount', 'description']);
+        return $this->success($data);
+    }
 
-        // Build timeline
-        $timeline = collect();
+    /**
+     * Get Profit & Loss report
+     * Permission: reports.financial
+     */
+    public function profitLoss(Request $request, \App\Services\Reports\ProfitLossReportService $service): JsonResponse
+    {
+        $this->checkPermission('reports.financial');
 
-        foreach ($shipmentsQuery as $shipment) {
-            $timeline->push([
-                'type' => 'shipment',
-                'date' => $shipment->date->format('Y-m-d'),
-                'reference' => $shipment->number,
-                'debit' => (float) $shipment->total_amount,
-                'credit' => 0,
-                'description' => 'شحنة',
-            ]);
-        }
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
 
-        foreach ($expensesQuery as $expense) {
-            $timeline->push([
-                'type' => 'expense',
-                'date' => $expense->date->format('Y-m-d'),
-                'reference' => $expense->expense_number,
-                'debit' => 0,
-                'credit' => (float) $expense->amount,
-                'description' => $expense->description ?? 'مصروف',
-            ]);
-        }
+        return $this->success($data);
+    }
 
-        // Sort by date
-        $timeline = $timeline->sortBy('date')->values();
+    /**
+     * Get Cash Flow report
+     * Permission: reports.financial
+     */
+    public function cashFlow(Request $request, \App\Services\Reports\CashFlowReportService $service): JsonResponse
+    {
+        $this->checkPermission('reports.financial');
 
-        // Calculate running balance (+له / -عليه)
-        $runningBalance = 0;
-        $timeline = $timeline->map(function ($item) use (&$runningBalance) {
-            $runningBalance += $item['debit'] - $item['credit'];
-            $item['balance'] = $runningBalance;
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
 
-            return $item;
-        });
+        return $this->success($data);
+    }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'supplier' => [
-                    'id' => $supplier->id,
-                    'code' => $supplier->code,
-                    'name' => $supplier->name,
-                    'current_balance' => (float) $supplier->balance,
-                ],
-                'period' => [
-                    'from' => $dateFrom,
-                    'to' => $dateTo,
-                ],
-                'summary' => [
-                    'total_shipments' => $shipmentsQuery->sum('total_amount'),
-                    'total_expenses' => $expensesQuery->sum('amount'),
-                    'shipments_count' => $shipmentsQuery->count(),
-                    'expenses_count' => $expensesQuery->count(),
-                ],
-                'transactions' => $timeline,
-            ],
-        ]);
+    /**
+     * Get Sales by Product report
+     * Permission: reports.sales
+     */
+    public function salesByProduct(Request $request, \App\Services\Reports\SalesByProductService $service): JsonResponse
+    {
+        $this->checkPermission('reports.sales');
+
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Sales by Customer report
+     * Permission: reports.sales
+     */
+    public function salesByCustomer(Request $request, \App\Services\Reports\SalesByCustomerService $service): JsonResponse
+    {
+        $this->checkPermission('reports.sales');
+
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Customer Aging report
+     * Permission: reports.customers
+     */
+    public function customerAging(\App\Services\Reports\CustomerAgingService $service): JsonResponse
+    {
+        $this->checkPermission('reports.customers');
+
+        $data = $service->generate();
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Customer Balance Summary report
+     * Permission: reports.customers
+     */
+    public function customerBalances(\App\Services\Reports\CustomerBalanceSummaryService $service): JsonResponse
+    {
+        $this->checkPermission('reports.customers');
+
+        $data = $service->generate();
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Current Stock report
+     * Permission: reports.inventory
+     */
+    public function currentStock(\App\Services\Reports\CurrentStockService $service): JsonResponse
+    {
+        $this->checkPermission('reports.inventory');
+
+        $data = $service->generate();
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Stock Movement report
+     * Permission: reports.inventory
+     */
+    public function stockMovement(Request $request, \App\Services\Reports\StockMovementService $service): JsonResponse
+    {
+        $this->checkPermission('reports.inventory');
+
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Wastage report
+     * Permission: reports.inventory
+     */
+    public function wastage(Request $request, \App\Services\Reports\WastageReportService $service): JsonResponse
+    {
+        $this->checkPermission('reports.inventory');
+
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Supplier Balance Summary report
+     * Permission: reports.suppliers
+     */
+    public function supplierBalances(\App\Services\Reports\SupplierBalanceSummaryService $service): JsonResponse
+    {
+        $this->checkPermission('reports.suppliers');
+
+        $data = $service->generate();
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Supplier Performance report
+     * Permission: reports.suppliers
+     */
+    public function supplierPerformance(Request $request, \App\Services\Reports\SupplierPerformanceService $service): JsonResponse
+    {
+        $this->checkPermission('reports.suppliers');
+
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
+
+        return $this->success($data);
+    }
+
+    /**
+     * Get Supplier Payments report
+     * Permission: reports.suppliers
+     */
+    public function supplierPayments(Request $request, \App\Services\Reports\SupplierPaymentsService $service): JsonResponse
+    {
+        $this->checkPermission('reports.suppliers');
+
+        $data = $service->generate(
+            $request->date_from,
+            $request->date_to
+        );
+
+        return $this->success($data);
     }
 
     /**
@@ -350,17 +331,7 @@ class ReportController extends Controller
         PdfGeneratorService $pdfService
     ) {
         $this->checkPermission('reports.export_pdf');
-
-        // Validate date format
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'RPT_001',
-                    'message' => 'Invalid date format',
-                ],
-            ], 422);
-        }
+        $this->validateDateFormat($date);
 
         try {
             $data = $reportService->generate($date);
@@ -371,14 +342,12 @@ class ReportController extends Controller
                 'daily-report-' . $date
             );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'RPT_003',
-                    'message' => 'PDF generation failed: ' . $e->getMessage(),
-                    'trace' => config('app.debug') ? $e->getTraceAsString() : null,
-                ],
-            ], 500);
+            return $this->error(
+                'RPT_003',
+                'فشل في إنشاء ملف PDF: ' . $e->getMessage(),
+                'PDF generation failed: ' . $e->getMessage(),
+                500
+            );
         }
     }
 
@@ -395,13 +364,12 @@ class ReportController extends Controller
 
         // Check if shipment is settled or being settled
         if (!in_array($shipment->status, ['closed', 'settled'])) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'RPT_002',
-                    'message' => 'Shipment must be closed or settled to generate report',
-                ],
-            ], 422);
+            return $this->error(
+                'RPT_002',
+                'يجب إغلاق أو تصفية الشحنة أولاً',
+                'Shipment must be closed or settled to generate report',
+                422
+            );
         }
 
         try {
@@ -413,14 +381,192 @@ class ReportController extends Controller
                 'settlement-' . $shipment->number
             );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'RPT_003',
-                    'message' => 'PDF generation failed: ' . $e->getMessage(),
-                    'trace' => config('app.debug') ? $e->getTraceAsString() : null,
-                ],
-            ], 500);
+            return $this->error(
+                'RPT_003',
+                'فشل في إنشاء ملف PDF: ' . $e->getMessage(),
+                'PDF generation failed: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    /**
+     * Download customer statement as PDF
+     */
+    public function customerStatementPdf(
+        Request $request,
+        Customer $customer,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $this->customerStatementService->generateStatement(
+                $customer,
+                $request->date_from,
+                $request->date_to
+            );
+
+            return $pdfService->download(
+                'reports.customer-statement',
+                $data,
+                'customer-statement-' . $customer->code
+            );
+        } catch (\Exception $e) {
+            return $this->error(
+                'RPT_003',
+                'فشل في إنشاء ملف PDF: ' . $e->getMessage(),
+                'PDF generation failed: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    /**
+     * Download supplier statement as PDF
+     */
+    public function supplierStatementPdf(
+        Request $request,
+        Supplier $supplier,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $this->supplierStatementService->generateStatement(
+                $supplier,
+                $request->date_from,
+                $request->date_to
+            );
+
+            return $pdfService->download(
+                'reports.supplier-statement',
+                $data,
+                'supplier-statement-' . $supplier->code
+            );
+        } catch (\Exception $e) {
+            return $this->error(
+                'RPT_003',
+                'فشل في إنشاء ملف PDF: ' . $e->getMessage(),
+                'PDF generation failed: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    /**
+     * Download Profit & Loss report as PDF
+     */
+    public function profitLossPdf(
+        Request $request,
+        \App\Services\Reports\ProfitLossReportService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate(
+                $request->date_from,
+                $request->date_to
+            );
+
+            return $pdfService->download(
+                'reports.profit-loss',
+                $data,
+                'profit-loss-report'
+            );
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Cash Flow report as PDF
+     */
+    public function cashFlowPdf(
+        Request $request,
+        \App\Services\Reports\CashFlowReportService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate(
+                $request->date_from,
+                $request->date_to
+            );
+
+            return $pdfService->download(
+                'reports.cash-flow',
+                $data,
+                'cash-flow-report'
+            );
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Customer Aging report as PDF
+     */
+    public function customerAgingPdf(
+        \App\Services\Reports\CustomerAgingService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate();
+
+            return $pdfService->download(
+                'reports.customer-aging',
+                $data,
+                'customer-aging-report'
+            );
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Sales by Product report as PDF
+     */
+    public function salesByProductPdf(
+        Request $request,
+        \App\Services\Reports\SalesByProductService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate(
+                $request->date_from,
+                $request->date_to
+            );
+
+            return $pdfService->download(
+                'reports.sales-by-product',
+                $data,
+                'sales-by-product-report'
+            );
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Validate date format.
+     *
+     * @throws BusinessException
+     */
+    protected function validateDateFormat(string $date): void
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            throw new BusinessException(
+                'RPT_001',
+                'صيغة التاريخ غير صحيحة',
+                'Invalid date format'
+            );
         }
     }
 }

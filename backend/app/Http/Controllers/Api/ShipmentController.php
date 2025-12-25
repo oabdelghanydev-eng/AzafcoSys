@@ -12,6 +12,7 @@ use App\Models\Shipment;
 use App\Models\ShipmentItem;
 use App\Services\NumberGeneratorService;
 use App\Services\ShipmentService;
+use App\Services\TelegramService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -242,10 +243,41 @@ class ShipmentController extends Controller
 
         $shipment->update(['status' => 'closed']);
 
+        // Send Telegram notification
+        $this->sendShipmentClosedNotification($shipment->fresh());
+
         return $this->success(
             new ShipmentResource($shipment->fresh()),
             'تم إغلاق الشحنة بنجاح'
         );
+    }
+
+    /**
+     * Send shipment closed notification to Telegram
+     */
+    private function sendShipmentClosedNotification(Shipment $shipment): void
+    {
+        try {
+            $telegram = app(TelegramService::class);
+
+            if (!$telegram->isConfigured()) {
+                return;
+            }
+
+            $totalCartons = $shipment->items->sum('cartons');
+            $totalWeight = $shipment->items->sum(fn($item) => $item->cartons * $item->weight_per_unit);
+
+            $telegram->sendShipmentClosedNotification(
+                $shipment->number ?? "#{$shipment->id}",
+                $shipment->supplier->name ?? 'Unknown',
+                $shipment->items->count(),
+                $totalCartons,
+                $totalWeight,
+                auth()->user()->name ?? 'System'
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send shipment closed notification to Telegram', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -305,12 +337,53 @@ class ShipmentController extends Controller
                 'settled_at' => now(),
                 'settled_by' => auth()->id(),
             ]);
+
+            // Send Telegram notification for settlement without carryover
+            $this->sendSettlementNotification($shipment->fresh());
         }
 
         // Generate settlement report
         $report = $this->shipmentService->generateSettlementReport($shipment->fresh());
 
         return $this->success($report, 'تم تصفية الشحنة بنجاح');
+    }
+
+    /**
+     * Send settlement notification to Telegram (for settlement without carryover)
+     */
+    private function sendSettlementNotification(Shipment $shipment): void
+    {
+        try {
+            $telegram = app(TelegramService::class);
+
+            if (!$telegram->isConfigured()) {
+                return;
+            }
+
+            // Generate PDF
+            $pdfService = app(\App\Services\Reports\PdfGeneratorService::class);
+            $reportService = app(\App\Services\Reports\ShipmentSettlementReportService::class);
+
+            $data = $reportService->generate($shipment);
+            $filename = "reports/settlement-{$shipment->id}.pdf";
+            $path = $pdfService->save('reports.shipment-settlement', $data, $filename);
+
+            // Send to Telegram
+            $summary = [
+                'total_sales' => $data['totalSales'] ?? 0,
+                'commission' => $data['companyCommission'] ?? 0,
+                'final_balance' => $data['finalSupplierBalance'] ?? 0,
+            ];
+
+            $telegram->sendSettlementReport(
+                $path,
+                $shipment->number ?? "#{$shipment->id}",
+                $shipment->supplier->name ?? 'Unknown',
+                $summary
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send settlement notification to Telegram', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

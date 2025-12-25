@@ -96,22 +96,54 @@ class ShipmentService
             }
 
             // Calculate totals AFTER updating items
+            // Calculate actual sales from invoice items (excluding cancelled invoices)
+            $totalSales = \App\Models\InvoiceItem::whereIn('shipment_item_id', $shipment->items()->pluck('id'))
+                ->whereHas('invoice', fn($q) => $q->where('status', '!=', 'cancelled'))
+                ->sum('subtotal');
+
             $totalSoldCartons = $shipment->items()->sum('sold_cartons');
             $totalWastage = $shipment->items()->sum('wastage_quantity');
             $totalCarryoverOut = $shipment->items()->sum('carryover_out_cartons');
-            $totalSupplierExpenses = \App\Models\Expense::where('type', 'supplier')
-                ->where('supplier_id', $shipment->supplier_id)
+
+            // Get expenses linked to this shipment only
+            $totalSupplierExpenses = \App\Models\Expense::where('shipment_id', $shipment->id)
+                ->where('type', 'supplier')
                 ->sum('amount');
+
+            // Calculate financial summary for balance tracking
+            $commissionRate = (float) (config('settings.company_commission_rate', 6)) / 100;
+            $netSales = $totalSales;
+            $companyCommission = $netSales * $commissionRate;
+
+            // Get previous balance from last settled shipment OR supplier's opening balance
+            $previousSettledShipment = Shipment::where('supplier_id', $shipment->supplier_id)
+                ->where('id', '<', $shipment->id)
+                ->where('status', 'settled')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($previousSettledShipment) {
+                // Use final balance from previous shipment
+                $previousBalance = (float) ($previousSettledShipment->final_supplier_balance ?? 0);
+            } else {
+                // First shipment - use supplier's opening balance
+                $previousBalance = (float) ($shipment->supplier->opening_balance ?? 0);
+            }
+
+            // Calculate final balance
+            $finalBalance = $netSales - $companyCommission - $totalSupplierExpenses + $previousBalance;
 
             // تغيير حالة الشحنة
             $shipment->update([
                 'status' => 'settled',
                 'settled_at' => now(),
                 'settled_by' => auth()->id(),
-                'total_sales' => $totalSoldCartons,
+                'total_sales' => $totalSales,
                 'total_wastage' => $totalWastage,
                 'total_carryover_out' => $totalCarryoverOut,
                 'total_supplier_expenses' => $totalSupplierExpenses,
+                'previous_supplier_balance' => $previousBalance,
+                'final_supplier_balance' => $finalBalance,
             ]);
 
             // Send Telegram notification

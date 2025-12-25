@@ -9,6 +9,11 @@ import {
     Plus,
     Calendar,
     Loader2,
+    TrendingUp,
+    Building2,
+    Truck,
+    ArrowDownRight,
+    ArrowUpRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,11 +22,12 @@ import { PermissionGate } from '@/components/shared/permission-gate';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatInteger, formatDateShort as _formatDateShort } from '@/lib/formatters';
-import { useDashboardStats, useDashboardActivity } from '@/hooks/api/use-dashboard';
+import { useDashboardStats, useDashboardActivity, useFinancialSummary } from '@/hooks/api/use-dashboard';
 
 export default function DashboardPage() {
     const { data: statsData, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useDashboardStats();
     const { data: activityData, isLoading: activityLoading } = useDashboardActivity();
+    const { data: financialData, isLoading: financialLoading } = useFinancialSummary();
 
     // Use API data or fallback to defaults
     const stats = statsData?.data || {
@@ -32,6 +38,7 @@ export default function DashboardPage() {
     };
 
     const activity = activityData?.data || { invoices: [], collections: [], expenses: [] };
+    const financial = financialData?.data;
 
     // Combine and sort recent activity
     const recentActivity = [
@@ -105,6 +112,137 @@ export default function DashboardPage() {
                     icon={<Wallet className="h-5 w-5" />}
                 />
             </div>
+
+            {/* Financial Summary Section */}
+            {financialLoading ? (
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+            ) : financial && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Company Profit Card */}
+                    <Card className="border-l-4 border-l-emerald-500 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-background">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <div className="bg-emerald-100 dark:bg-emerald-900 p-2 rounded-lg">
+                                    <Building2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                Company Profit
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-baseline justify-between">
+                                <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                                    {formatMoney(financial.company.net_profit)}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                    Net Profit
+                                </span>
+                            </div>
+                            <div className="space-y-2 pt-2 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <span className="flex items-center gap-1 text-muted-foreground">
+                                        <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                                        Commission ({financial.commission_rate})
+                                    </span>
+                                    <span className="font-medium text-emerald-600">
+                                        +{formatMoney(financial.company.total_commission)}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="flex items-center gap-1 text-muted-foreground">
+                                        <ArrowDownRight className="h-3 w-3 text-red-500" />
+                                        Company Expenses
+                                    </span>
+                                    <span className="font-medium text-red-600">
+                                        -{formatMoney(financial.company.total_expenses)}
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Supplier Dues Card */}
+                    <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-lg">
+                                <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded-lg">
+                                    <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                Due to Suppliers
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-baseline justify-between">
+                                <span className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                                    {formatMoney(financial.suppliers.net_due_to_all)}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                    Total Due
+                                </span>
+                            </div>
+                            <div className="space-y-2 pt-2 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Total Sales</span>
+                                    <span className="font-medium">{formatMoney(financial.suppliers.total_sales)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Commission Deducted</span>
+                                    <span className="font-medium text-red-600">-{formatMoney(financial.suppliers.total_commission_deducted)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Expenses on Behalf</span>
+                                    <span className="font-medium text-red-600">-{formatMoney(financial.suppliers.total_expenses_on_behalf)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Payments Made</span>
+                                    <span className="font-medium text-red-600">-{formatMoney(financial.suppliers.total_payments_made)}</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Supplier Breakdown */}
+            {financial && financial.supplier_breakdown.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <TrendingUp className="h-5 w-5" />
+                            Supplier Balances
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b">
+                                        <th className="text-left py-2 font-medium">Supplier</th>
+                                        <th className="text-right py-2 font-medium">Sales</th>
+                                        <th className="text-right py-2 font-medium">Commission</th>
+                                        <th className="text-right py-2 font-medium">Expenses</th>
+                                        <th className="text-right py-2 font-medium">Payments</th>
+                                        <th className="text-right py-2 font-medium text-blue-600">Net Due</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {financial.supplier_breakdown.map((supplier) => (
+                                        <tr key={supplier.id} className="border-b last:border-0 hover:bg-muted/50">
+                                            <td className="py-3 font-medium">{supplier.name}</td>
+                                            <td className="py-3 text-right">{formatMoney(supplier.total_sales)}</td>
+                                            <td className="py-3 text-right text-red-600">-{formatMoney(supplier.commission)}</td>
+                                            <td className="py-3 text-right text-red-600">-{formatMoney(supplier.expenses)}</td>
+                                            <td className="py-3 text-right text-red-600">-{formatMoney(supplier.payments)}</td>
+                                            <td className="py-3 text-right font-bold text-blue-600">{formatMoney(supplier.net_due)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Quick Actions */}
             <Card>

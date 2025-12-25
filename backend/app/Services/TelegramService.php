@@ -143,4 +143,27 @@ class TelegramService
 
         return $this->sendDocument($pdfPath, $caption);
     }
+
+    /**
+     * Send shipment closed notification
+     */
+    public function sendShipmentClosedNotification(
+        string $shipmentNumber,
+        string $supplierName,
+        int $totalItems,
+        int $totalCartons,
+        float $totalWeight,
+        string $closedBy
+    ): bool {
+        $message = "🚚 <b>تم إغلاق الشحنة</b>\n\n";
+        $message .= "🔢 رقم الشحنة: <b>{$shipmentNumber}</b>\n";
+        $message .= "👤 المورد: {$supplierName}\n";
+        $message .= "📦 عدد الأصناف: {$totalItems}\n";
+        $message .= "📦 عدد الكراتين: " . number_format($totalCartons) . "\n";
+        $message .= "⚖️ إجمالي الوزن: " . number_format($totalWeight, 2) . " kg\n\n";
+        $message .= "👷 أغلقها: {$closedBy}\n";
+        $message .= "🕐 الوقت: " . now()->format('Y-m-d H:i');
+
+        return $this->sendMessage($message);
+    }
 }

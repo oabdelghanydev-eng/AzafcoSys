@@ -14,7 +14,7 @@ class Expense extends Model
         'expense_number',
         'type',
         'supplier_id',
-        'shipment_id',
+        'shipment_id', // Used for expense filtering by shipment
         'category',
         'date',
         'amount',

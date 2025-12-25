@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\BusinessException;
+use App\DTOs\TransactionDTO;
 use App\Http\Controllers\Controller;
-use App\Models\Account;
-use App\Models\CashboxTransaction;
+use App\Http\Requests\Api\StoreAccountTransactionRequest;
+use App\Services\AccountService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * CashboxController
  *
- * Handles cashbox deposit/withdraw operations with permission checks
+ * Handles cashbox deposit/withdraw operations with permission checks.
+ * Delegates business logic to AccountService.
  */
 /**
  * @tags Cashbox
@@ -22,6 +22,11 @@ use Illuminate\Support\Facades\DB;
 class CashboxController extends Controller
 {
     use ApiResponse;
+
+    public function __construct(
+        private AccountService $accountService
+    ) {
+    }
 
     /**
      * Get cashbox balance and recent transactions
@@ -31,112 +36,52 @@ class CashboxController extends Controller
     {
         $this->checkPermission('cashbox.view');
 
-        $cashbox = Account::cashbox()->active()->first();
+        $data = $this->accountService->getAccountWithTransactions(
+            AccountService::TYPE_CASHBOX,
+            limit: 20
+        );
 
-        if (! $cashbox) {
-            return $this->error('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found', 404);
-        }
-
-        $transactions = $cashbox->cashboxTransactions()
-            ->with('createdBy:id,name')
-            ->orderByDesc('created_at')
-            ->take(20)
-            ->get();
-
-        return $this->success([
-            'balance' => (float) $cashbox->balance,
-            'transactions' => $transactions,
-        ]);
+        return $this->success($data);
     }
 
     /**
      * Deposit to cashbox
      * Permission: cashbox.deposit
      */
-    public function deposit(Request $request): JsonResponse
+    public function deposit(StoreAccountTransactionRequest $request): JsonResponse
     {
         $this->checkPermission('cashbox.deposit');
 
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'required|string|max:500',
-            'reference_type' => 'nullable|string',
-            'reference_id' => 'nullable|integer',
-        ]);
+        $dto = TransactionDTO::deposit(
+            amount: (float) $request->validated('amount'),
+            description: $request->validated('description'),
+            referenceType: $request->validated('reference_type'),
+            referenceId: $request->validated('reference_id'),
+        );
 
-        return DB::transaction(function () use ($validated) {
-            $cashbox = Account::cashbox()->active()->lockForUpdate()->first();
+        $result = $this->accountService->deposit(AccountService::TYPE_CASHBOX, $dto);
 
-            if (! $cashbox) {
-                throw new BusinessException('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found');
-            }
-
-            $newBalance = $cashbox->balance + $validated['amount'];
-
-            CashboxTransaction::create([
-                'account_id' => $cashbox->id,
-                'type' => 'in',
-                'amount' => $validated['amount'],
-                'balance_after' => $newBalance,
-                'reference_type' => $validated['reference_type'] ?? null,
-                'reference_id' => $validated['reference_id'] ?? null,
-                'description' => $validated['description'],
-                'created_by' => auth()->id(),
-            ]);
-
-            $cashbox->update(['balance' => $newBalance]);
-
-            return $this->success([
-                'new_balance' => (float) $newBalance,
-            ], 'تم الإيداع بنجاح');
-        });
+        return $this->success(['new_balance' => $result['new_balance']], 'تم الإيداع بنجاح');
     }
 
     /**
      * Withdraw from cashbox
      * Permission: cashbox.withdraw
      */
-    public function withdraw(Request $request): JsonResponse
+    public function withdraw(StoreAccountTransactionRequest $request): JsonResponse
     {
         $this->checkPermission('cashbox.withdraw');
 
-        $validated = $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'description' => 'required|string|max:500',
-            'reference_type' => 'nullable|string',
-            'reference_id' => 'nullable|integer',
-        ]);
+        $dto = TransactionDTO::withdraw(
+            amount: (float) $request->validated('amount'),
+            description: $request->validated('description'),
+            referenceType: $request->validated('reference_type'),
+            referenceId: $request->validated('reference_id'),
+        );
 
-        return DB::transaction(function () use ($validated) {
-            $cashbox = Account::cashbox()->active()->lockForUpdate()->first();
+        $result = $this->accountService->withdraw(AccountService::TYPE_CASHBOX, $dto);
 
-            if (! $cashbox) {
-                throw new BusinessException('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found');
-            }
-
-            if ($cashbox->balance < $validated['amount']) {
-                throw new BusinessException('FIN_002', 'الرصيد غير كافي', 'Insufficient balance');
-            }
-
-            $newBalance = $cashbox->balance - $validated['amount'];
-
-            CashboxTransaction::create([
-                'account_id' => $cashbox->id,
-                'type' => 'out',
-                'amount' => $validated['amount'],
-                'balance_after' => $newBalance,
-                'reference_type' => $validated['reference_type'] ?? null,
-                'reference_id' => $validated['reference_id'] ?? null,
-                'description' => $validated['description'],
-                'created_by' => auth()->id(),
-            ]);
-
-            $cashbox->update(['balance' => $newBalance]);
-
-            return $this->success([
-                'new_balance' => (float) $newBalance,
-            ], 'تم السحب بنجاح');
-        });
+        return $this->success(['new_balance' => $result['new_balance']], 'تم السحب بنجاح');
     }
 
     /**
@@ -147,19 +92,15 @@ class CashboxController extends Controller
     {
         $this->checkPermission('cashbox.view');
 
-        $cashbox = Account::cashbox()->active()->first();
-
-        if (! $cashbox) {
-            return $this->error('FIN_001', 'الخزنة غير موجودة', 'Cashbox not found', 404);
-        }
-
-        $transactions = $cashbox->cashboxTransactions()
-            ->with('createdBy:id,name')
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($request->type, fn ($q, $t) => $q->where('type', $t))
-            ->orderByDesc('created_at')
-            ->paginate($request->per_page ?? 50);
+        $transactions = $this->accountService->getTransactionHistory(
+            AccountService::TYPE_CASHBOX,
+            filters: [
+                'date_from' => $request->date_from,
+                'date_to' => $request->date_to,
+                'type' => $request->type,
+            ],
+            perPage: $request->per_page ?? 50
+        );
 
         return $this->success($transactions);
     }

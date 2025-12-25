@@ -93,18 +93,22 @@ export function useCloseShipment() {
 
 /**
  * Settle a shipment
+ * @param id - Shipment ID to settle
+ * @param nextShipmentId - Optional: ID of next shipment for carryover (required if has remaining)
  */
 export function useSettleShipment() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: number) => api.post(endpoints.shipments.settle(id)),
-        onSuccess: (_, id) => {
+        mutationFn: ({ id, nextShipmentId }: { id: number; nextShipmentId?: number }) =>
+            api.post(endpoints.shipments.settle(id), nextShipmentId ? { next_shipment_id: nextShipmentId } : {}),
+        onSuccess: (_, { id }) => {
             queryClient.invalidateQueries({ queryKey: ['shipments'] });
             queryClient.invalidateQueries({ queryKey: ['shipment', id] });
             queryClient.invalidateQueries({ queryKey: ['suppliers'] });
             queryClient.invalidateQueries({ queryKey: ['accounts'] }); // Account balance
             queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Dashboard stats
+            queryClient.invalidateQueries({ queryKey: ['stock'] }); // Stock update after carryover
         },
     });
 }

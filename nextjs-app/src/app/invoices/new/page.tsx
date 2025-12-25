@@ -64,9 +64,45 @@ export default function NewInvoicePage() {
         }))
         : [];
 
+    // Calculate how many cartons of a product are already in the cart
+    const getCartQuantityForProduct = (productId: number): number => {
+        return cart
+            .filter(item => item.product_id === productId)
+            .reduce((sum, item) => sum + item.cartons, 0);
+    };
+
+    // Calculate remaining available stock after subtracting cart items
+    const getRemainingAvailable = (productId: number): number => {
+        const product = availableProducts.find((p: { product_id: number }) => p.product_id === productId);
+        if (!product) return 0;
+        const originalStock = product.remaining_cartons;
+        const inCart = getCartQuantityForProduct(productId);
+        return Math.max(0, originalStock - inCart);
+    };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleProductSelect = (product: any) => {
-        setSelectedProduct(product);
+        const remaining = getRemainingAvailable(product.product_id);
+        if (remaining <= 0) {
+            toast.error(
+                <div className="space-y-1">
+                    <p>No available quantity for this product</p>
+                    <a
+                        href="/shipments"
+                        className="text-primary underline text-sm"
+                    >
+                        Manage Shipments →
+                    </a>
+                </div>,
+                { duration: 5000 }
+            );
+            return;
+        }
+        setSelectedProduct({
+            ...product,
+            // Update remaining_cartons to reflect actual remaining after cart
+            remaining_cartons: remaining,
+        });
         setWeight(product.weight_per_unit?.toString() || '');
         setCartons('');
         setPrice('');
@@ -86,9 +122,16 @@ export default function NewInvoicePage() {
         }
 
         const c = parseInt(cartons);
-        const remainingCartons = selectedProduct.remaining_cartons ?? 0;
+        // Get REAL remaining (original stock - cart items)
+        const remainingCartons = getRemainingAvailable(selectedProduct.product_id);
+
         if (c > remainingCartons) {
-            toast.error(`Max available: ${remainingCartons} cartons`);
+            toast.error(`Only ${remainingCartons} cartons available`);
+            return;
+        }
+
+        if (c <= 0) {
+            toast.error('Quantity must be greater than zero');
             return;
         }
 
@@ -211,17 +254,24 @@ export default function NewInvoicePage() {
                                 {/* Product Buttons Grid */}
                                 <div className="grid grid-cols-3 gap-2">
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                    {availableProducts.map((product: any) => (
-                                        <Button
-                                            key={`${product.product_id}-${product.shipment_id}`}
-                                            variant={selectedProduct?.product_id === product.product_id ? 'default' : 'outline'}
-                                            className="h-auto py-3 flex-col touch-target"
-                                            onClick={() => handleProductSelect(product)}
-                                        >
-                                            <span className="font-medium text-sm">{product.product_name}</span>
-                                            <span className="text-xs opacity-70">{product.remaining_cartons} cart</span>
-                                        </Button>
-                                    ))}
+                                    {availableProducts.map((product: any) => {
+                                        const remaining = getRemainingAvailable(product.product_id);
+                                        const isOutOfStock = remaining <= 0;
+                                        return (
+                                            <Button
+                                                key={`${product.product_id}-${product.shipment_id}`}
+                                                variant={selectedProduct?.product_id === product.product_id ? 'default' : 'outline'}
+                                                className={`h-auto py-3 flex-col touch-target ${isOutOfStock ? 'opacity-50' : ''}`}
+                                                onClick={() => handleProductSelect(product)}
+                                                disabled={isOutOfStock}
+                                            >
+                                                <span className="font-medium text-sm">{product.product_name}</span>
+                                                <span className={`text-xs ${isOutOfStock ? 'text-destructive' : 'opacity-70'}`}>
+                                                    {remaining} cart {isOutOfStock && '(sold out)'}
+                                                </span>
+                                            </Button>
+                                        );
+                                    })}
                                 </div>
 
                                 {/* Item Entry Form */}

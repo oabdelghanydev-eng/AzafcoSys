@@ -60,6 +60,40 @@ class DailyReportService
     }
 
     /**
+     * Get current open daily report or throw exception.
+     * Must be used when an open report is required for an operation.
+     * 
+     * يضمن وجود يومية مفتوحة أو يرجع خطأ
+     * 
+     * @throws BusinessException If no daily report is open
+     */
+    public function ensureOpenReport(): DailyReport
+    {
+        $report = $this->getCurrentOpenReport();
+
+        if (!$report) {
+            throw new BusinessException(
+                'DAY_004',
+                'يجب فتح يومية أولاً قبل تسجيل العمليات.',
+                'Must open a daily report first.'
+            );
+        }
+
+        return $report;
+    }
+
+    /**
+     * Get the working date from current open report.
+     * Returns null if no report is open.
+     * 
+     * تاريخ العمل الحالي
+     */
+    public function getWorkingDate(): ?string
+    {
+        return $this->getCurrentOpenReport()?->date;
+    }
+
+    /**
      * Open/Create a daily report
      * فتح يومية (مشتركة لكل المستخدمين)
      */
@@ -246,36 +280,6 @@ class DailyReportService
 
             return $report->fresh();
         });
-    }
-
-    /**
-     * Get working date from current open report
-     * تاريخ العمل الحالي
-     */
-    public function getWorkingDate(): ?string
-    {
-        $report = $this->getCurrentOpenReport();
-
-        return $report?->date;
-    }
-
-    /**
-     * Ensure there's an open daily report for operations
-     * التأكد من وجود يومية مفتوحة
-     */
-    public function ensureOpenReport(): DailyReport
-    {
-        $report = $this->getCurrentOpenReport();
-
-        if (!$report) {
-            throw new BusinessException(
-                'DAY_004',
-                'يجب فتح يومية أولاً',
-                'Must open a daily report first'
-            );
-        }
-
-        return $report;
     }
 
     /**

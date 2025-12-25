@@ -107,6 +107,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Admin Reset Password
+    |--------------------------------------------------------------------------
+    |
+    | This password is required for dangerous admin operations like database
+    | reset. Store it securely in your .env file as ADMIN_RESET_PASSWORD.
+    |
+    */
+
+    'admin_reset_password' => env('ADMIN_RESET_PASSWORD'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allow Database Reset
+    |--------------------------------------------------------------------------
+    |
+    | By default, database reset is only allowed in local/testing environments.
+    | Set this to true to allow in staging/production (USE WITH CAUTION!).
+    |
+    */
+
+    'allow_database_reset' => env('ALLOW_DATABASE_RESET', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

@@ -97,4 +97,84 @@ class DashboardController extends Controller
             'expenses' => $recentExpenses,
         ]);
     }
+
+    /**
+     * Get comprehensive financial summary
+     * Shows company profit, supplier dues, and expense breakdown
+     */
+    public function financialSummary(): JsonResponse
+    {
+        $commissionRate = (float) (config('settings.company_commission_rate', 6)) / 100;
+
+        // Get all settled shipments data
+        $settledShipments = Shipment::where('status', 'settled')->get();
+
+        // Total sales from all settled shipments
+        $totalSales = $settledShipments->sum('total_sales');
+
+        // Commission earned (6% of sales)
+        $totalCommission = $totalSales * $commissionRate;
+
+        // Company expenses
+        $companyExpenses = Expense::where('type', 'company')->sum('amount');
+
+        // Company net profit = Commission - Company Expenses
+        $companyNetProfit = $totalCommission - $companyExpenses;
+
+        // Supplier expenses (paid on behalf)
+        $supplierExpenses = Expense::where('type', 'supplier')->sum('amount');
+
+        // Supplier payments made
+        $supplierPayments = Expense::where('type', 'supplier_payment')->sum('amount');
+
+        // Net due to suppliers = Sales - Commission - Supplier Expenses - Payments
+        $netDueToSuppliers = $totalSales - $totalCommission - $supplierExpenses - $supplierPayments;
+
+        // Per supplier breakdown
+        $supplierBreakdown = Supplier::with([
+            'shipments' => function ($q) {
+                $q->where('status', 'settled');
+            }
+        ])->get()->map(function ($supplier) use ($commissionRate) {
+            $sales = $supplier->shipments->sum('total_sales');
+            $commission = $sales * $commissionRate;
+            $expenses = Expense::where('type', 'supplier')->where('supplier_id', $supplier->id)->sum('amount');
+            $payments = Expense::where('type', 'supplier_payment')->where('supplier_id', $supplier->id)->sum('amount');
+
+            return [
+                'id' => $supplier->id,
+                'name' => $supplier->name,
+                'total_sales' => (float) $sales,
+                'commission' => (float) $commission,
+                'expenses' => (float) $expenses,
+                'payments' => (float) $payments,
+                'net_due' => (float) ($sales - $commission - $expenses - $payments),
+                'stored_balance' => (float) $supplier->balance,
+            ];
+        });
+
+        return $this->success([
+            // Company Summary
+            'company' => [
+                'total_commission' => (float) $totalCommission,
+                'total_expenses' => (float) $companyExpenses,
+                'net_profit' => (float) $companyNetProfit,
+            ],
+
+            // Supplier Summary
+            'suppliers' => [
+                'total_sales' => (float) $totalSales,
+                'total_commission_deducted' => (float) $totalCommission,
+                'total_expenses_on_behalf' => (float) $supplierExpenses,
+                'total_payments_made' => (float) $supplierPayments,
+                'net_due_to_all' => (float) $netDueToSuppliers,
+            ],
+
+            // Detailed breakdown per supplier
+            'supplier_breakdown' => $supplierBreakdown,
+
+            // Commission rate used
+            'commission_rate' => $commissionRate * 100 . '%',
+        ]);
+    }
 }

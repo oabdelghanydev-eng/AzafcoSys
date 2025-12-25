@@ -26,6 +26,9 @@ class Shipment extends Model
         'total_wastage',
         'total_carryover_out',
         'total_supplier_expenses',
+        // Balance tracking for reporting chain
+        'previous_supplier_balance',
+        'final_supplier_balance',
         // fifo_sequence is NOT fillable - it's auto-generated and immutable
     ];
 
