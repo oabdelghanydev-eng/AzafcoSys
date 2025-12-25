@@ -55,6 +55,13 @@ export default function SupplierPaymentsPage() {
     });
     const report = data?.data;
 
+    const handleDownloadPdf = () => {
+        const pdfParams = new URLSearchParams();
+        if (dateFrom) pdfParams.append('date_from', dateFrom);
+        if (dateTo) pdfParams.append('date_to', dateTo);
+        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.supplierPaymentsPdf}?${pdfParams}`, '_blank');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -62,7 +69,7 @@ export default function SupplierPaymentsPage() {
                     <h1 className="text-2xl font-bold">Supplier Payments</h1>
                     <p className="text-muted-foreground">Payments and expenses by supplier</p>
                 </div>
-                <Button disabled>
+                <Button onClick={handleDownloadPdf} disabled={!report}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button>

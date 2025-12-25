@@ -58,6 +58,10 @@ export default function CustomerBalancesPage() {
         }
     };
 
+    const handleDownloadPdf = () => {
+        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.customerBalancesPdf}`, '_blank');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -65,7 +69,7 @@ export default function CustomerBalancesPage() {
                     <h1 className="text-2xl font-bold">Customer Balances</h1>
                     <p className="text-muted-foreground">All customer balances summary</p>
                 </div>
-                <Button disabled>
+                <Button onClick={handleDownloadPdf} disabled={!report}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button>

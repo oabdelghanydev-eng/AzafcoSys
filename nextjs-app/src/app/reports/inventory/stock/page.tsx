@@ -5,10 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useInventoryStockReport } from '@/hooks/api/use-reports';
+import { endpoints } from '@/lib/api/endpoints';
 
 export default function InventoryStockPage() {
     const { data, isLoading, error } = useInventoryStockReport();
     const report = data?.data;
+
+    const handleDownloadPdf = () => {
+        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.inventoryStockPdf}`, '_blank');
+    };
 
     return (
         <div className="space-y-6">
@@ -17,7 +22,7 @@ export default function InventoryStockPage() {
                     <h1 className="text-2xl font-bold">Current Stock</h1>
                     <p className="text-muted-foreground">Available inventory by product</p>
                 </div>
-                <Button disabled>
+                <Button onClick={handleDownloadPdf} disabled={!report}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button>

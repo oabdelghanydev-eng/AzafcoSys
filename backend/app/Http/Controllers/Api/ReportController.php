@@ -555,6 +555,147 @@ class ReportController extends Controller
     }
 
     /**
+     * Download Customer Balances report as PDF
+     */
+    public function customerBalancesPdf(
+        \App\Services\Reports\CustomerBalanceSummaryService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate();
+            return $pdfService->download('reports.customer-balance-summary', $data, 'customer-balances-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Supplier Balances report as PDF
+     */
+    public function supplierBalancesPdf(
+        \App\Services\Reports\SupplierBalanceSummaryService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate();
+            return $pdfService->download('reports.supplier-balance-summary', $data, 'supplier-balances-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Inventory Stock report as PDF
+     */
+    public function inventoryStockPdf(
+        \App\Services\Reports\CurrentStockService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate();
+            return $pdfService->download('reports.current-stock', $data, 'current-stock-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Stock Movement report as PDF
+     */
+    public function stockMovementPdf(
+        Request $request,
+        \App\Services\Reports\StockMovementService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate($request->date_from, $request->date_to);
+            return $pdfService->download('reports.stock-movement', $data, 'stock-movement-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Wastage report as PDF
+     */
+    public function wastagePdf(
+        Request $request,
+        \App\Services\Reports\WastageReportService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate($request->date_from, $request->date_to);
+            return $pdfService->download('reports.wastage', $data, 'wastage-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Sales by Customer report as PDF
+     */
+    public function salesByCustomerPdf(
+        Request $request,
+        \App\Services\Reports\SalesByCustomerService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate($request->date_from, $request->date_to);
+            return $pdfService->download('reports.sales-by-customer', $data, 'sales-by-customer-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Supplier Performance report as PDF
+     */
+    public function supplierPerformancePdf(
+        Request $request,
+        \App\Services\Reports\SupplierPerformanceService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate($request->date_from, $request->date_to);
+            return $pdfService->download('reports.supplier-performance', $data, 'supplier-performance-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
+     * Download Supplier Payments report as PDF
+     */
+    public function supplierPaymentsPdf(
+        Request $request,
+        \App\Services\Reports\SupplierPaymentsService $reportService,
+        PdfGeneratorService $pdfService
+    ) {
+        $this->checkPermission('reports.export_pdf');
+
+        try {
+            $data = $reportService->generate($request->date_from, $request->date_to);
+            return $pdfService->download('reports.supplier-payments', $data, 'supplier-payments-report');
+        } catch (\Exception $e) {
+            return $this->error('RPT_003', 'فشل في إنشاء ملف PDF', 'PDF generation failed', 500);
+        }
+    }
+
+    /**
      * Validate date format.
      *
      * @throws BusinessException

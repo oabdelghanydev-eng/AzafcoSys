@@ -66,6 +66,13 @@ export default function SupplierPerformancePage() {
         return <Badge variant="destructive">High</Badge>;
     };
 
+    const handleDownloadPdf = () => {
+        const pdfParams = new URLSearchParams();
+        if (dateFrom) pdfParams.append('date_from', dateFrom);
+        if (dateTo) pdfParams.append('date_to', dateTo);
+        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.supplierPerformancePdf}?${pdfParams}`, '_blank');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -73,7 +80,7 @@ export default function SupplierPerformancePage() {
                     <h1 className="text-2xl font-bold">Supplier Performance</h1>
                     <p className="text-muted-foreground">Sales, wastage, and settlement analysis by supplier</p>
                 </div>
-                <Button disabled>
+                <Button onClick={handleDownloadPdf} disabled={!report}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button>

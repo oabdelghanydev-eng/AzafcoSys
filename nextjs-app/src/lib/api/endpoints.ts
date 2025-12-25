@@ -128,18 +128,26 @@ export const endpoints = {
         salesByProduct: '/reports/sales/by-product',
         salesByProductPdf: '/reports/sales/by-product/pdf',
         salesByCustomer: '/reports/sales/by-customer',
+        salesByCustomerPdf: '/reports/sales/by-customer/pdf',
         // Customer
         customerAging: '/reports/customers/aging',
         customerAgingPdf: '/reports/customers/aging/pdf',
         customerBalances: '/reports/customers/balances',
+        customerBalancesPdf: '/reports/customers/balances/pdf',
         // Inventory
         inventoryStock: '/reports/inventory/stock',
+        inventoryStockPdf: '/reports/inventory/stock/pdf',
         inventoryMovement: '/reports/inventory/movement',
+        inventoryMovementPdf: '/reports/inventory/movement/pdf',
         inventoryWastage: '/reports/inventory/wastage',
+        inventoryWastagePdf: '/reports/inventory/wastage/pdf',
         // Supplier
         supplierBalances: '/reports/suppliers/balances',
+        supplierBalancesPdf: '/reports/suppliers/balances/pdf',
         supplierPerformance: '/reports/suppliers/performance',
+        supplierPerformancePdf: '/reports/suppliers/performance/pdf',
         supplierPayments: '/reports/suppliers/payments',
+        supplierPaymentsPdf: '/reports/suppliers/payments/pdf',
     },
 
     // Settings

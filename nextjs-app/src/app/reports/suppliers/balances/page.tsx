@@ -58,6 +58,10 @@ export default function SupplierBalancesPage() {
         }
     };
 
+    const handleDownloadPdf = () => {
+        window.open(`${process.env.NEXT_PUBLIC_API_URL}${endpoints.reports.supplierBalancesPdf}`, '_blank');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -65,7 +69,7 @@ export default function SupplierBalancesPage() {
                     <h1 className="text-2xl font-bold">Supplier Balances</h1>
                     <p className="text-muted-foreground">All supplier balances summary</p>
                 </div>
-                <Button disabled>
+                <Button onClick={handleDownloadPdf} disabled={!report}>
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                 </Button>

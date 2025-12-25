@@ -159,7 +159,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profit-loss/pdf', [ReportController::class, 'profitLossPdf']);
         Route::get('/cash-flow/pdf', [ReportController::class, 'cashFlowPdf']);
         Route::get('/customers/aging/pdf', [ReportController::class, 'customerAgingPdf']);
+        Route::get('/customers/balances/pdf', [ReportController::class, 'customerBalancesPdf']);
         Route::get('/sales/by-product/pdf', [ReportController::class, 'salesByProductPdf']);
+        Route::get('/sales/by-customer/pdf', [ReportController::class, 'salesByCustomerPdf']);
+        Route::get('/inventory/stock/pdf', [ReportController::class, 'inventoryStockPdf']);
+        Route::get('/inventory/movement/pdf', [ReportController::class, 'stockMovementPdf']);
+        Route::get('/inventory/wastage/pdf', [ReportController::class, 'wastagePdf']);
+        Route::get('/suppliers/balances/pdf', [ReportController::class, 'supplierBalancesPdf']);
+        Route::get('/suppliers/performance/pdf', [ReportController::class, 'supplierPerformancePdf']);
+        Route::get('/suppliers/payments/pdf', [ReportController::class, 'supplierPaymentsPdf']);
     });
 
     // Settings
