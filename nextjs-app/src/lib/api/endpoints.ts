@@ -119,6 +119,27 @@ export const endpoints = {
         daily: (date: string) => `/reports/daily/${date}/pdf`,
         customerStatement: (id: number) => `/reports/customer/${id}`,
         supplierStatement: (id: number) => `/reports/supplier/${id}`,
+        // Financial
+        profitLoss: '/reports/profit-loss',
+        profitLossPdf: '/reports/profit-loss/pdf',
+        cashFlow: '/reports/cash-flow',
+        cashFlowPdf: '/reports/cash-flow/pdf',
+        // Sales
+        salesByProduct: '/reports/sales/by-product',
+        salesByProductPdf: '/reports/sales/by-product/pdf',
+        salesByCustomer: '/reports/sales/by-customer',
+        // Customer
+        customerAging: '/reports/customers/aging',
+        customerAgingPdf: '/reports/customers/aging/pdf',
+        customerBalances: '/reports/customers/balances',
+        // Inventory
+        inventoryStock: '/reports/inventory/stock',
+        inventoryMovement: '/reports/inventory/movement',
+        inventoryWastage: '/reports/inventory/wastage',
+        // Supplier
+        supplierBalances: '/reports/suppliers/balances',
+        supplierPerformance: '/reports/suppliers/performance',
+        supplierPayments: '/reports/suppliers/payments',
     },
 
     // Settings
