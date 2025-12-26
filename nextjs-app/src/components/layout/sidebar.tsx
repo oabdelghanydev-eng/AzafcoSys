@@ -34,77 +34,77 @@ interface NavItem {
 
 const navItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'لوحة التحكم',
         href: '/',
         icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
-        title: 'Daily Report',
+        title: 'التقرير اليومي',
         href: '/daily',
         icon: <Calendar className="h-5 w-5" />,
         permission: 'daily_reports.view',
     },
     {
-        title: 'Invoices',
+        title: 'الفواتير',
         href: '/invoices',
         icon: <FileText className="h-5 w-5" />,
         permission: 'invoices.view',
     },
     {
-        title: 'Collections',
+        title: 'التحصيلات',
         href: '/collections',
         icon: <Receipt className="h-5 w-5" />,
         permission: 'collections.view',
     },
     {
-        title: 'Shipments',
+        title: 'الشحنات',
         href: '/shipments',
         icon: <Truck className="h-5 w-5" />,
         permission: 'shipments.view',
     },
     {
-        title: 'Customers',
+        title: 'العملاء',
         href: '/customers',
         icon: <Users className="h-5 w-5" />,
         permission: 'customers.view',
     },
     {
-        title: 'Suppliers',
+        title: 'الموردين',
         href: '/suppliers',
         icon: <Building2 className="h-5 w-5" />,
         permission: 'suppliers.view',
     },
     {
-        title: 'Expenses',
+        title: 'المصروفات',
         href: '/expenses',
         icon: <Wallet className="h-5 w-5" />,
         permission: 'expenses.view',
     },
     {
-        title: 'Returns',
+        title: 'المرتجعات',
         href: '/returns',
         icon: <RotateCcw className="h-5 w-5" />,
         permission: 'returns.view',
     },
     {
-        title: 'Accounts',
+        title: 'الحسابات',
         href: '/accounts',
         icon: <PiggyBank className="h-5 w-5" />,
         permission: 'accounts.view',
     },
     {
-        title: 'Reports',
+        title: 'التقارير',
         href: '/reports',
         icon: <BarChart3 className="h-5 w-5" />,
     },
     {
-        title: 'Settings',
+        title: 'الإعدادات',
         href: '/settings',
         icon: <Settings className="h-5 w-5" />,
         permission: 'settings.view',
     },
     {
-        title: 'Users',
+        title: 'المستخدمين',
         href: '/users',
         icon: <UserCog className="h-5 w-5" />,
         permission: 'users.view',
@@ -127,7 +127,7 @@ export function Sidebar() {
             <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
                 {!sidebarCollapsed && (
                     <Link href="/" className="font-bold text-lg text-sidebar-foreground">
-                        Sales System
+                        نظام المبيعات
                     </Link>
                 )}
                 <Button
