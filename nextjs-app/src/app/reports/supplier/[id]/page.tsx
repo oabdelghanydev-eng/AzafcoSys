@@ -91,7 +91,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
     if (isNaN(supplierId)) {
         return (
             <div className="p-6">
-                <div className="text-center text-red-500">معرف المورد غير صحيح</div>
+                <div className="text-center text-red-500">Invalid supplier ID</div>
             </div>
         );
     }
@@ -107,8 +107,8 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold">كشف حساب المورد</h1>
-                        <p className="text-muted-foreground">Supplier Statement</p>
+                        <h1 className="text-2xl font-bold">Supplier Statement</h1>
+                        <p className="text-muted-foreground">Account transactions and balance</p>
                     </div>
                 </div>
                 <Button onClick={handleDownloadPdf} disabled={isDownloading || !statement}>
@@ -117,7 +117,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                     ) : (
                         <Download className="h-4 w-4 ml-2" />
                     )}
-                    {isDownloading ? 'جاري التحميل...' : 'تحميل PDF'}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 
@@ -126,7 +126,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                 <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <Label>من تاريخ</Label>
+                            <Label>From Date</Label>
                             <Input
                                 type="date"
                                 value={dateFrom}
@@ -134,7 +134,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                             />
                         </div>
                         <div>
-                            <Label>إلى تاريخ</Label>
+                            <Label>To Date</Label>
                             <Input
                                 type="date"
                                 value={dateTo}
@@ -154,7 +154,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
             {error && (
                 <Card className="border-red-200 bg-red-50">
                     <CardContent className="pt-6 text-center text-red-600">
-                        حدث خطأ في تحميل البيانات
+                        Error loading data
                     </CardContent>
                 </Card>
             )}
@@ -172,24 +172,24 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                         <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الكود</p>
+                                    <p className="text-sm text-muted-foreground">Code</p>
                                     <p className="font-medium">{statement.supplier.code}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الهاتف</p>
+                                    <p className="text-sm text-muted-foreground">Phone</p>
                                     <p className="font-medium">{statement.supplier.phone || '-'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الرصيد الافتتاحي</p>
+                                    <p className="text-sm text-muted-foreground">Opening Balance</p>
                                     <p className="font-medium money">{formatCurrency(safeNumber(statement.summary.opening_balance))}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الرصيد الحالي</p>
+                                    <p className="text-sm text-muted-foreground">Current Balance</p>
                                     <p className={`font-bold text-lg money ${statement.summary.closing_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                         {formatCurrency(Math.abs(statement.summary.closing_balance))}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {statement.summary.closing_balance > 0 ? 'مستحق له (علينا)' : statement.summary.closing_balance < 0 ? 'مستحق لنا (عليه)' : 'متوازن'}
+                                        {statement.summary.closing_balance > 0 ? 'We Owe Them' : statement.summary.closing_balance < 0 ? 'They Owe Us' : 'Balanced'}
                                     </p>
                                 </div>
                             </div>
@@ -200,7 +200,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">إجمالي الشحنات</p>
+                                <p className="text-sm text-muted-foreground">Total Shipments</p>
                                 <p className="text-2xl font-bold text-blue-600 money">
                                     {formatCurrency(statement.summary.total_shipments)}
                                 </p>
@@ -208,7 +208,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                         </Card>
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">إجمالي المدفوعات</p>
+                                <p className="text-sm text-muted-foreground">Total Payments</p>
                                 <p className="text-2xl font-bold text-green-600 money">
                                     {formatCurrency(statement.summary.total_payments)}
                                 </p>
@@ -216,7 +216,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                         </Card>
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">إجمالي المصروفات</p>
+                                <p className="text-sm text-muted-foreground">Total Expenses</p>
                                 <p className="text-2xl font-bold text-orange-600 money">
                                     {formatCurrency(statement.summary.total_expenses)}
                                 </p>
@@ -224,7 +224,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                         </Card>
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">الرصيد الختامي</p>
+                                <p className="text-sm text-muted-foreground">Closing Balance</p>
                                 <p className={`text-2xl font-bold money ${statement.summary.closing_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                     {formatCurrency(Math.abs(statement.summary.closing_balance))}
                                 </p>
@@ -235,24 +235,24 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                     {/* Transactions Table */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>الحركات</CardTitle>
+                            <CardTitle>Transactions</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {statement.transactions.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    لا توجد حركات في هذه الفترة
+                                    No transactions in this period
                                 </div>
                             ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>التاريخ</TableHead>
-                                            <TableHead>النوع</TableHead>
-                                            <TableHead>المرجع</TableHead>
-                                            <TableHead>البيان</TableHead>
-                                            <TableHead className="text-left">مدين</TableHead>
-                                            <TableHead className="text-left">دائن</TableHead>
-                                            <TableHead className="text-left">الرصيد</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Type</TableHead>
+                                            <TableHead>Reference</TableHead>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead className="text-left">Debit</TableHead>
+                                            <TableHead className="text-left">Credit</TableHead>
+                                            <TableHead className="text-left">Balance</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -266,10 +266,10 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                                                                 : tx.type === 'expense' ? 'outline'
                                                                     : 'secondary'
                                                     }>
-                                                        {tx.type === 'shipment' ? 'شحنة'
-                                                            : tx.type === 'payment' ? 'دفعة'
-                                                                : tx.type === 'expense' ? 'مصروف'
-                                                                    : 'رصيد افتتاحي'}
+                                                        {tx.type === 'shipment' ? 'Shipment'
+                                                            : tx.type === 'payment' ? 'Payment'
+                                                                : tx.type === 'expense' ? 'Expense'
+                                                                    : 'Opening Balance'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>{tx.reference}</TableCell>

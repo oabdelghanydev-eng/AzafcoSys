@@ -90,7 +90,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
     if (isNaN(customerId)) {
         return (
             <div className="p-6">
-                <div className="text-center text-red-500">معرف العميل غير صحيح</div>
+                <div className="text-center text-red-500">Invalid customer ID</div>
             </div>
         );
     }
@@ -106,8 +106,8 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold">كشف حساب العميل</h1>
-                        <p className="text-muted-foreground">Customer Statement</p>
+                        <h1 className="text-2xl font-bold">Customer Statement</h1>
+                        <p className="text-muted-foreground">Account transactions and balance</p>
                     </div>
                 </div>
                 <Button onClick={handleDownloadPdf} disabled={isDownloading || !statement}>
@@ -116,7 +116,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                     ) : (
                         <Download className="h-4 w-4 ml-2" />
                     )}
-                    {isDownloading ? 'جاري التحميل...' : 'تحميل PDF'}
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
                 </Button>
             </div>
 
@@ -125,7 +125,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                 <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <Label>من تاريخ</Label>
+                            <Label>From Date</Label>
                             <Input
                                 type="date"
                                 value={dateFrom}
@@ -133,7 +133,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                             />
                         </div>
                         <div>
-                            <Label>إلى تاريخ</Label>
+                            <Label>To Date</Label>
                             <Input
                                 type="date"
                                 value={dateTo}
@@ -153,7 +153,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
             {error && (
                 <Card className="border-red-200 bg-red-50">
                     <CardContent className="pt-6 text-center text-red-600">
-                        حدث خطأ في تحميل البيانات
+                        Error loading data
                     </CardContent>
                 </Card>
             )}
@@ -171,19 +171,19 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                         <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الكود</p>
+                                    <p className="text-sm text-muted-foreground">Code</p>
                                     <p className="font-medium">{statement.customer.code}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الهاتف</p>
+                                    <p className="text-sm text-muted-foreground">Phone</p>
                                     <p className="font-medium">{statement.customer.phone || '-'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الرصيد الافتتاحي</p>
+                                    <p className="text-sm text-muted-foreground">Opening Balance</p>
                                     <p className="font-medium money">{formatCurrency(statement.summary.opening_balance)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الرصيد الحالي</p>
+                                    <p className="text-sm text-muted-foreground">Current Balance</p>
                                     <p className={`font-bold text-lg money ${statement.summary.closing_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                         {formatCurrency(statement.summary.closing_balance)}
                                     </p>
@@ -196,7 +196,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">إجمالي الفواتير</p>
+                                <p className="text-sm text-muted-foreground">Total Invoices</p>
                                 <p className="text-2xl font-bold text-red-600 money">
                                     {formatCurrency(statement.summary.total_invoices)}
                                 </p>
@@ -204,7 +204,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                         </Card>
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">إجمالي التحصيلات</p>
+                                <p className="text-sm text-muted-foreground">Total Collections</p>
                                 <p className="text-2xl font-bold text-green-600 money">
                                     {formatCurrency(statement.summary.total_collections)}
                                 </p>
@@ -212,12 +212,12 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                         </Card>
                         <Card>
                             <CardContent className="pt-6 text-center">
-                                <p className="text-sm text-muted-foreground">الرصيد الختامي</p>
+                                <p className="text-sm text-muted-foreground">Closing Balance</p>
                                 <p className={`text-2xl font-bold money ${statement.summary.closing_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                     {formatCurrency(Math.abs(statement.summary.closing_balance))}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {statement.summary.closing_balance > 0 ? 'مدين (له علينا)' : statement.summary.closing_balance < 0 ? 'دائن (لنا عليه)' : 'متوازن'}
+                                    {statement.summary.closing_balance > 0 ? 'Debit (Owes Us)' : statement.summary.closing_balance < 0 ? 'Credit (We Owe)' : 'Balanced'}
                                 </p>
                             </CardContent>
                         </Card>
@@ -226,24 +226,24 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                     {/* Transactions Table */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>الحركات</CardTitle>
+                            <CardTitle>Transactions</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {statement.transactions.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    لا توجد حركات في هذه الفترة
+                                    No transactions in this period
                                 </div>
                             ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>التاريخ</TableHead>
-                                            <TableHead>النوع</TableHead>
-                                            <TableHead>المرجع</TableHead>
-                                            <TableHead>البيان</TableHead>
-                                            <TableHead className="text-left">مدين</TableHead>
-                                            <TableHead className="text-left">دائن</TableHead>
-                                            <TableHead className="text-left">الرصيد</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Type</TableHead>
+                                            <TableHead>Reference</TableHead>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead className="text-left">Debit</TableHead>
+                                            <TableHead className="text-left">Credit</TableHead>
+                                            <TableHead className="text-left">Balance</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -256,9 +256,9 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                                                             : tx.type === 'collection' ? 'default'
                                                                 : 'secondary'
                                                     }>
-                                                        {tx.type === 'invoice' ? 'فاتورة'
-                                                            : tx.type === 'collection' ? 'تحصيل'
-                                                                : 'رصيد افتتاحي'}
+                                                        {tx.type === 'invoice' ? 'Invoice'
+                                                            : tx.type === 'collection' ? 'Collection'
+                                                                : 'Opening Balance'}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>{tx.reference}</TableCell>
