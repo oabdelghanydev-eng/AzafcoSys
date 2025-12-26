@@ -143,6 +143,19 @@ export default function EditCustomerPage() {
                             onCheckedChange={setIsActive}
                         />
                     </div>
+
+                    {/* Read-only Opening Balance */}
+                    <div className="pt-4 border-t">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <Label className="text-muted-foreground">Opening Balance</Label>
+                                <p className="text-xs text-muted-foreground">Set at creation, cannot be modified</p>
+                            </div>
+                            <p className="font-medium text-lg">
+                                {customer.opening_balance?.toFixed(2) || '0.00'} QAR
+                            </p>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
