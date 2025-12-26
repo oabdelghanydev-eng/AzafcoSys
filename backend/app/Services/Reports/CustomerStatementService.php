@@ -148,7 +148,7 @@ class CustomerStatementService extends BaseService
             ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
             ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
             ->orderBy('date')
-            ->get(['id', 'return_number', 'date', 'total']);
+            ->get(['id', 'return_number', 'date', 'total_amount']);
     }
 
     /**
@@ -222,7 +222,7 @@ class CustomerStatementService extends BaseService
                 'date' => $return->date->format('Y-m-d'),
                 'reference' => $return->return_number,
                 'debit' => 0,
-                'credit' => (float) $return->total,
+                'credit' => (float) $return->total_amount,
                 'description' => 'مرتجع',
             ]);
         }
