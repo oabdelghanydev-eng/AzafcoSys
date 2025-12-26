@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, X, Loader2 as _Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatDateShort, formatQuantity } from '@/lib/formatters';
 import { useInvoice, useCancelInvoice } from '@/hooks/api/use-invoices';
 import { useState } from 'react';
-import { config } from '@/lib/config';
+import { usePdfDownload } from '@/hooks/use-pdf-download';
 
 function getStatusBadge(status: string) {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
@@ -38,6 +38,7 @@ export default function InvoiceDetailPage() {
     const invoiceId = Number(params.id);
     const { data: invoice, isLoading, error, refetch } = useInvoice(invoiceId);
     const cancelInvoice = useCancelInvoice();
+    const { downloadPdf, isDownloading } = usePdfDownload();
 
     const handleCancel = async () => {
         try {
@@ -52,7 +53,7 @@ export default function InvoiceDetailPage() {
     };
 
     const handlePrint = () => {
-        window.open(`${config.apiUrl}/invoices/${invoiceId}/pdf`, '_blank');
+        downloadPdf(`/invoices/${invoiceId}/pdf`, `invoice-${invoice?.invoice_number || invoiceId}.pdf`);
     };
 
     if (isLoading) {
@@ -89,9 +90,9 @@ export default function InvoiceDetailPage() {
                 </div>
 
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={handlePrint} className="touch-target">
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print
+                    <Button variant="outline" onClick={handlePrint} disabled={isDownloading} className="touch-target">
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Downloading...' : 'Print'}
                     </Button>
                     {invoice.status !== 'cancelled' && (
                         <PermissionGate permission="invoices.cancel">
