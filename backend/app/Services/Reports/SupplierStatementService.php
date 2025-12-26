@@ -42,8 +42,9 @@ class SupplierStatementService extends BaseService
         return [
             'supplier' => [
                 'id' => $supplier->id,
-                'code' => $supplier->code,
+                'code' => $supplier->supplier_code,
                 'name' => $supplier->name,
+                'phone' => $supplier->phone,
                 'opening_balance' => (float) $supplier->opening_balance,
                 'current_balance' => (float) $supplier->balance,
             ],
@@ -52,9 +53,11 @@ class SupplierStatementService extends BaseService
                 'to' => $dateTo,
             ],
             'summary' => [
-                'total_settlements' => $totalSettlements, // صافي المستحقات بعد العمولة
-                'total_expenses' => $totalExpenses,       // مصروفات على المورد
-                'total_payments' => $totalPayments,       // مدفوعات للمورد
+                'opening_balance' => (float) $supplier->opening_balance,
+                'total_shipments' => (float) $totalSettlements, // صافي المستحقات بعد العمولة
+                'total_expenses' => (float) $totalExpenses,       // مصروفات على المورد
+                'total_payments' => (float) $totalPayments,       // مدفوعات للمورد
+                'closing_balance' => (float) ($supplier->opening_balance + $totalSettlements - $totalExpenses - $totalPayments),
                 'shipments_count' => $shipments->count(),
                 'expenses_count' => $expenses->count(),
                 'payments_count' => $payments->count(),

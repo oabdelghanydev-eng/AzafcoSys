@@ -51,6 +51,11 @@ interface SupplierStatement {
     };
 }
 
+// Safe number helper to prevent NaN
+const safeNumber = (value: number | undefined | null): number => {
+    return typeof value === 'number' && !isNaN(value) ? value : 0;
+};
+
 export default function SupplierStatementPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const supplierId = parseInt(resolvedParams.id);
@@ -176,7 +181,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">الرصيد الافتتاحي</p>
-                                    <p className="font-medium money">{formatCurrency(statement.summary.opening_balance)}</p>
+                                    <p className="font-medium money">{formatCurrency(safeNumber(statement.summary.opening_balance))}</p>
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">الرصيد الحالي</p>

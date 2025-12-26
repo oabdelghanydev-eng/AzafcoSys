@@ -37,15 +37,16 @@ class CustomerStatementService extends BaseService
 
         $timeline = $this->buildTimeline($invoices, $collections, $returns, $creditNotes, $periodOpeningBalance);
 
-        $totalReturns = $returns->sum('total');
+        $totalReturns = $returns->sum('total_amount');
         $totalCreditNotes = $creditNotes->where('type', 'credit')->sum('amount');
         $totalDebitNotes = $creditNotes->where('type', 'debit')->sum('amount');
 
         return [
             'customer' => [
                 'id' => $customer->id,
-                'code' => $customer->code,
+                'code' => $customer->customer_code,
                 'name' => $customer->name,
+                'phone' => $customer->phone,
                 'opening_balance' => (float) $customer->opening_balance,
                 'current_balance' => (float) $customer->balance,
             ],
@@ -55,11 +56,13 @@ class CustomerStatementService extends BaseService
                 'opening_balance' => $periodOpeningBalance,
             ],
             'summary' => [
-                'total_invoices' => $invoices->sum('total'),
-                'total_collections' => $collections->sum('amount'),
-                'total_returns' => $totalReturns,
-                'total_credit_notes' => $totalCreditNotes,
-                'total_debit_notes' => $totalDebitNotes,
+                'opening_balance' => (float) $periodOpeningBalance,
+                'total_invoices' => (float) $invoices->sum('total'),
+                'total_collections' => (float) $collections->sum('amount'),
+                'total_returns' => (float) $totalReturns,
+                'total_credit_notes' => (float) $totalCreditNotes,
+                'total_debit_notes' => (float) $totalDebitNotes,
+                'closing_balance' => (float) ($periodOpeningBalance + $invoices->sum('total') + $totalDebitNotes - $collections->sum('amount') - $totalReturns - $totalCreditNotes),
                 'invoices_count' => $invoices->count(),
                 'collections_count' => $collections->count(),
                 'returns_count' => $returns->count(),

@@ -50,6 +50,11 @@ interface CustomerStatement {
     };
 }
 
+// Safe number helper to prevent NaN
+const safeNumber = (value: number | undefined | null): number => {
+    return typeof value === 'number' && !isNaN(value) ? value : 0;
+};
+
 export default function CustomerStatementPage({ params }: { params: Promise<{ id: string }> }) {
     const resolvedParams = use(params);
     const customerId = parseInt(resolvedParams.id);
