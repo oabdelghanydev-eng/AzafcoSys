@@ -85,6 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('expenses', ExpenseController::class);
     });
 
+    // Invoice PDF (doesn't require open day - view only)
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+
     // Shipments (not tied to daily report - has own lifecycle)
     Route::get('/shipments/stock', [ShipmentController::class, 'stock']);
     Route::apiResource('shipments', ShipmentController::class);

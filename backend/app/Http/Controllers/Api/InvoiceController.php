@@ -196,4 +196,46 @@ class InvoiceController extends Controller
             'تم إلغاء الفاتورة بنجاح'
         );
     }
+
+    /**
+     * Download invoice as PDF.
+     *
+     * Permission: invoices.view
+     */
+    public function pdf(Invoice $invoice, \App\Services\PdfGeneratorService $pdfService)
+    {
+        $this->checkPermission('invoices.view');
+
+        $invoice->load(['items.product', 'customer']);
+
+        $data = [
+            'invoice' => [
+                'invoice_number' => $invoice->invoice_number,
+                'date' => $invoice->date->format('Y-m-d'),
+                'status' => $invoice->status,
+                'subtotal' => (float) $invoice->subtotal,
+                'discount' => (float) $invoice->discount,
+                'total' => (float) $invoice->total,
+                'paid_amount' => (float) $invoice->paid_amount,
+                'balance' => (float) $invoice->balance,
+                'notes' => $invoice->notes,
+            ],
+            'customer' => [
+                'name' => $invoice->customer->name,
+                'code' => $invoice->customer->customer_code,
+                'phone' => $invoice->customer->phone,
+            ],
+            'items' => $invoice->items->map(fn($item) => [
+                'product_name' => $item->product->name,
+                'quantity' => $item->quantity,
+                'total_weight' => (float) $item->total_weight,
+                'unit_price' => (float) $item->unit_price,
+                'subtotal' => (float) $item->subtotal,
+            ])->toArray(),
+        ];
+
+        $pdf = $pdfService->generateFromView('reports.invoice', $data);
+
+        return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
+    }
 }
