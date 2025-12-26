@@ -21,10 +21,11 @@ import { usePdfDownload } from '@/hooks/use-pdf-download';
 
 function getStatusBadge(status: string) {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-        paid: { variant: 'default', label: 'Paid' },
-        partially_paid: { variant: 'secondary', label: 'Partial' },
-        unpaid: { variant: 'outline', label: 'Unpaid' },
-        cancelled: { variant: 'destructive', label: 'Cancelled' },
+        paid: { variant: 'default', label: 'مدفوع' },
+        partially_paid: { variant: 'secondary', label: 'جزئي' },
+        unpaid: { variant: 'outline', label: 'غير مدفوع' },
+        cancelled: { variant: 'destructive', label: 'ملغي' },
+        active: { variant: 'default', label: 'نشط' },
     };
     const config = variants[status] || { variant: 'outline', label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -92,7 +93,7 @@ export default function InvoiceDetailPage() {
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={handlePrint} disabled={isDownloading} className="touch-target">
                         {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-                        {isDownloading ? 'Downloading...' : 'Print'}
+                        {isDownloading ? 'جاري التحميل...' : 'طباعة'}
                     </Button>
                     {invoice.status !== 'cancelled' && (
                         <PermissionGate permission="invoices.cancel">
@@ -102,7 +103,7 @@ export default function InvoiceDetailPage() {
                                 className="touch-target"
                             >
                                 <X className="mr-2 h-4 w-4" />
-                                Cancel
+                                إلغاء
                             </Button>
                         </PermissionGate>
                     )}
@@ -113,7 +114,7 @@ export default function InvoiceDetailPage() {
             <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">Customer</CardTitle>
+                        <CardTitle className="text-lg">العميل</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="font-semibold text-lg">{invoice.customer?.name}</p>
@@ -123,30 +124,30 @@ export default function InvoiceDetailPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">Summary</CardTitle>
+                        <CardTitle className="text-lg">الملخص</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                         <div className="flex justify-between">
-                            <span className="text-muted-foreground">Subtotal</span>
+                            <span className="text-muted-foreground">المجموع الفرعي</span>
                             <span className="money">{formatMoney(invoice.subtotal || invoice.total)}</span>
                         </div>
                         {invoice.discount > 0 && (
                             <div className="flex justify-between text-red-600">
-                                <span>Discount</span>
+                                <span>الخصم</span>
                                 <span className="money">-{formatMoney(invoice.discount)}</span>
                             </div>
                         )}
                         <div className="flex justify-between font-bold text-lg border-t pt-2">
-                            <span>Total</span>
+                            <span>الإجمالي</span>
                             <span className="money">{formatMoney(invoice.total)}</span>
                         </div>
                         <div className="flex justify-between text-green-600">
-                            <span>Paid</span>
+                            <span>المدفوع</span>
                             <span className="money">{formatMoney(invoice.paid || 0)}</span>
                         </div>
                         {invoice.balance > 0 && (
                             <div className="flex justify-between text-orange-600 font-semibold">
-                                <span>Balance</span>
+                                <span>المتبقي</span>
                                 <span className="money">{formatMoney(invoice.balance)}</span>
                             </div>
                         )}
@@ -157,17 +158,17 @@ export default function InvoiceDetailPage() {
             {/* Items */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-lg">Items</CardTitle>
+                    <CardTitle className="text-lg">الأصناف</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Product</TableHead>
-                                <TableHead className="text-right">Cartons</TableHead>
-                                <TableHead className="text-right">Weight</TableHead>
-                                <TableHead className="text-right">Price/KG</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
+                                <TableHead>المنتج</TableHead>
+                                <TableHead className="text-right">الكراتين</TableHead>
+                                <TableHead className="text-right">الوزن</TableHead>
+                                <TableHead className="text-right">سعر/كغ</TableHead>
+                                <TableHead className="text-right">الإجمالي</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -189,14 +190,14 @@ export default function InvoiceDetailPage() {
             {((invoice.payments?.length ?? 0) > 0 || (invoice.allocations?.length ?? 0) > 0) && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-lg">Payments</CardTitle>
+                        <CardTitle className="text-lg">المدفوعات</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-3">
                             {(invoice.allocations || invoice.payments || []).map((payment: { collection?: { receipt_number?: string }; id?: number; created_at?: string; date?: string; amount?: number; allocated_amount?: number }, index: number) => (
                                 <div key={index} className="flex justify-between py-2 border-b last:border-0">
                                     <div>
-                                        <p className="font-medium">Collection #{payment.collection?.receipt_number || payment.id}</p>
+                                        <p className="font-medium">تحصيل #{payment.collection?.receipt_number || payment.id}</p>
                                         <p className="text-sm text-muted-foreground">
                                             {formatDateShort(payment.created_at || payment.date)}
                                         </p>
@@ -215,9 +216,9 @@ export default function InvoiceDetailPage() {
             <ConfirmDialog
                 open={showCancelConfirm}
                 onOpenChange={setShowCancelConfirm}
-                title="Cancel Invoice?"
-                description="This will cancel the invoice and reverse any stock allocations. This action cannot be undone."
-                confirmLabel="Cancel Invoice"
+                title="إلغاء الفاتورة؟"
+                description="سيتم إلغاء الفاتورة وإرجاع المخزون المخصص. هذا الإجراء لا يمكن التراجع عنه."
+                confirmLabel="إلغاء الفاتورة"
                 onConfirm={handleCancel}
                 variant="destructive"
                 loading={cancelInvoice.isPending}

@@ -24,10 +24,11 @@ import type { Invoice } from '@/types/api';
 
 function getStatusBadge(status: string) {
     const variants: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; label: string }> = {
-        paid: { variant: 'default', label: 'Paid' },
-        partially_paid: { variant: 'secondary', label: 'Partial' },
-        unpaid: { variant: 'outline', label: 'Unpaid' },
-        cancelled: { variant: 'destructive', label: 'Cancelled' },
+        paid: { variant: 'default', label: 'مدفوع' },
+        partially_paid: { variant: 'secondary', label: 'جزئي' },
+        unpaid: { variant: 'outline', label: 'غير مدفوع' },
+        cancelled: { variant: 'destructive', label: 'ملغي' },
+        active: { variant: 'default', label: 'نشط' },
     };
 
     const config = variants[status] || { variant: 'outline', label: status };
@@ -53,7 +54,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
                     </div>
                     {invoice.balance > 0 && (
                         <p className="text-xs text-orange-600 mt-1">
-                            Balance: {formatMoney(invoice.balance)}
+                            المتبقي: {formatMoney(invoice.balance)}
                         </p>
                     )}
                 </CardContent>
@@ -87,16 +88,16 @@ export default function InvoicesPage() {
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold">Invoices</h1>
+                    <h1 className="text-2xl font-bold">الفواتير</h1>
                     <p className="text-muted-foreground">
-                        Manage sales invoices
+                        إدارة فواتير المبيعات
                     </p>
                 </div>
                 <PermissionGate permission="invoices.create">
                     <Button asChild className="touch-target">
                         <Link href="/invoices/new">
                             <Plus className="mr-2 h-4 w-4" />
-                            New Invoice
+                            فاتورة جديدة
                         </Link>
                     </Button>
                 </PermissionGate>
@@ -106,20 +107,20 @@ export default function InvoicesPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search invoices..." className="pl-10" />
+                    <Input placeholder="بحث في الفواتير..." className="pl-10" />
                 </div>
                 <Button variant="outline" className="touch-target">
                     <Filter className="mr-2 h-4 w-4" />
-                    Filters
+                    فلترة
                 </Button>
             </div>
 
             {isEmpty ? (
                 <EmptyState
                     icon={<FileText className="h-12 w-12" />}
-                    title="No invoices found"
-                    description="Create a new invoice to get started"
-                    action={{ label: 'New Invoice', href: '/invoices/new' }}
+                    title="لا توجد فواتير"
+                    description="أنشئ فاتورة جديدة للبدء"
+                    action={{ label: 'فاتورة جديدة', href: '/invoices/new' }}
                 />
             ) : (
                 <>
@@ -135,13 +136,13 @@ export default function InvoicesPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Invoice #</TableHead>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead className="text-right">Total</TableHead>
-                                    <TableHead className="text-right">Paid</TableHead>
-                                    <TableHead className="text-right">Balance</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead>رقم الفاتورة</TableHead>
+                                    <TableHead>العميل</TableHead>
+                                    <TableHead>التاريخ</TableHead>
+                                    <TableHead className="text-right">الإجمالي</TableHead>
+                                    <TableHead className="text-right">المدفوع</TableHead>
+                                    <TableHead className="text-right">المتبقي</TableHead>
+                                    <TableHead>الحالة</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
