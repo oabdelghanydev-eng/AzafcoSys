@@ -185,11 +185,11 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">الرصيد الحالي</p>
-                                    <p className={`font-bold text-lg money ${statement.summary.closing_balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    <p className={`font-bold text-lg money ${statement.summary.closing_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                         {formatCurrency(Math.abs(statement.summary.closing_balance))}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {statement.summary.closing_balance < 0 ? 'نحن ندين له' : statement.summary.closing_balance > 0 ? 'يدين لنا' : 'متوازن'}
+                                        {statement.summary.closing_balance > 0 ? 'مستحق له (علينا)' : statement.summary.closing_balance < 0 ? 'مستحق لنا (عليه)' : 'متوازن'}
                                     </p>
                                 </div>
                             </div>
@@ -225,7 +225,7 @@ export default function SupplierStatementPage({ params }: { params: Promise<{ id
                         <Card>
                             <CardContent className="pt-6 text-center">
                                 <p className="text-sm text-muted-foreground">الرصيد الختامي</p>
-                                <p className={`text-2xl font-bold money ${statement.summary.closing_balance < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                <p className={`text-2xl font-bold money ${statement.summary.closing_balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
                                     {formatCurrency(Math.abs(statement.summary.closing_balance))}
                                 </p>
                             </CardContent>

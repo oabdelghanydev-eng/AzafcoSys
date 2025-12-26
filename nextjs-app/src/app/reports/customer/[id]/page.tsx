@@ -217,7 +217,7 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                                     {formatCurrency(Math.abs(statement.summary.closing_balance))}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {statement.summary.closing_balance > 0 ? 'مدين (علينا)' : statement.summary.closing_balance < 0 ? 'دائن (له)' : 'متوازن'}
+                                    {statement.summary.closing_balance > 0 ? 'مدين (له علينا)' : statement.summary.closing_balance < 0 ? 'دائن (لنا عليه)' : 'متوازن'}
                                 </p>
                             </CardContent>
                         </Card>
