@@ -80,7 +80,7 @@ class ReportController extends Controller
 
         // Items breakdown
         $itemsBreakdown = $shipment->items->map(fn($item) => [
-            'product' => $item->product->name,
+            'product' => $item->product->name_en ?? $item->product->name,
             'cartons' => $item->cartons,
             'sold_cartons' => $item->sold_cartons,
             'remaining_cartons' => $item->remaining_cartons,

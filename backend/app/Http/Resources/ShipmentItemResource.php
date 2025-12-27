@@ -13,7 +13,7 @@ class ShipmentItemResource extends JsonResource
             'id' => $this->id,
             'product' => [
                 'id' => $this->product->id,
-                'name' => $this->product->name,
+                'name' => $this->product->name_en ?? $this->product->name,
             ],
             'weight_per_unit' => (float) $this->weight_per_unit,
             'weight_label' => $this->weight_label,

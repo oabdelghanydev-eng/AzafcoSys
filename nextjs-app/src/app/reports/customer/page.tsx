@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
 import { useCustomers } from '@/hooks/api/use-customers';
 import Link from 'next/link';
-import type { Customer } from '@/types/api';
 
 export default function CustomerStatementSelectPage() {
     const { data, isLoading } = useCustomers();
@@ -21,8 +20,8 @@ export default function CustomerStatementSelectPage() {
                     <User className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold">كشف حساب العميل</h1>
-                    <p className="text-muted-foreground">Customer Statement - Select Customer</p>
+                    <h1 className="text-2xl font-bold">Customer Statement</h1>
+                    <p className="text-muted-foreground">Select a customer to view their account statement</p>
                 </div>
             </div>
 
@@ -30,7 +29,7 @@ export default function CustomerStatementSelectPage() {
             <Card>
                 <CardContent className="pt-6">
                     <p className="text-muted-foreground">
-                        اختر العميل من القائمة أدناه لعرض كشف حسابه
+                        Select a customer from the list below to view their account statement
                     </p>
                 </CardContent>
             </Card>
@@ -38,25 +37,25 @@ export default function CustomerStatementSelectPage() {
             {/* Customers List */}
             <Card>
                 <CardHeader>
-                    <CardTitle>اختر العميل لعرض كشف الحساب</CardTitle>
+                    <CardTitle>Select Customer</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            جاري التحميل...
+                            Loading...
                         </div>
                     ) : customers.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            لا يوجد عملاء
+                            No customers found
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>الكود</TableHead>
-                                    <TableHead>الاسم</TableHead>
-                                    <TableHead>الهاتف</TableHead>
-                                    <TableHead className="text-left">الرصيد</TableHead>
+                                    <TableHead>Code</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Phone</TableHead>
+                                    <TableHead className="text-left">Balance</TableHead>
                                     <TableHead></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -72,8 +71,8 @@ export default function CustomerStatementSelectPage() {
                                         <TableCell>
                                             <Link href={`/reports/customer/${customer.id}`}>
                                                 <Button size="sm" variant="outline">
-                                                    <FileText className="h-4 w-4 ml-2" />
-                                                    كشف الحساب
+                                                    <FileText className="h-4 w-4 mr-2" />
+                                                    View Statement
                                                 </Button>
                                             </Link>
                                         </TableCell>

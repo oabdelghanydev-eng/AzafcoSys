@@ -226,7 +226,7 @@ class InvoiceController extends Controller
                 'phone' => $invoice->customer->phone,
             ],
             'items' => $invoice->items->map(fn($item) => [
-                'product_name' => $item->product->name,
+                'product_name' => $item->product->name_en ?? $item->product->name,
                 'quantity' => $item->quantity,
                 'total_weight' => (float) $item->total_weight,
                 'unit_price' => (float) $item->unit_price,

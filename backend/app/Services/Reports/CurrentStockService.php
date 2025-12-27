@@ -78,7 +78,7 @@ class CurrentStockService extends BaseService
 
         return $items->map(fn($item) => [
             'product_id' => $item->product_id,
-            'product_name' => $item->product->name_ar,
+            'product_name' => $item->product->name_en ?? $item->product->name,
             'shipment_number' => $item->shipment->number,
             'supplier_name' => $item->shipment->supplier->name,
             'shipment_date' => $item->shipment->date->format('Y-m-d'),

@@ -274,7 +274,7 @@ class ShipmentService
             $actualSoldWeight = $item->invoiceItems()->sum('quantity');
 
             $itemData = [
-                'product' => $item->product->name,
+                'product' => $item->product->name_en ?? $item->product->name,
                 'weight_label' => $item->weight_label,
                 'weight_per_unit' => (float) $item->weight_per_unit,
                 'cartons' => $item->cartons,

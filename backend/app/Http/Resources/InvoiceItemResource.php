@@ -13,7 +13,7 @@ class InvoiceItemResource extends JsonResource
             'id' => $this->id,
             'product' => [
                 'id' => $this->product->id,
-                'name' => $this->product->name,
+                'name' => $this->product->name_en ?? $this->product->name,
             ],
             'shipment_item_id' => $this->shipment_item_id,
             'cartons' => $this->cartons,

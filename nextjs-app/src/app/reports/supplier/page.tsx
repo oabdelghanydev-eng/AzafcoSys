@@ -21,8 +21,8 @@ export default function SupplierStatementSelectPage() {
                     <Truck className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold">كشف حساب المورد</h1>
-                    <p className="text-muted-foreground">Supplier Statement - Select Supplier</p>
+                    <h1 className="text-2xl font-bold">Supplier Statement</h1>
+                    <p className="text-muted-foreground">Select a supplier to view their account statement</p>
                 </div>
             </div>
 
@@ -30,7 +30,7 @@ export default function SupplierStatementSelectPage() {
             <Card>
                 <CardContent className="pt-6">
                     <p className="text-muted-foreground">
-                        اختر المورد من القائمة أدناه لعرض كشف حسابه
+                        Select a supplier from the list below to view their account statement
                     </p>
                 </CardContent>
             </Card>
@@ -38,25 +38,25 @@ export default function SupplierStatementSelectPage() {
             {/* Suppliers List */}
             <Card>
                 <CardHeader>
-                    <CardTitle>اختر المورد لعرض كشف الحساب</CardTitle>
+                    <CardTitle>Select Supplier</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            جاري التحميل...
+                            Loading...
                         </div>
                     ) : suppliers.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
-                            لا يوجد موردين
+                            No suppliers found
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>الكود</TableHead>
-                                    <TableHead>الاسم</TableHead>
-                                    <TableHead>الهاتف</TableHead>
-                                    <TableHead className="text-left">الرصيد</TableHead>
+                                    <TableHead>Code</TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Phone</TableHead>
+                                    <TableHead className="text-left">Balance</TableHead>
                                     <TableHead></TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -72,8 +72,8 @@ export default function SupplierStatementSelectPage() {
                                         <TableCell>
                                             <Link href={`/reports/supplier/${supplier.id}`}>
                                                 <Button size="sm" variant="outline">
-                                                    <FileText className="h-4 w-4 ml-2" />
-                                                    كشف الحساب
+                                                    <FileText className="h-4 w-4 mr-2" />
+                                                    View Statement
                                                 </Button>
                                             </Link>
                                         </TableCell>

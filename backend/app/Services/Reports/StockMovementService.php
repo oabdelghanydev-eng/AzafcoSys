@@ -75,7 +75,7 @@ class StockMovementService extends BaseService
                 shipments.number as shipment_number,
                 shipments.date as shipment_date,
                 suppliers.name as supplier_name,
-                products.name_ar as product_name,
+                products.name_en as product_name,
                 shipment_items.cartons,
                 shipment_items.cartons * shipment_items.weight_per_unit as weight
             ')
@@ -98,7 +98,7 @@ class StockMovementService extends BaseService
             ->selectRaw('
                 invoices.invoice_number,
                 invoices.date as sale_date,
-                products.name_ar as product_name,
+                products.name_en as product_name,
                 invoice_items.quantity,
                 invoice_items.quantity * shipment_items.weight_per_unit as weight
             ')
@@ -119,7 +119,7 @@ class StockMovementService extends BaseService
 
         return [
             'in' => $carryovers->map(fn($c) => [
-                'product_name' => $c->product->name_ar ?? 'N/A',
+                'product_name' => $c->product->name_en ?? $c->product->name ?? 'N/A',
                 'from_shipment' => $c->fromShipment->number ?? 'N/A',
                 'to_shipment' => $c->toShipment->number ?? 'N/A',
                 'cartons' => $c->cartons,
