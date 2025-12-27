@@ -63,10 +63,10 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $validated['code'] = $this->numberGenerator->generate('customer');
 
-        // Handle opening balance
+        // Handle opening balance: set balance equal to opening_balance
         if (isset($validated['opening_balance'])) {
             $validated['balance'] = $validated['opening_balance'];
-            unset($validated['opening_balance']);
+            // Keep opening_balance in the validated data - don't unset!
         }
 
         $customer = Customer::create($validated);
