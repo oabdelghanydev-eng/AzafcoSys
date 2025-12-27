@@ -193,7 +193,15 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                     </Card>
 
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Card>
+                            <CardContent className="pt-6 text-center">
+                                <p className="text-sm text-muted-foreground">Opening Balance</p>
+                                <p className="text-2xl font-bold text-blue-600 money">
+                                    {formatCurrency(statement.summary.opening_balance)}
+                                </p>
+                            </CardContent>
+                        </Card>
                         <Card>
                             <CardContent className="pt-6 text-center">
                                 <p className="text-sm text-muted-foreground">Total Invoices</p>
