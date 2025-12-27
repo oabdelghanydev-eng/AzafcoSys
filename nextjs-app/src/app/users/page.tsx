@@ -8,6 +8,7 @@ import {
     Plus,
     Shield,
     ShieldCheck,
+    ShieldAlert,
     Lock,
     Unlock,
     MoreHorizontal,
@@ -39,6 +40,7 @@ import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { PermissionsEditor } from '@/components/users/permissions-editor';
+import { PermissionGate } from '@/components/shared/permission-gate';
 import { cn } from '@/lib/utils';
 import {
     useUsers,
@@ -48,6 +50,20 @@ import {
     useUnlockUser,
     type User,
 } from '@/hooks/api/use-users';
+
+// Fallback component for unauthorized access
+function UnauthorizedAccess() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+            <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground max-w-md">
+                You do not have permission to manage users.
+                Please contact an administrator if you believe this is an error.
+            </p>
+        </div>
+    );
+}
 
 function CreateUserDialog({
     open,
@@ -289,6 +305,14 @@ function UserCard({ user, onManagePermissions }: { user: User; onManagePermissio
 }
 
 export default function UsersPage() {
+    return (
+        <PermissionGate permission="admin.users" fallback={<UnauthorizedAccess />}>
+            <UsersContent />
+        </PermissionGate>
+    );
+}
+
+function UsersContent() {
     const [search, setSearch] = useState('');
     const [showCreateDialog, setShowCreateDialog] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);

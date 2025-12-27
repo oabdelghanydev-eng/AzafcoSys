@@ -168,6 +168,7 @@ export interface CreateCollectionData {
     payment_method: PaymentMethod;
     distribution_method?: DistributionMethod;
     notes?: string;
+    allocations?: { invoice_id: number; amount: number }[];
 }
 
 export interface Payment {
@@ -291,16 +292,16 @@ export interface ReturnItem {
 
 export interface CreateReturnData {
     customer_id: number;
-    date: string;
+    original_invoice_id: number; // Required: Link to original invoice for qty/price validation
     items: CreateReturnItemData[];
     notes?: string;
 }
 
 export interface CreateReturnItemData {
     product_id: number;
-    cartons: number;
-    weight: number;
-    price: number;
+    quantity: number;     // Weight in kg (backend expects 'quantity')
+    unit_price: number;   // Price per kg (backend expects 'unit_price')
+    shipment_item_id?: number; // Optional: link to shipment item
 }
 
 // =============================================================================

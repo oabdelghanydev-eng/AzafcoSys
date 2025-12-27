@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Download, Play, Square, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar, Download, Play, Square, AlertCircle, Loader2, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,14 +17,25 @@ import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { PermissionGate } from '@/components/shared/permission-gate';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
 import { useUIStore } from '@/stores/ui-store';
-import { useCurrentDay, useAvailableDates, useOpenDay, useCloseDay } from '@/hooks/api/use-daily-report';
+import { useCurrentDay, useAvailableDates, useOpenDay, useCloseDay, useForceCloseDay } from '@/hooks/api/use-daily-report';
 import { config } from '@/lib/config';
 
 export default function DailyReportPage() {
     const [selectedDate, setSelectedDate] = useState<string>('');
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+    const [showForceCloseDialog, setShowForceCloseDialog] = useState(false);
+    const [forceCloseReason, setForceCloseReason] = useState('');
     const { setWorkingDate } = useUIStore();
 
     // API hooks - these now return unwrapped data
@@ -32,6 +43,7 @@ export default function DailyReportPage() {
     const { data: availableDates, isLoading: datesLoading } = useAvailableDates();
     const openDay = useOpenDay();
     const closeDay = useCloseDay();
+    const forceCloseDay = useForceCloseDay();
 
     // Check if day is open - API returns status: 'open' | 'closed'
     const isDayOpen = currentDay?.status === 'open';
@@ -64,9 +76,62 @@ export default function DailyReportPage() {
         }
     };
 
-    const handleDownloadPDF = () => {
+    const handleForceCloseDay = async () => {
+        if (!forceCloseReason.trim()) {
+            toast.error('Reason is required for force close');
+            return;
+        }
+
+        try {
+            await forceCloseDay.mutateAsync({ reason: forceCloseReason.trim() });
+            setWorkingDate(null);
+            toast.success('Day force closed successfully');
+            setShowForceCloseDialog(false);
+            setForceCloseReason('');
+        } catch (err) {
+            const error = err as Error;
+            toast.error(error.message || 'Failed to force close day');
+        }
+    };
+
+    const handleDownloadPDF = async () => {
         if (!currentDay?.date) return;
-        window.open(`${config.apiUrl}/reports/daily/${currentDay.date}/pdf`, '_blank');
+
+        // Extract just YYYY-MM-DD from the date
+        const dateStr = typeof currentDay.date === 'string'
+            ? currentDay.date.split('T')[0]
+            : new Date(currentDay.date).toISOString().split('T')[0];
+
+        try {
+            // Get auth token from localStorage
+            const storage = localStorage.getItem('auth-storage');
+            const token = storage ? JSON.parse(storage)?.state?.token : null;
+
+            const response = await fetch(`${config.apiUrl}/reports/daily/${dateStr}/pdf`, {
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Accept': 'application/pdf',
+                },
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to download PDF');
+            }
+
+            // Create blob URL and trigger download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `daily-report-${dateStr}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            toast.error('Failed to download PDF');
+        }
     };
 
     if (currentLoading || datesLoading) {
@@ -192,6 +257,20 @@ export default function DailyReportPage() {
                                     </Button>
                                 </PermissionGate>
 
+                                {/* Admin Force Close - for when normal close fails */}
+                                <PermissionGate permission="admin.force_close">
+                                    <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        onClick={() => setShowForceCloseDialog(true)}
+                                        disabled={forceCloseDay.isPending}
+                                        className="touch-target"
+                                        title="Force Close (Admin)"
+                                    >
+                                        <ShieldAlert className="h-4 w-4" />
+                                    </Button>
+                                </PermissionGate>
+
                                 <Button
                                     variant="outline"
                                     onClick={handleDownloadPDF}
@@ -250,6 +329,58 @@ export default function DailyReportPage() {
                 variant="destructive"
                 loading={closeDay.isPending}
             />
+
+            {/* Force Close Dialog - Admin Only */}
+            <Dialog open={showForceCloseDialog} onOpenChange={setShowForceCloseDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                            <ShieldAlert className="h-5 w-5" />
+                            Force Close Day
+                        </DialogTitle>
+                        <DialogDescription>
+                            Use this when normal close fails due to validation errors.
+                            This action will be logged for audit purposes.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label>Reason (Required)</Label>
+                            <Textarea
+                                placeholder="Explain why force close is necessary..."
+                                value={forceCloseReason}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForceCloseReason(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setShowForceCloseDialog(false);
+                                    setForceCloseReason('');
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                onClick={handleForceCloseDay}
+                                disabled={forceCloseDay.isPending || !forceCloseReason.trim()}
+                            >
+                                {forceCloseDay.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Closing...
+                                    </>
+                                ) : (
+                                    'Force Close'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

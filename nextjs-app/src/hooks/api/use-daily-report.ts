@@ -127,8 +127,25 @@ export function useCloseDay() {
     });
 }
 
+/**
+ * Force close the current day (Admin only)
+ * Used when normal close fails due to validation errors
+ */
+export function useForceCloseDay() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ reason }: { reason: string }) =>
+            api.post<ApiResponse<DailyReport>>(endpoints.daily.forceClose, { reason }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['daily-report'] });
+        },
+    });
+}
+
 // =============================================================================
 // Type Exports
 // =============================================================================
 
 export type { DailyReport, AvailableDate };
+

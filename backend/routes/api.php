@@ -122,6 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/daily/current', [DailyReportController::class, 'current']);
     Route::post('/daily/open', [DailyReportController::class, 'open']);
     Route::post('/daily/close', [DailyReportController::class, 'close']);
+    Route::post('/daily/force-close', [DailyReportController::class, 'forceClose']);
     Route::get('/daily/{date}', [DailyReportController::class, 'show']);
     Route::post('/daily/{date}/reopen', [DailyReportController::class, 'reopen']);
 

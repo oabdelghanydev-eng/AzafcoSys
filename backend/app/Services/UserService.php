@@ -280,6 +280,10 @@ class UserService extends BaseService
             // Daily
             'daily.close',
             'daily.reopen',
+            // Admin
+            'admin.force_close',
+            'admin.settings',
+            'admin.users',
             // Users
             'users.view',
             'users.create',
@@ -314,6 +318,7 @@ class UserService extends BaseService
             'products' => ['label' => 'الأصناف', 'permissions' => ['create', 'edit', 'delete']],
             'reports' => ['label' => 'التقارير', 'permissions' => ['daily', 'settlement', 'customers', 'suppliers', 'inventory', 'export_pdf', 'export_excel', 'share']],
             'daily' => ['label' => 'إغلاق اليوم', 'permissions' => ['close', 'reopen']],
+            'admin' => ['label' => 'صلاحيات إدارية', 'permissions' => ['force_close', 'settings', 'users']],
             'users' => ['label' => 'المستخدمين', 'permissions' => ['view', 'create', 'edit', 'delete', 'unlock']],
             'settings' => ['label' => 'الإعدادات', 'permissions' => ['view', 'edit']],
             'corrections' => ['label' => 'التصحيحات', 'permissions' => ['approve']],

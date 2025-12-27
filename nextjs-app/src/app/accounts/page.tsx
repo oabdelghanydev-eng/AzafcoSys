@@ -27,7 +27,17 @@ import { cn } from '@/lib/utils';
 // Quick amount buttons
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
 
-function TransferSection({ cashboxBalance, bankBalance }: { cashboxBalance: number; bankBalance: number }) {
+function TransferSection({
+    cashboxBalance,
+    bankBalance,
+    cashboxId,
+    bankId,
+}: {
+    cashboxBalance: number;
+    bankBalance: number;
+    cashboxId: number;
+    bankId: number;
+}) {
     const [amount, setAmount] = useState('');
     const [direction, setDirection] = useState<'to_bank' | 'to_cashbox'>('to_bank');
     const [notes, setNotes] = useState('');
@@ -48,8 +58,8 @@ function TransferSection({ cashboxBalance, bankBalance }: { cashboxBalance: numb
 
         try {
             await transfer.mutateAsync({
-                from_account_id: direction === 'to_bank' ? 1 : 2,
-                to_account_id: direction === 'to_bank' ? 2 : 1,
+                from_account_id: direction === 'to_bank' ? cashboxId : bankId,
+                to_account_id: direction === 'to_bank' ? bankId : cashboxId,
                 amount: transferAmount,
                 notes: notes || `Transfer ${direction === 'to_bank' ? 'to Bank' : 'to Cashbox'}`,
             });
@@ -232,7 +242,17 @@ export default function AccountsPage() {
     const { data: summaryData, isLoading, error, refetch } = useAccountsSummary();
     const { data: transactionsData } = useCashboxTransactions();
 
-    const summary = summaryData?.data || { cashbox: { balance: 0 }, bank: { balance: 0 }, total: 0 };
+    // Extract account data with dynamic IDs (fallback to 1/2 for safety)
+    const rawSummary = summaryData?.data as {
+        cashbox?: { id?: number; balance: number };
+        bank?: { id?: number; balance: number };
+        total?: number
+    } | undefined;
+    const summary = {
+        cashbox: { id: rawSummary?.cashbox?.id || 1, balance: rawSummary?.cashbox?.balance || 0 },
+        bank: { id: rawSummary?.bank?.id || 2, balance: rawSummary?.bank?.balance || 0 },
+        total: rawSummary?.total || 0,
+    };
     const transactionsRaw = transactionsData?.data || transactionsData || [];
     const transactions = Array.isArray(transactionsRaw) ? transactionsRaw : [];
 
@@ -282,8 +302,10 @@ export default function AccountsPage() {
 
             {/* Transfer Section */}
             <TransferSection
-                cashboxBalance={summary.cashbox?.balance || 0}
-                bankBalance={summary.bank?.balance || 0}
+                cashboxBalance={summary.cashbox.balance}
+                bankBalance={summary.bank.balance}
+                cashboxId={summary.cashbox.id}
+                bankId={summary.bank.id}
             />
 
             {/* Transactions */}

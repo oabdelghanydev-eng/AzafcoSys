@@ -1,80 +1,162 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingState } from '@/components/shared/loading-state';
 import { RequireOpenDay } from '@/components/shared/require-open-day';
-import { formatMoney, formatQuantity } from '@/lib/formatters';
+import { formatMoney, formatQuantity, formatDateShort } from '@/lib/formatters';
 import { useCustomers } from '@/hooks/api/use-customers';
-import { useProducts } from '@/hooks/api/use-products';
+import { useInvoices, useInvoice } from '@/hooks/api/use-invoices';
 import { useCreateReturn } from '@/hooks/api/use-returns';
+import type { InvoiceItem } from '@/types/api';
 
-interface ReturnItem {
+// Return item derived from invoice item
+interface ReturnItemEntry {
+    invoiceItemId: number;
     product_id: number;
     product_name: string;
+    // Original invoice values (for validation)
+    originalCartons: number;
+    originalWeight: number;
+    originalPrice: number;
+    // Return values (capped at original)
     cartons: number;
     weight: number;
-    price: number;
+    price: number; // Always equals originalPrice (read-only)
 }
 
 export default function NewReturnPage() {
     const router = useRouter();
-    const [customerId, setCustomerId] = useState('');
-    const [items, setItems] = useState<ReturnItem[]>([]);
 
-    // Form for adding item
-    const [selectedProduct, setSelectedProduct] = useState('');
-    const [cartons, setCartons] = useState('');
-    const [weight, setWeight] = useState('');
-    const [price, setPrice] = useState('');
+    // Step 1: Customer selection
+    const [customerId, setCustomerId] = useState('');
+
+    // Step 2: Invoice selection (required)
+    const [invoiceId, setInvoiceId] = useState('');
+
+    // Step 3: Items from invoice
+    const [items, setItems] = useState<ReturnItemEntry[]>([]);
+
+    // Currently selected invoice item to add
+    const [selectedInvoiceItemId, setSelectedInvoiceItemId] = useState('');
+    const [returnCartons, setReturnCartons] = useState('');
+    const [returnWeight, setReturnWeight] = useState('');
 
     // API hooks
     const { data: customersData, isLoading: customersLoading } = useCustomers();
-    const { data: productsData, isLoading: productsLoading } = useProducts();
+    const { data: invoicesData, isLoading: invoicesLoading } = useInvoices(
+        customerId ? { customer_id: parseInt(customerId) } : undefined
+    );
+    const { data: invoiceDetail, isLoading: invoiceDetailLoading } = useInvoice(
+        invoiceId ? parseInt(invoiceId) : 0
+    );
     const createReturn = useCreateReturn();
 
     const customers = customersData?.data ?? customersData ?? [];
-    const productsRaw = productsData?.data ?? productsData ?? [];
-    // Sort products by ID
-    const products = Array.isArray(productsRaw)
-        ? [...productsRaw].sort((a: { id: number }, b: { id: number }) => a.id - b.id)
-        : [];
+    const invoicesRaw = invoicesData?.data ?? invoicesData ?? [];
+    const customerInvoices = Array.isArray(invoicesRaw) ? invoicesRaw.filter((inv: { status: string }) => inv.status !== 'cancelled') : [];
+
+    // Get invoice items from selected invoice
+    const invoiceItems: InvoiceItem[] = invoiceDetail?.items ?? [];
+
+    // Calculate what's available to return (original qty minus already added)
+    const availableItems = useMemo(() => {
+        return invoiceItems.map(item => {
+            const alreadyAddedWeight = items
+                .filter(i => i.invoiceItemId === item.id)
+                .reduce((sum, i) => sum + i.weight, 0);
+            const alreadyAddedCartons = items
+                .filter(i => i.invoiceItemId === item.id)
+                .reduce((sum, i) => sum + i.cartons, 0);
+
+            return {
+                ...item,
+                remainingWeight: item.quantity - alreadyAddedWeight,
+                remainingCartons: item.cartons - alreadyAddedCartons,
+            };
+        }).filter(item => item.remainingWeight > 0 || item.remainingCartons > 0);
+    }, [invoiceItems, items]);
+
+    // Handle customer change - reset invoice and items
+    const handleCustomerChange = (value: string) => {
+        setCustomerId(value);
+        setInvoiceId('');
+        setItems([]);
+        setSelectedInvoiceItemId('');
+    };
+
+    // Handle invoice change - reset items
+    const handleInvoiceChange = (value: string) => {
+        setInvoiceId(value);
+        setItems([]);
+        setSelectedInvoiceItemId('');
+    };
 
     const handleAddItem = () => {
-        if (!selectedProduct || !cartons || !weight || !price) {
+        if (!selectedInvoiceItemId || !returnCartons || !returnWeight) {
             toast.error('Please fill all item fields');
             return;
         }
 
-        const product = Array.isArray(products)
-            ? products.find((p: { id: number }) => p.id.toString() === selectedProduct)
-            : null;
-        if (!product) return;
+        const invoiceItem = invoiceItems.find(i => i.id.toString() === selectedInvoiceItemId);
+        if (!invoiceItem) {
+            toast.error('Invalid invoice item');
+            return;
+        }
 
-        const newItem: ReturnItem = {
-            product_id: product.id,
-            product_name: product.name_en || product.name,
-            cartons: parseInt(cartons),
-            weight: parseFloat(weight),
-            price: parseFloat(price),
+        const cartonsNum = parseInt(returnCartons);
+        const weightNum = parseFloat(returnWeight);
+
+        // Get available amounts
+        const available = availableItems.find(i => i.id.toString() === selectedInvoiceItemId);
+        if (!available) {
+            toast.error('This item has been fully returned');
+            return;
+        }
+
+        // Validate against remaining available
+        if (cartonsNum > available.remainingCartons) {
+            toast.error(`Maximum cartons available: ${available.remainingCartons}`);
+            return;
+        }
+        if (weightNum > available.remainingWeight) {
+            toast.error(`Maximum weight available: ${formatQuantity(available.remainingWeight)} kg`);
+            return;
+        }
+
+        if (cartonsNum <= 0 || weightNum <= 0) {
+            toast.error('Cartons and weight must be positive');
+            return;
+        }
+
+        const newItem: ReturnItemEntry = {
+            invoiceItemId: invoiceItem.id,
+            product_id: invoiceItem.product.id,
+            product_name: invoiceItem.product.name,
+            originalCartons: invoiceItem.cartons,
+            originalWeight: invoiceItem.quantity,
+            originalPrice: invoiceItem.unit_price,
+            cartons: cartonsNum,
+            weight: weightNum,
+            price: invoiceItem.unit_price, // Price is always from invoice
         };
 
         setItems([...items, newItem]);
-        setSelectedProduct('');
-        setCartons('');
-        setWeight('');
-        setPrice('');
-        toast.success(`${product.name_en || product.name} added`);
+        setSelectedInvoiceItemId('');
+        setReturnCartons('');
+        setReturnWeight('');
+        toast.success(`${invoiceItem.product.name} added`);
     };
 
     const handleRemoveItem = (index: number) => {
@@ -82,20 +164,19 @@ export default function NewReturnPage() {
     };
 
     const handleSubmit = async () => {
-        if (!customerId || items.length === 0) {
-            toast.error('Please select a customer and add items');
+        if (!customerId || !invoiceId || items.length === 0) {
+            toast.error('Please select a customer, invoice, and add items');
             return;
         }
 
         try {
             await createReturn.mutateAsync({
                 customer_id: parseInt(customerId),
-                date: new Date().toISOString().split('T')[0],
+                original_invoice_id: parseInt(invoiceId), // Link to original invoice
                 items: items.map(item => ({
                     product_id: item.product_id,
-                    cartons: item.cartons,
-                    weight: item.weight,
-                    price: item.price,
+                    quantity: item.weight, // Backend expects 'quantity' (weight in kg)
+                    unit_price: item.price, // Backend expects 'unit_price'
                 })),
             });
             toast.success('Return recorded successfully');
@@ -108,9 +189,11 @@ export default function NewReturnPage() {
 
     const totalAmount = items.reduce((sum, item) => sum + (item.weight * item.price), 0);
 
-    if (customersLoading || productsLoading) {
+    if (customersLoading) {
         return <LoadingState message="Loading..." />;
     }
+
+    const selectedInvoice = customerInvoices.find((inv: { id: number }) => inv.id.toString() === invoiceId);
 
     return (
         <RequireOpenDay>
@@ -124,19 +207,27 @@ export default function NewReturnPage() {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold">New Return</h1>
-                        <p className="text-muted-foreground">Record a customer return</p>
+                        <p className="text-muted-foreground">Record a customer return linked to original invoice</p>
                     </div>
                 </div>
 
-                {/* Customer */}
+                {/* Safety Notice */}
+                <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        Returns must be linked to the original invoice. Quantities and prices are derived from the invoice to prevent discrepancies.
+                    </AlertDescription>
+                </Alert>
+
+                {/* Step 1: Customer */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Customer</CardTitle>
+                        <CardTitle>Step 1: Customer</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
                             <Label>Select Customer *</Label>
-                            <Select value={customerId} onValueChange={setCustomerId}>
+                            <Select value={customerId} onValueChange={handleCustomerChange}>
                                 <SelectTrigger className="touch-target">
                                     <SelectValue placeholder="Select customer" />
                                 </SelectTrigger>
@@ -152,65 +243,134 @@ export default function NewReturnPage() {
                     </CardContent>
                 </Card>
 
-                {/* Add Item */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Add Item</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-1 sm:col-span-2">
-                                <Label className="text-xs">Product</Label>
-                                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                                    <SelectTrigger className="touch-target">
-                                        <SelectValue placeholder="Select product" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {products.map((p: { id: number; name_en?: string; name?: string }) => (
-                                            <SelectItem key={p.id} value={p.id.toString()}>
-                                                {p.name_en || p.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-xs">Cartons</Label>
-                                <Input
-                                    type="number"
-                                    inputMode="numeric"
-                                    value={cartons}
-                                    onChange={(e) => setCartons(e.target.value)}
-                                    className="touch-target"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-xs">Weight (kg)</Label>
-                                <Input
-                                    type="number"
-                                    inputMode="decimal"
-                                    value={weight}
-                                    onChange={(e) => setWeight(e.target.value)}
-                                    className="touch-target"
-                                />
-                            </div>
-                            <div className="space-y-1 sm:col-span-2">
-                                <Label className="text-xs">Price per KG</Label>
-                                <Input
-                                    type="number"
-                                    inputMode="decimal"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    className="touch-target"
-                                />
-                            </div>
-                        </div>
-                        <Button onClick={handleAddItem} variant="outline" className="w-full touch-target">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Item
-                        </Button>
-                    </CardContent>
-                </Card>
+                {/* Step 2: Invoice Selection */}
+                {customerId && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <FileText className="h-5 w-5" />
+                                Step 2: Original Invoice
+                            </CardTitle>
+                            <CardDescription>
+                                Select the invoice for this return
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {invoicesLoading ? (
+                                <p className="text-sm text-muted-foreground">Loading invoices...</p>
+                            ) : customerInvoices.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No invoices found for this customer</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Label>Select Invoice *</Label>
+                                    <Select value={invoiceId} onValueChange={handleInvoiceChange}>
+                                        <SelectTrigger className="touch-target">
+                                            <SelectValue placeholder="Select invoice" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {customerInvoices.map((inv: { id: number; invoice_number: string; date: string; total: number }) => (
+                                                <SelectItem key={inv.id} value={inv.id.toString()}>
+                                                    {inv.invoice_number} - {formatDateShort(inv.date)} ({formatMoney(inv.total)})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Step 3: Add Items from Invoice */}
+                {invoiceId && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Step 3: Return Items</CardTitle>
+                            <CardDescription>
+                                Select items from invoice to return. Prices are fixed from the original sale.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {invoiceDetailLoading ? (
+                                <p className="text-sm text-muted-foreground">Loading invoice items...</p>
+                            ) : availableItems.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    {items.length > 0 ? 'All invoice items have been added' : 'No items available for return'}
+                                </p>
+                            ) : (
+                                <>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1 sm:col-span-2">
+                                            <Label className="text-xs">Invoice Item</Label>
+                                            <Select value={selectedInvoiceItemId} onValueChange={setSelectedInvoiceItemId}>
+                                                <SelectTrigger className="touch-target">
+                                                    <SelectValue placeholder="Select item from invoice" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableItems.map((item) => (
+                                                        <SelectItem key={item.id} value={item.id.toString()}>
+                                                            {item.product.name} - Max: {item.remainingCartons} ctns / {formatQuantity(item.remainingWeight)} kg @ {formatMoney(item.unit_price)}/kg
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">
+                                                Cartons (max: {availableItems.find(i => i.id.toString() === selectedInvoiceItemId)?.remainingCartons ?? '-'})
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                inputMode="numeric"
+                                                min="1"
+                                                max={availableItems.find(i => i.id.toString() === selectedInvoiceItemId)?.remainingCartons ?? undefined}
+                                                value={returnCartons}
+                                                onChange={(e) => setReturnCartons(e.target.value)}
+                                                className="touch-target"
+                                                disabled={!selectedInvoiceItemId}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label className="text-xs">
+                                                Weight kg (max: {formatQuantity(availableItems.find(i => i.id.toString() === selectedInvoiceItemId)?.remainingWeight ?? 0)})
+                                            </Label>
+                                            <Input
+                                                type="number"
+                                                inputMode="decimal"
+                                                step="0.01"
+                                                min="0.01"
+                                                max={availableItems.find(i => i.id.toString() === selectedInvoiceItemId)?.remainingWeight ?? undefined}
+                                                value={returnWeight}
+                                                onChange={(e) => setReturnWeight(e.target.value)}
+                                                className="touch-target"
+                                                disabled={!selectedInvoiceItemId}
+                                            />
+                                        </div>
+                                        {selectedInvoiceItemId && (
+                                            <div className="sm:col-span-2 p-3 bg-muted/50 rounded-lg">
+                                                <p className="text-sm">
+                                                    <span className="text-muted-foreground">Price per KG (from invoice): </span>
+                                                    <span className="font-semibold">
+                                                        {formatMoney(availableItems.find(i => i.id.toString() === selectedInvoiceItemId)?.unit_price ?? 0)}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <Button
+                                        onClick={handleAddItem}
+                                        variant="outline"
+                                        className="w-full touch-target"
+                                        disabled={!selectedInvoiceItemId}
+                                    >
+                                        <Plus className="mr-2 h-4 w-4" />
+                                        Add Item
+                                    </Button>
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Items List */}
                 {items.length > 0 && (
@@ -261,7 +421,7 @@ export default function NewReturnPage() {
                         <Button
                             size="lg"
                             onClick={handleSubmit}
-                            disabled={createReturn.isPending || !customerId || items.length === 0}
+                            disabled={createReturn.isPending || !customerId || !invoiceId || items.length === 0}
                             className="touch-target px-8"
                         >
                             {createReturn.isPending ? (

@@ -1,4 +1,5 @@
 import { config } from '@/lib/config';
+import { generateRequestId } from '@/lib/utils';
 
 interface ApiError {
     message: string;
@@ -98,6 +99,7 @@ class ApiClient {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: data ? JSON.stringify(data) : undefined,
+            headers: { 'X-Request-ID': generateRequestId() },
         });
     }
 
@@ -105,11 +107,15 @@ class ApiClient {
         return this.request<T>(endpoint, {
             method: 'PUT',
             body: JSON.stringify(data),
+            headers: { 'X-Request-ID': generateRequestId() },
         });
     }
 
     async delete<T>(endpoint: string): Promise<T> {
-        return this.request<T>(endpoint, { method: 'DELETE' });
+        return this.request<T>(endpoint, {
+            method: 'DELETE',
+            headers: { 'X-Request-ID': generateRequestId() },
+        });
     }
 
     // For file downloads (PDF)

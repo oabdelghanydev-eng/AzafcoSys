@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Save, Loader2 } from 'lucide-react';
+import { Save, Loader2, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,32 @@ import { Label } from '@/components/ui/label';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { DatabaseResetCard } from '@/components/settings/database-reset-card';
+import { PermissionGate } from '@/components/shared/permission-gate';
 import { useSettings, useUpdateSettings } from '@/hooks/api/use-settings';
 
+// Fallback component for unauthorized access
+function UnauthorizedAccess() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+            <ShieldAlert className="h-16 w-16 text-destructive mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground max-w-md">
+                You do not have permission to access system settings.
+                Please contact an administrator if you believe this is an error.
+            </p>
+        </div>
+    );
+}
+
 export default function SettingsPage() {
+    return (
+        <PermissionGate permission="admin.settings" fallback={<UnauthorizedAccess />}>
+            <SettingsContent />
+        </PermissionGate>
+    );
+}
+
+function SettingsContent() {
     const { data: settings, isLoading, error, refetch } = useSettings();
     const updateSettings = useUpdateSettings();
 

@@ -45,6 +45,7 @@ class DailyReport extends Model
         'opened_by',
         'closed_at',
         'closed_by',
+        'force_close_reason',
         'reopened_at',
         'reopened_by',
         'ai_alerts',

@@ -26,7 +26,7 @@ class ReturnService
     /**
      * Create a return and update inventory + customer balance
      *
-     * @param  array  $items  [{product_id, cartons, unit_price, shipment_item_id?, original_invoice_item_id?}]
+     * @param  array  $items  [{product_id, quantity, unit_price, shipment_item_id?, original_invoice_item_id?}]
      */
     public function createReturn(
         int $customerId,
@@ -39,8 +39,8 @@ class ReturnService
             $dailyReport = $this->dailyReportService->ensureOpenReport();
             $workingDate = $dailyReport->date;
 
-            // Calculate total (cartons * unit_price per carton)
-            $totalAmount = collect($items)->sum(fn($item) => $item['cartons'] * $item['unit_price']);
+            // Calculate total (quantity * unit_price)
+            $totalAmount = collect($items)->sum(fn($item) => $item['quantity'] * $item['unit_price']);
 
             // Create return with working date from daily report
             $return = ReturnModel::create([
@@ -61,27 +61,25 @@ class ReturnService
                     $itemData['shipment_item_id'] ?? null
                 );
 
-                $cartons = (int) $itemData['cartons'];
-                $weightPerUnit = $targetShipmentItem->weight_per_unit;
-                $actualWeight = $cartons * $weightPerUnit;
+                $quantity = (float) $itemData['quantity'];
+                $unitPrice = (float) $itemData['unit_price'];
 
-                // Create return item with proper cartons and weight
+                // Create return item with quantity (weight in kg)
                 ReturnItem::create([
                     'return_id' => $return->id,
                     'product_id' => $itemData['product_id'],
                     'original_invoice_item_id' => $itemData['original_invoice_item_id'] ?? null,
                     'target_shipment_item_id' => $targetShipmentItem->id,
-                    'cartons' => $cartons,
-                    'quantity' => $actualWeight,  // Actual weight = cartons * weight_per_unit
-                    'unit_price' => $itemData['unit_price'],
-                    'subtotal' => $cartons * $itemData['unit_price'],
+                    'quantity' => $quantity,  // Weight in kg
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $quantity * $unitPrice,
                 ]);
 
-                // Restore inventory (decrement sold_cartons to "return" cartons to stock)
-                $targetShipmentItem->decrement('sold_cartons', $cartons);
+                // TODO: Restore inventory based on your business logic
+                // This depends on whether you track by weight or cartons
             }
 
-            // Decrease customer balance
+            // Decrease customer balance (negative = customer owes less / refund)
             Customer::where('id', $customerId)
                 ->decrement('balance', $totalAmount);
 

@@ -21,6 +21,7 @@ export const endpoints = {
         available: '/daily/available',
         open: '/daily/open',
         close: '/daily/close',
+        forceClose: '/daily/force-close',
     },
 
     // Alias for consistency
@@ -29,6 +30,7 @@ export const endpoints = {
         availableDates: '/daily/available',
         open: '/daily/open',
         close: '/daily/close',
+        forceClose: '/daily/force-close',
     },
 
     // Invoices

@@ -46,3 +46,19 @@ export function formatWeight(weight: number | null | undefined): string {
   return `${weight.toLocaleString('en-US', { maximumFractionDigits: 2 })} kg`;
 }
 
+/**
+ * Generate a unique request ID for idempotency
+ * Used to prevent duplicate submissions on network retries
+ */
+export function generateRequestId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+

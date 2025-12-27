@@ -40,7 +40,7 @@ class StoreReturnRequest extends FormRequest
             if (!$dailyReport) {
                 $validator->errors()->add(
                     'daily_report',
-                    'يجب فتح يومية أولاً قبل تسجيل المرتجعات.'
+                    'You must open a daily report first before recording returns.'
                 );
             }
         });
@@ -49,11 +49,11 @@ class StoreReturnRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'customer_id.required' => 'العميل مطلوب',
-            'items.required' => 'يجب إضافة صنف واحد على الأقل',
-            'items.*.product_id.required' => 'الصنف مطلوب',
-            'items.*.quantity.required' => 'الكمية مطلوبة',
-            'items.*.unit_price.required' => 'السعر مطلوب',
+            'customer_id.required' => 'Customer is required',
+            'items.required' => 'At least one item is required',
+            'items.*.product_id.required' => 'Product is required',
+            'items.*.quantity.required' => 'Quantity is required',
+            'items.*.unit_price.required' => 'Price is required',
         ];
     }
 }

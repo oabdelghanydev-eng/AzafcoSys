@@ -26,4 +26,13 @@ class DailyReportPolicy
     {
         return $user->hasPermission('daily.reopen');
     }
+
+    /**
+     * Determine if user can force close daily report
+     * Admin-only operation for resolving deadlocks
+     */
+    public function forceClose(User $user): bool
+    {
+        return $user->hasPermission('admin.force_close');
+    }
 }

@@ -140,4 +140,43 @@ class DailyReportController extends Controller
 
         return $this->success($report, 'تم إعادة فتح اليومية بنجاح');
     }
+
+    /**
+     * Force close daily report (Admin only)
+     * إغلاق قسري لليومية
+     * 
+     * Used when normal close fails due to validation errors.
+     * Requires admin.force_close permission and mandatory reason for audit.
+     */
+    public function forceClose(Request $request): JsonResponse
+    {
+        $request->validate([
+            'reason' => 'required|string|min:10|max:500',
+        ]);
+
+        // Admin permission check
+        if (!Gate::allows('force-close', DailyReport::class)) {
+            throw new BusinessException('AUTH_003', 'ليس لديك صلاحية الإغلاق القسري', 'Permission denied');
+        }
+
+        $report = $this->dailyReportService->getCurrentOpenReport();
+
+        if (!$report) {
+            return $this->error('DAY_004', 'لا توجد يومية مفتوحة', 'No open daily report', 422);
+        }
+
+        // Log the force close reason for audit
+        \Log::warning('Force Close Daily Report', [
+            'date' => $report->date,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name ?? 'Unknown',
+            'reason' => $request->reason,
+            'timestamp' => now()->toIso8601String(),
+        ]);
+
+        // Force close without validations
+        $report = $this->dailyReportService->forceCloseDay($report, $request->reason);
+
+        return $this->success($report, 'تم إغلاق اليومية قسرياً');
+    }
 }

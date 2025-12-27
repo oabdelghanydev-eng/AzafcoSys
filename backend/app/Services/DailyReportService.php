@@ -283,6 +283,65 @@ class DailyReportService
     }
 
     /**
+     * Force close daily report (Admin only)
+     * إغلاق قسري لليومية بدون تحقق من الشروط
+     * 
+     * Used when normal close fails due to validation errors.
+     * Stores the reason for audit trail.
+     */
+    public function forceCloseDay(DailyReport $report, string $reason): DailyReport
+    {
+        return DB::transaction(function () use ($report, $reason) {
+            // Calculate totals like normal close
+            $date = $report->date;
+
+            // Invoices totals
+            $invoiceStats = \App\Models\Invoice::where('date', $date)
+                ->where('status', 'active')
+                ->where('type', '!=', 'wastage')
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(total), 0) as total')
+                ->first();
+
+            // Collections totals
+            $collectionStats = \App\Models\Collection::where('date', $date)
+                ->where('status', '!=', 'cancelled')
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(amount), 0) as total')
+                ->first();
+
+            // Expenses totals
+            $expenseStats = \App\Models\Expense::where('date', $date)
+                ->selectRaw('COUNT(*) as count, COALESCE(SUM(amount), 0) as total')
+                ->first();
+
+            // Calculate closing balances
+            $cashboxClosing = (float) $report->cashbox_opening
+                + (float) ($collectionStats->total ?? 0)
+                - (float) ($expenseStats->total ?? 0);
+
+            $report->update([
+                'status' => 'closed',
+                'closed_at' => now(),
+                'closed_by' => auth()->id(),
+                'force_close_reason' => $reason, // Store reason for audit
+                // Totals
+                'total_sales' => $invoiceStats->total ?? 0,
+                'total_collections' => $collectionStats->total ?? 0,
+                'total_expenses' => $expenseStats->total ?? 0,
+                'invoices_count' => $invoiceStats->count ?? 0,
+                'collections_count' => $collectionStats->count ?? 0,
+                'expenses_count' => $expenseStats->count ?? 0,
+                // Closing balances
+                'cashbox_closing' => $cashboxClosing,
+            ]);
+
+            // Log user event with force close notation
+            $this->logUserEvent('daily_force_close', "إغلاق قسري ليومية {$report->date} - السبب: {$reason}");
+
+            return $report->fresh();
+        });
+    }
+
+    /**
      * Validate date is available for opening
      */
     private function validateDateAvailable(string $date): void
