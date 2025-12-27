@@ -19,7 +19,7 @@ export function usePdfDownload() {
             await api.download(endpoint, `${filename}.pdf`);
         } catch (err) {
             console.error('PDF download failed:', err);
-            setError('فشل تحميل ملف PDF');
+            setError('Failed to download PDF');
         } finally {
             setIsDownloading(false);
         }

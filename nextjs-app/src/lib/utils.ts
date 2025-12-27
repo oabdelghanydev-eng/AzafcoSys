@@ -9,8 +9,8 @@ export function cn(...inputs: ClassValue[]) {
  * Format number as currency (QAR)
  */
 export function formatCurrency(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined) return 'ر.ق 0.00';
-  return `ر.ق ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (amount === null || amount === undefined) return 'QAR 0.00';
+  return `QAR ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /**
