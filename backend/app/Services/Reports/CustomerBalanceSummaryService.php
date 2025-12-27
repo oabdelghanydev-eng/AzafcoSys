@@ -31,21 +31,23 @@ class CustomerBalanceSummaryService extends BaseService
         return [
             'as_of_date' => now()->format('Y-m-d'),
             'customers' => $customers->map(fn($c) => [
-                'id' => $c->id,
-                'code' => $c->code,
-                'name' => $c->name,
+                'customer_id' => $c->id,
+                'customer_code' => $c->code,
+                'customer_name' => $c->name,
                 'balance' => (float) $c->balance,
                 'opening_balance' => (float) $c->opening_balance,
-                'status' => $c->balance > 0 ? 'debtor' : ($c->balance < 0 ? 'creditor' : 'settled'),
+                'balance_type' => $c->balance > 0 ? 'debtor' : ($c->balance < 0 ? 'creditor' : 'settled'),
             ]),
+            'totals' => [
+                'total_debtors' => $customersWithDebt->sum('balance'),
+                'total_creditors' => abs($customersWithCredit->sum('balance')),
+                'net_balance' => $customers->sum('balance'),
+            ],
             'summary' => [
                 'total_customers' => $customers->count(),
-                'customers_with_debt' => $customersWithDebt->count(),
-                'customers_with_credit' => $customersWithCredit->count(),
-                'customers_settled' => $customers->where('balance', 0)->count(),
-                'total_market_debt' => $customersWithDebt->sum('balance'),
-                'total_credit' => abs($customersWithCredit->sum('balance')),
-                'net_market_balance' => $customers->sum('balance'),
+                'debtors_count' => $customersWithDebt->count(),
+                'creditors_count' => $customersWithCredit->count(),
+                'settled_count' => $customers->where('balance', 0)->count(),
             ],
         ];
     }

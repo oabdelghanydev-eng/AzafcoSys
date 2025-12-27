@@ -39,14 +39,14 @@ class WastageReportService extends BaseService
                 'from' => $dateFrom,
                 'to' => $dateTo,
             ],
-            'shipments' => $wastageByShipment,
+            'by_shipment' => $wastageByShipment,
             'by_product' => $this->getWastageByProduct($dateFrom, $dateTo),
             'summary' => [
-                'total_shipments' => $shipments->count(),
-                'total_weight_in' => $totalWeightIn,
-                'total_weight_sold' => $totalWeightOut,
+                'shipments_count' => $shipments->count(),
+                'total_incoming' => $totalWeightIn,
+                'total_sold' => $totalWeightOut,
                 'total_wastage' => $totalWastage,
-                'wastage_percentage' => $totalWeightIn > 0
+                'overall_wastage_rate' => $totalWeightIn > 0
                     ? round(($totalWastage / $totalWeightIn) * 100, 2)
                     : 0,
             ],
@@ -94,13 +94,14 @@ class WastageReportService extends BaseService
 
         return [
             'shipment_id' => $shipment->id,
-            'shipment_number' => $shipment->number,
+            'shipment_code' => $shipment->number,
             'supplier_name' => $shipment->supplier->name,
             'settled_at' => $shipment->settled_at?->format('Y-m-d'),
-            'weight_in' => $effectiveWeightIn,
-            'weight_sold' => $weightSold,
-            'wastage' => $wastage,
-            'wastage_percentage' => $effectiveWeightIn > 0
+            'incoming_weight' => $effectiveWeightIn,
+            'sold_weight' => $weightSold,
+            'carry_out_weight' => $weightCarryoutOut,
+            'wastage_weight' => $wastage,
+            'wastage_rate' => $effectiveWeightIn > 0
                 ? round(($wastage / $effectiveWeightIn) * 100, 2)
                 : 0,
         ];
@@ -119,22 +120,22 @@ class WastageReportService extends BaseService
             ->when($dateTo, fn($q) => $q->whereDate('shipments.settled_at', '<=', $dateTo))
             ->selectRaw('
                 products.id as product_id,
-                products.name_ar as product_name,
-                SUM((shipment_items.cartons + shipment_items.carryover_in_cartons - shipment_items.carryover_out_cartons) * shipment_items.weight_per_unit) as weight_in,
-                SUM(shipment_items.sold_cartons * shipment_items.weight_per_unit) as weight_sold,
-                SUM((shipment_items.cartons + shipment_items.carryover_in_cartons - shipment_items.carryover_out_cartons - shipment_items.sold_cartons) * shipment_items.weight_per_unit) as wastage
+                COALESCE(products.name_en, products.name) as product_name,
+                SUM((shipment_items.cartons + shipment_items.carryover_in_cartons - shipment_items.carryover_out_cartons) * shipment_items.weight_per_unit) as incoming_weight,
+                SUM(shipment_items.sold_cartons * shipment_items.weight_per_unit) as sold_weight,
+                SUM((shipment_items.cartons + shipment_items.carryover_in_cartons - shipment_items.carryover_out_cartons - shipment_items.sold_cartons) * shipment_items.weight_per_unit) as wastage_weight
             ')
-            ->groupBy('products.id', 'products.name_ar')
-            ->orderByDesc('wastage')
+            ->groupBy('products.id', 'products.name_en', 'products.name')
+            ->orderByDesc('wastage_weight')
             ->get()
             ->map(fn($p) => [
                 'product_id' => $p->product_id,
                 'product_name' => $p->product_name,
-                'weight_in' => (float) $p->weight_in,
-                'weight_sold' => (float) $p->weight_sold,
-                'wastage' => (float) $p->wastage,
-                'wastage_percentage' => $p->weight_in > 0
-                    ? round(($p->wastage / $p->weight_in) * 100, 2)
+                'incoming_weight' => (float) $p->incoming_weight,
+                'sold_weight' => (float) $p->sold_weight,
+                'wastage_weight' => (float) $p->wastage_weight,
+                'wastage_rate' => $p->incoming_weight > 0
+                    ? round(($p->wastage_weight / $p->incoming_weight) * 100, 2)
                     : 0,
             ]);
     }

@@ -60,15 +60,14 @@ class SalesByProductService extends BaseService
             ->when($dateTo, fn($q) => $q->whereDate('invoices.date', '<=', $dateTo))
             ->selectRaw('
                 products.id as product_id,
-                products.name_ar as product_name,
-                products.name_en as product_name_en,
+                COALESCE(products.name_en, products.name) as product_name,
                 SUM(invoice_items.quantity) as quantity,
                 SUM(invoice_items.quantity * shipment_items.weight_per_unit) as weight,
                 SUM(invoice_items.subtotal) as revenue,
                 AVG(invoice_items.unit_price) as avg_unit_price,
                 COUNT(DISTINCT invoices.id) as invoices_count
             ')
-            ->groupBy('products.id', 'products.name_ar', 'products.name_en')
+            ->groupBy('products.id', 'products.name_en', 'products.name')
             ->orderByDesc('revenue')
             ->get();
     }

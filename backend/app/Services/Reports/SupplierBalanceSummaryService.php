@@ -31,21 +31,23 @@ class SupplierBalanceSummaryService extends BaseService
         return [
             'as_of_date' => now()->format('Y-m-d'),
             'suppliers' => $suppliers->map(fn($s) => [
-                'id' => $s->id,
-                'code' => $s->code,
-                'name' => $s->name,
+                'supplier_id' => $s->id,
+                'supplier_code' => $s->code,
+                'supplier_name' => $s->name,
                 'balance' => (float) $s->balance,
                 'opening_balance' => (float) $s->opening_balance,
-                'status' => $s->balance > 0 ? 'owed' : ($s->balance < 0 ? 'owes' : 'settled'),
+                'balance_type' => $s->balance > 0 ? 'we_owe_supplier' : ($s->balance < 0 ? 'supplier_owes_us' : 'settled'),
             ]),
+            'totals' => [
+                'we_owe_suppliers' => $suppliersOwed->sum('balance'),
+                'suppliers_owe_us' => abs($suppliersOwe->sum('balance')),
+                'net_balance' => $suppliers->sum('balance'),
+            ],
             'summary' => [
                 'total_suppliers' => $suppliers->count(),
-                'suppliers_owed' => $suppliersOwed->count(),        // نحن ندين لهم
-                'suppliers_owe' => $suppliersOwe->count(),          // هم يدينون لنا
-                'suppliers_settled' => $suppliers->where('balance', 0)->count(),
-                'total_we_owe' => $suppliersOwed->sum('balance'),   // إجمالي ما نحن مدينين
-                'total_they_owe' => abs($suppliersOwe->sum('balance')), // إجمالي ما هم مدينين
-                'net_balance' => $suppliers->sum('balance'),
+                'suppliers_we_owe' => $suppliersOwed->count(),
+                'suppliers_owe_us' => $suppliersOwe->count(),
+                'settled_suppliers' => $suppliers->where('balance', 0)->count(),
             ],
         ];
     }

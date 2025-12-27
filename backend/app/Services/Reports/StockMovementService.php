@@ -32,30 +32,103 @@ class StockMovementService extends BaseService
         $outgoing = $this->getOutgoing($dateFrom, $dateTo);
         $carryover = $this->getCarryover($dateFrom, $dateTo);
 
+        // Build products array by aggregating incoming and outgoing per product
+        $productsData = [];
+
+        // Process incoming (shipments)
+        foreach ($incoming as $item) {
+            $productName = $item->product_name ?? 'Unknown';
+            if (!isset($productsData[$productName])) {
+                $productsData[$productName] = [
+                    'product_name' => $productName,
+                    'incoming' => ['cartons' => 0, 'weight' => 0],
+                    'outgoing' => ['cartons' => 0, 'weight' => 0],
+                    'carryover' => ['in' => 0, 'out' => 0],
+                    'net_change' => ['cartons' => 0, 'weight' => 0],
+                ];
+            }
+            $productsData[$productName]['incoming']['cartons'] += $item->cartons ?? 0;
+            $productsData[$productName]['incoming']['weight'] += $item->weight ?? 0;
+        }
+
+        // Process outgoing (sales)
+        foreach ($outgoing as $item) {
+            $productName = $item->product_name ?? 'Unknown';
+            if (!isset($productsData[$productName])) {
+                $productsData[$productName] = [
+                    'product_name' => $productName,
+                    'incoming' => ['cartons' => 0, 'weight' => 0],
+                    'outgoing' => ['cartons' => 0, 'weight' => 0],
+                    'carryover' => ['in' => 0, 'out' => 0],
+                    'net_change' => ['cartons' => 0, 'weight' => 0],
+                ];
+            }
+            $productsData[$productName]['outgoing']['cartons'] += $item->quantity ?? 0;
+            $productsData[$productName]['outgoing']['weight'] += $item->weight ?? 0;
+        }
+
+        // Process carryover
+        foreach ($carryover['in'] as $item) {
+            $productName = $item['product_name'] ?? 'Unknown';
+            if (!isset($productsData[$productName])) {
+                $productsData[$productName] = [
+                    'product_name' => $productName,
+                    'incoming' => ['cartons' => 0, 'weight' => 0],
+                    'outgoing' => ['cartons' => 0, 'weight' => 0],
+                    'carryover' => ['in' => 0, 'out' => 0],
+                    'net_change' => ['cartons' => 0, 'weight' => 0],
+                ];
+            }
+            $productsData[$productName]['carryover']['in'] += $item['cartons'] ?? 0;
+        }
+
+        // Calculate net change for each product
+        foreach ($productsData as &$product) {
+            $product['net_change']['cartons'] =
+                $product['incoming']['cartons'] + $product['carryover']['in'] -
+                $product['outgoing']['cartons'] - $product['carryover']['out'];
+            $product['net_change']['weight'] =
+                $product['incoming']['weight'] - $product['outgoing']['weight'];
+        }
+
+        $products = array_values($productsData);
+
+        // Calculate totals
+        $totalIncomingCartons = $incoming->sum('cartons') + $carryover['in']->sum('cartons');
+        $totalIncomingWeight = $incoming->sum('weight');
+        $totalOutgoingCartons = $outgoing->sum('quantity');
+        $totalOutgoingWeight = $outgoing->sum('weight');
+        $totalCarryoverIn = $carryover['in']->sum('cartons');
+        $totalCarryoverOut = $carryover['out']->sum('cartons');
+
         return [
             'period' => [
                 'from' => $dateFrom,
                 'to' => $dateTo,
             ],
-            'incoming' => [
-                'shipments' => $incoming,
-                'total_cartons' => $incoming->sum('cartons'),
-                'total_weight' => $incoming->sum('weight'),
-            ],
-            'outgoing' => [
-                'sales' => $outgoing,
-                'total_cartons' => $outgoing->sum('quantity'),
-                'total_weight' => $outgoing->sum('weight'),
-            ],
-            'carryover' => [
-                'in' => $carryover['in'],
-                'out' => $carryover['out'],
-                'in_total' => $carryover['in']->sum('cartons'),
-                'out_total' => $carryover['out']->sum('cartons'),
+            'products' => $products,
+            'totals' => [
+                'incoming' => [
+                    'cartons' => $incoming->sum('cartons'),
+                    'weight' => $totalIncomingWeight,
+                ],
+                'outgoing' => [
+                    'cartons' => $totalOutgoingCartons,
+                    'weight' => $totalOutgoingWeight,
+                ],
+                'carryover' => [
+                    'in' => $totalCarryoverIn,
+                    'out' => $totalCarryoverOut,
+                ],
+                'net_change' => [
+                    'cartons' => $totalIncomingCartons - $totalOutgoingCartons - $totalCarryoverOut,
+                    'weight' => $totalIncomingWeight - $totalOutgoingWeight,
+                ],
             ],
             'summary' => [
-                'net_in' => $incoming->sum('cartons') + $carryover['in']->sum('cartons'),
-                'net_out' => $outgoing->sum('quantity') + $carryover['out']->sum('cartons'),
+                'products_count' => count($products),
+                'shipments_received' => $incoming->count(),
+                'invoices_issued' => $outgoing->groupBy('invoice_number')->count(),
             ],
         ];
     }

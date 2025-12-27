@@ -48,7 +48,8 @@ class SupplierPerformanceService extends BaseService
                 'total_suppliers' => $performanceData->count(),
                 'total_shipments' => $performanceData->sum('shipments_count'),
                 'total_sales' => $performanceData->sum('total_sales'),
-                'avg_wastage_rate' => $performanceData->avg('wastage_percentage') ?? 0,
+                'avg_wastage_rate' => $performanceData->avg('wastage_rate') ?? 0,
+                'avg_settlement_days' => $performanceData->avg('avg_days_to_settle') ?? 0,
             ],
         ];
     }
@@ -108,8 +109,8 @@ class SupplierPerformanceService extends BaseService
             'total_sales' => $totalSales,
             'total_weight_in' => $totalWeightIn,
             'total_weight_sold' => $totalWeightSold,
-            'wastage' => $wastage,
-            'wastage_percentage' => $totalWeightIn > 0
+            'total_wastage' => $wastage,
+            'wastage_rate' => $totalWeightIn > 0
                 ? round(($wastage / $totalWeightIn) * 100, 2)
                 : 0,
             'avg_days_to_settle' => $shipments->count() > 0

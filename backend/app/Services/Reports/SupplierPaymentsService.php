@@ -37,17 +37,15 @@ class SupplierPaymentsService extends BaseService
                 'from' => $dateFrom,
                 'to' => $dateTo,
             ],
-            'by_supplier' => $bySupplier,
-            'details' => [
-                'payments' => $payments,
-                'expenses' => $expenses,
-            ],
-            'summary' => [
+            'suppliers' => $bySupplier,
+            'totals' => [
                 'total_payments' => $payments->sum('amount'),
                 'total_expenses' => $expenses->sum('amount'),
-                'total_outflow' => $payments->sum('amount') + $expenses->sum('amount'),
-                'payments_count' => $payments->count(),
-                'expenses_count' => $expenses->count(),
+                'grand_total' => $payments->sum('amount') + $expenses->sum('amount'),
+            ],
+            'summary' => [
+                'suppliers_count' => $bySupplier->count(),
+                'transactions_count' => $payments->count() + $expenses->count(),
             ],
         ];
     }
@@ -107,16 +105,19 @@ class SupplierPaymentsService extends BaseService
         return $suppliers->map(function ($supplier) use ($payments, $expenses) {
             $supplierPayments = $payments->where('supplier_id', $supplier->id);
             $supplierExpenses = $expenses->where('supplier_id', $supplier->id);
+            $paymentsTotal = $supplierPayments->sum('amount');
+            $expensesTotal = $supplierExpenses->sum('amount');
 
             return [
                 'supplier_id' => $supplier->id,
+                'supplier_code' => $supplier->code,
                 'supplier_name' => $supplier->name,
-                'total_payments' => $supplierPayments->sum('amount'),
-                'total_expenses' => $supplierExpenses->sum('amount'),
-                'payments_count' => $supplierPayments->count(),
-                'expenses_count' => $supplierExpenses->count(),
+                'payments' => $paymentsTotal,
+                'expenses' => $expensesTotal,
+                'total' => $paymentsTotal + $expensesTotal,
+                'transactions_count' => $supplierPayments->count() + $supplierExpenses->count(),
             ];
-        })->filter(fn($s) => $s['total_payments'] > 0 || $s['total_expenses'] > 0)
+        })->filter(fn($s) => $s['payments'] > 0 || $s['expenses'] > 0)
             ->values();
     }
 

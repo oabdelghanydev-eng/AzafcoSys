@@ -73,12 +73,11 @@ class ProfitLossReportService extends BaseService
         $commissionRate = config('settings.company_commission_rate', 6) / 100;
         $totalCommission = $totalSales * $commissionRate;
 
-        // مبيعات نقدية مباشرة (لو فيه)
-        $directCashSales = Invoice::where('payment_method', 'cash')
-            ->where('status', 'active')
+        // Direct cash collections (payments received)
+        $directCashSales = Collection::where('payment_method', 'cash')
             ->when($dateFrom, fn($q) => $q->whereDate('date', '>=', $dateFrom))
             ->when($dateTo, fn($q) => $q->whereDate('date', '<=', $dateTo))
-            ->sum('total');
+            ->sum('amount');
 
         return [
             'commission' => [
@@ -105,16 +104,16 @@ class ProfitLossReportService extends BaseService
 
         $expenses = $expensesQuery->get();
 
-        // تصنيف المصروفات
+        // Group expenses by category
         $byCategory = $expenses->groupBy('category')->map(function ($items, $category) {
             return [
-                'category' => $category ?: 'عام',
+                'category' => $category ?: 'General',
                 'count' => $items->count(),
                 'amount' => $items->sum('amount'),
             ];
         })->values();
 
-        // بطريقة الدفع
+        // Group by payment method
         $byPaymentMethod = [
             'cash' => $expenses->where('payment_method', 'cash')->sum('amount'),
             'bank' => $expenses->where('payment_method', 'bank')->sum('amount'),
