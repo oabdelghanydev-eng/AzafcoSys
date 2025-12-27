@@ -182,17 +182,15 @@ class CustomerStatementService extends BaseService
     ): Collection {
         $timeline = collect();
 
-        // Opening Balance row (if not zero)
-        if ($periodOpeningBalance != 0) {
-            $timeline->push([
-                'type' => 'opening_balance',
-                'date' => '1900-01-01', // يظهر أولاً
-                'reference' => '-',
-                'debit' => $periodOpeningBalance > 0 ? $periodOpeningBalance : 0,
-                'credit' => $periodOpeningBalance < 0 ? abs($periodOpeningBalance) : 0,
-                'description' => 'رصيد افتتاحي',
-            ]);
-        }
+        // Opening Balance row (always show as first entry)
+        $timeline->push([
+            'type' => 'opening_balance',
+            'date' => '1900-01-01', // Shows first when sorted
+            'reference' => '-',
+            'debit' => $periodOpeningBalance > 0 ? $periodOpeningBalance : 0,
+            'credit' => $periodOpeningBalance < 0 ? abs($periodOpeningBalance) : 0,
+            'description' => 'Opening Balance',
+        ]);
 
         // Invoices (Debit - يزيد رصيد العميل)
         foreach ($invoices as $invoice) {
@@ -202,7 +200,7 @@ class CustomerStatementService extends BaseService
                 'reference' => $invoice->invoice_number,
                 'debit' => (float) $invoice->total,
                 'credit' => 0,
-                'description' => 'فاتورة',
+                'description' => 'Invoice',
             ]);
         }
 
@@ -214,7 +212,7 @@ class CustomerStatementService extends BaseService
                 'reference' => $collection->receipt_number,
                 'debit' => 0,
                 'credit' => (float) $collection->amount,
-                'description' => 'تحصيل ' . ($collection->payment_method === 'cash' ? 'نقدي' : 'بنكي'),
+                'description' => 'Collection (' . ($collection->payment_method === 'cash' ? 'Cash' : 'Bank') . ')',
             ]);
         }
 
@@ -226,7 +224,7 @@ class CustomerStatementService extends BaseService
                 'reference' => $return->return_number,
                 'debit' => 0,
                 'credit' => (float) $return->total_amount,
-                'description' => 'مرتجع',
+                'description' => 'Return',
             ]);
         }
 

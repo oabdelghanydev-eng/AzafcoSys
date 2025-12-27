@@ -131,17 +131,15 @@ class SupplierStatementService extends BaseService
     ): Collection {
         $timeline = collect();
 
-        // Opening Balance (if exists)
-        if ($supplier->opening_balance > 0) {
-            $timeline->push([
-                'type' => 'opening_balance',
-                'date' => '1900-01-01', // يظهر أولاً دائماً
-                'reference' => '-',
-                'debit' => (float) $supplier->opening_balance,
-                'credit' => 0,
-                'description' => 'رصيد افتتاحي',
-            ]);
-        }
+        // Opening Balance (always show as first entry)
+        $timeline->push([
+            'type' => 'opening_balance',
+            'date' => '1900-01-01', // Shows first when sorted
+            'reference' => '-',
+            'debit' => (float) max(0, $supplier->opening_balance ?? 0),
+            'credit' => (float) max(0, -($supplier->opening_balance ?? 0)),
+            'description' => 'Opening Balance',
+        ]);
 
         // Shipment Settlements (Debit - له)
         // نستخدم final_supplier_balance - previous_supplier_balance للحصول على صافي هذه الشحنة
@@ -154,7 +152,7 @@ class SupplierStatementService extends BaseService
                 'reference' => $shipment->number,
                 'debit' => (float) max(0, $netThisShipment), // له
                 'credit' => (float) max(0, -$netThisShipment), // عليه (لو سالب)
-                'description' => 'تسوية شحنة - مبيعات: ' . number_format($shipment->total_sales, 2),
+                'description' => 'Settlement - Sales: ' . number_format($shipment->total_sales, 2),
             ]);
         }
 
@@ -166,7 +164,7 @@ class SupplierStatementService extends BaseService
                 'reference' => $expense->expense_number,
                 'debit' => 0,
                 'credit' => (float) $expense->amount,
-                'description' => 'مصروف: ' . ($expense->description ?? '-'),
+                'description' => 'Expense: ' . ($expense->description ?? '-'),
             ]);
         }
 
@@ -178,7 +176,7 @@ class SupplierStatementService extends BaseService
                 'reference' => $payment->expense_number,
                 'debit' => 0,
                 'credit' => (float) $payment->amount,
-                'description' => 'دفعة للمورد: ' . ($payment->description ?? '-'),
+                'description' => 'Payment to Supplier: ' . ($payment->description ?? '-'),
             ]);
         }
 
