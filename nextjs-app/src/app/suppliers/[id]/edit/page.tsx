@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { useSupplier, useUpdateSupplier } from '@/hooks/api/use-suppliers';
+import { formatCurrency } from '@/lib/utils';
 import type { UpdateSupplierData } from '@/types/api';
 
 export default function EditSupplierPage() {
@@ -152,7 +153,7 @@ export default function EditSupplierPage() {
                                 <p className="text-xs text-muted-foreground">Set at creation, cannot be modified</p>
                             </div>
                             <p className="font-medium text-lg">
-                                {supplier.opening_balance?.toFixed(2) || '0.00'} QAR
+                                {formatCurrency(supplier.opening_balance)}
                             </p>
                         </div>
                     </div>

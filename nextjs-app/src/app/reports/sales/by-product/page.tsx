@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useSalesByProductReport } from '@/hooks/api/use-reports';
 import { usePdfDownload } from '@/hooks/use-pdf-download';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatNumber } from '@/lib/utils';
 import { endpoints } from '@/lib/api/endpoints';
 
 export default function SalesByProductPage() {

@@ -61,8 +61,8 @@ class SalesByProductService extends BaseService
             ->selectRaw('
                 products.id as product_id,
                 COALESCE(products.name_en, products.name) as product_name,
-                SUM(invoice_items.quantity) as quantity,
-                SUM(invoice_items.quantity * shipment_items.weight_per_unit) as weight,
+                SUM(invoice_items.cartons) as quantity,
+                SUM(invoice_items.quantity) as weight,
                 SUM(invoice_items.subtotal) as revenue,
                 AVG(invoice_items.unit_price) as avg_unit_price,
                 COUNT(DISTINCT invoices.id) as invoices_count

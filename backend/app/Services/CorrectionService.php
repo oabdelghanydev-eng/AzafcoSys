@@ -6,6 +6,7 @@ use App\Exceptions\BusinessException;
 use App\Exceptions\ErrorCodes;
 use App\Models\Collection;
 use App\Models\Correction;
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,8 @@ class CorrectionService
 {
     public function __construct(
         private CollectionDistributorService $distributorService
-    ) {}
+    ) {
+    }
 
     /**
      * Create invoice correction (adjustment note)
@@ -93,7 +95,7 @@ class CorrectionService
      */
     public function approveInvoiceCorrection(Correction $correction, User $approver): Invoice
     {
-        if (! $correction->isPending()) {
+        if (!$correction->isPending()) {
             throw new BusinessException(
                 'COR_001',
                 'التصحيح ليس في انتظار الموافقة',
@@ -101,7 +103,7 @@ class CorrectionService
             );
         }
 
-        if (! $correction->canBeApprovedBy($approver)) {
+        if (!$correction->canBeApprovedBy($approver)) {
             throw new BusinessException(
                 'COR_002',
                 'لا يمكنك الموافقة على تصحيحك الخاص',
@@ -115,7 +117,7 @@ class CorrectionService
 
             // Create correction invoice
             $correctionInvoice = Invoice::create([
-                'invoice_number' => $original->invoice_number.'-C'.$correction->correction_sequence,
+                'invoice_number' => $original->invoice_number . '-C' . $correction->correction_sequence,
                 'customer_id' => $original->customer_id,
                 'date' => now()->toDateString(),
                 'type' => 'adjustment',
@@ -137,7 +139,13 @@ class CorrectionService
                 'approved_at' => now(),
             ]);
 
-            // Customer balance will be updated by InvoiceObserver
+            // CRITICAL: Update customer balance for correction invoice
+            // SEV-1 FIX (2025-12-27): InvoiceObserver::created() does NOT update balance
+            // Adjustment invoices can be positive (debit) or negative (credit)
+            if ($correctionInvoice->type !== 'wastage') {
+                Customer::where('id', $correctionInvoice->customer_id)
+                    ->increment('balance', (float) $correctionInvoice->total);
+            }
 
             AuditService::logCorrection(
                 'correction_approved',
@@ -199,7 +207,7 @@ class CorrectionService
      */
     public function approveCollectionCorrection(Correction $correction, User $approver): Collection
     {
-        if (! $correction->canBeApprovedBy($approver)) {
+        if (!$correction->canBeApprovedBy($approver)) {
             throw new BusinessException(
                 'COR_002',
                 'لا يمكنك الموافقة على تصحيحك الخاص',
@@ -213,7 +221,7 @@ class CorrectionService
 
             // Create correction collection (can be negative for refunds)
             $correctionCollection = Collection::create([
-                'receipt_number' => $original->receipt_number.'-C'.$correction->correction_sequence,
+                'receipt_number' => $original->receipt_number . '-C' . $correction->correction_sequence,
                 'customer_id' => $original->customer_id,
                 'date' => now()->toDateString(),
                 'amount' => $correction->adjustment_value, // Can be negative
@@ -241,7 +249,7 @@ class CorrectionService
      */
     public function rejectCorrection(Correction $correction, User $rejector, string $reason): void
     {
-        if (! $correction->isPending()) {
+        if (!$correction->isPending()) {
             throw new BusinessException(
                 'COR_001',
                 'التصحيح ليس في انتظار الموافقة',

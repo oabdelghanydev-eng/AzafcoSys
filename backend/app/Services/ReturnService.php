@@ -192,7 +192,8 @@ class ReturnService
             Customer::where('id', $return->customer_id)
                 ->increment('balance', (float) $return->total_amount);
 
-            // Mark as cancelled
+            // Mark as cancelled (set authorization flag to bypass guard)
+            $return->cancelViaService = true;
             $return->update([
                 'status' => 'cancelled',
                 'cancelled_by' => auth()->id(),

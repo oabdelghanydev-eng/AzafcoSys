@@ -14,7 +14,7 @@ import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { usePdfDownload } from '@/hooks/use-pdf-download';
 import { formatCurrency } from '@/lib/utils';
-import { formatDate } from '@/lib/formatters';
+import { formatDateShort } from '@/lib/formatters';
 import Link from 'next/link';
 import type { ApiResponse } from '@/types/api';
 
@@ -255,9 +255,9 @@ export default function CustomerStatementPage({ params }: { params: Promise<{ id
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {statement.transactions.map((tx) => (
-                                            <TableRow key={`${tx.type}-${tx.id}`}>
-                                                <TableCell>{formatDate(tx.date)}</TableCell>
+                                        {statement.transactions.map((tx, index) => (
+                                            <TableRow key={`${tx.type}-${tx.id ?? index}`}>
+                                                <TableCell>{formatDateShort(tx.date)}</TableCell>
                                                 <TableCell>
                                                     <Badge variant={
                                                         tx.type === 'invoice' ? 'destructive'

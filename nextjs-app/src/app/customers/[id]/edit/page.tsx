@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { useCustomer, useUpdateCustomer } from '@/hooks/api/use-customers';
+import { formatCurrency } from '@/lib/utils';
 import type { UpdateCustomerData } from '@/types/api';
 
 export default function EditCustomerPage() {
@@ -152,7 +153,7 @@ export default function EditCustomerPage() {
                                 <p className="text-xs text-muted-foreground">Set at creation, cannot be modified</p>
                             </div>
                             <p className="font-medium text-lg">
-                                {customer.opening_balance?.toFixed(2) || '0.00'} QAR
+                                {formatCurrency(customer.opening_balance)}
                             </p>
                         </div>
                     </div>

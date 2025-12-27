@@ -2,14 +2,47 @@
 
 namespace App\Models;
 
+use App\Traits\ChecksClosedDailyReport;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Log;
 
 class Invoice extends Model
 {
     use HasFactory;
+    use ChecksClosedDailyReport;
+
+    /**
+     * Boot the model.
+     * 
+     * ARCHITECTURAL DECISION (2025-12-27):
+     * Guard rail to catch invoice creation bypasses.
+     * Logs warning if invoice is created with invalid/missing total.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function (Invoice $invoice) {
+            // Allow wastage invoices with zero total
+            if ($invoice->type === 'wastage') {
+                return;
+            }
+
+            // Guard rail: Log warning if invoice created without proper total
+            // This catches bypasses of InvoiceController/InvoiceService
+            if (is_null($invoice->total) || $invoice->total <= 0) {
+                Log::warning('Invoice created with invalid total - possible service bypass', [
+                    'invoice_id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number,
+                    'total' => $invoice->total,
+                    'customer_id' => $invoice->customer_id,
+                ]);
+            }
+        });
+    }
 
     protected $fillable = [
         'invoice_number',

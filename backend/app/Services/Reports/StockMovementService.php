@@ -63,7 +63,7 @@ class StockMovementService extends BaseService
                     'net_change' => ['cartons' => 0, 'weight' => 0],
                 ];
             }
-            $productsData[$productName]['outgoing']['cartons'] += $item->quantity ?? 0;
+            $productsData[$productName]['outgoing']['cartons'] += $item->cartons ?? 0;
             $productsData[$productName]['outgoing']['weight'] += $item->weight ?? 0;
         }
 
@@ -171,9 +171,9 @@ class StockMovementService extends BaseService
             ->selectRaw('
                 invoices.invoice_number,
                 invoices.date as sale_date,
-                products.name_en as product_name,
-                invoice_items.quantity,
-                invoice_items.quantity * shipment_items.weight_per_unit as weight
+                COALESCE(products.name_en, products.name) as product_name,
+                invoice_items.cartons,
+                invoice_items.quantity as weight
             ')
             ->orderBy('invoices.date')
             ->get();
