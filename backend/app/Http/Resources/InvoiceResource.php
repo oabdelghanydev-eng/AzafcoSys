@@ -22,11 +22,11 @@ class InvoiceResource extends JsonResource
             'subtotal' => (float) $this->subtotal,
             'discount' => (float) $this->discount,
             'total' => (float) $this->total,
-            'paid_amount' => (float) $this->paid_amount,
+            'paid' => (float) $this->paid_amount,  // Frontend expects 'paid'
             'balance' => (float) $this->balance,
             'notes' => $this->notes,
             'items' => InvoiceItemResource::collection($this->whenLoaded('items')),
-            'created_by' => $this->whenLoaded('createdBy', fn () => [
+            'created_by' => $this->whenLoaded('createdBy', fn() => [
                 'id' => $this->createdBy->id,
                 'name' => $this->createdBy->name,
             ]),
