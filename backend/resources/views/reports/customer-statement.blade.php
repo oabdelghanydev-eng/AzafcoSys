@@ -61,7 +61,7 @@
             <span class="en">Movement Summary</span>
         </div>
 
-        <div class="summary-box" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);">
+        <div class="summary-box" style="background: #f0fff4; border: 2px solid #48bb78;">
             <div class="summary-row">
                 <span class="summary-label">
                     <span class="ar">إجمالي الفواتير</span>
