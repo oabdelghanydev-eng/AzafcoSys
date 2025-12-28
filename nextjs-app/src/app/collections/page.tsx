@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Receipt, Filter } from 'lucide-react';
+import { Plus, Search, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,12 +15,20 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { PermissionGate } from '@/components/shared/permission-gate';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
 import { useCollections } from '@/hooks/api/use-collections';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Collection } from '@/types/api';
 
 function getPaymentMethodBadge(method: string) {
@@ -58,9 +67,22 @@ function CollectionCard({ collection }: { collection: Collection }) {
 }
 
 export default function CollectionsPage() {
-    const { data, isLoading, error, refetch } = useCollections();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState<string>('all');
+    const debouncedSearch = useDebounce(searchTerm, 300);
 
-    const collections = data?.data || [];
+    const { data, isLoading, error, refetch } = useCollections({
+        payment_method: paymentFilter !== 'all' ? paymentFilter : undefined,
+    });
+
+    // Client-side search filter (backend doesn't support search param)
+    const allCollections = data?.data || [];
+    const collections = debouncedSearch
+        ? allCollections.filter(col =>
+            col.receipt_number?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            col.customer?.name?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
+        : allCollections;
     const isEmpty = collections.length === 0;
 
     if (isLoading) {
@@ -99,12 +121,23 @@ export default function CollectionsPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search collections..." className="pl-10" />
+                    <Input
+                        placeholder="Search collections..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-                <Button variant="outline" className="touch-target">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filters
-                </Button>
+                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                    <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Payment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Methods</SelectItem>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="bank">Bank</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {isEmpty ? (

@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, FileText, Filter } from 'lucide-react';
+import { Plus, Search, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,12 +15,20 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { PermissionGate } from '@/components/shared/permission-gate';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
 import { useInvoices } from '@/hooks/api/use-invoices';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Invoice } from '@/types/api';
 
 function getStatusBadge(status: string) {
@@ -63,9 +72,22 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 }
 
 export default function InvoicesPage() {
-    const { data, isLoading, error, refetch } = useInvoices();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const debouncedSearch = useDebounce(searchTerm, 300);
 
-    const invoices = data?.data || [];
+    const { data, isLoading, error, refetch } = useInvoices({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+
+    // Client-side search filter (API may not support text search)
+    const allInvoices = data?.data || [];
+    const invoices = debouncedSearch
+        ? allInvoices.filter(inv =>
+            inv.invoice_number?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            inv.customer?.name?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
+        : allInvoices;
     const isEmpty = invoices.length === 0;
 
     if (isLoading) {
@@ -106,12 +128,25 @@ export default function InvoicesPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search invoices..." className="pl-10" />
+                    <Input
+                        placeholder="Search invoices..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-                <Button variant="outline" className="touch-target">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Filters
-                </Button>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="unpaid">Unpaid</SelectItem>
+                        <SelectItem value="partially_paid">Partial</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {isEmpty ? (

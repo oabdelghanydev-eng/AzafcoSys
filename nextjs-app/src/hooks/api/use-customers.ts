@@ -15,12 +15,19 @@ import type {
 // =============================================================================
 
 /**
- * Fetch list of customers
+ * Fetch list of customers with optional search
  */
-export function useCustomers() {
+export function useCustomers(params?: { search?: string }) {
     return useQuery({
-        queryKey: ['customers'],
-        queryFn: () => api.get<ApiResponse<Customer[]>>(endpoints.customers.list),
+        queryKey: ['customers', params?.search || ''],
+        queryFn: () => {
+            const queryParams = new URLSearchParams();
+            if (params?.search) queryParams.set('search', params.search);
+            const url = queryParams.toString()
+                ? `${endpoints.customers.list}?${queryParams}`
+                : endpoints.customers.list;
+            return api.get<ApiResponse<Customer[]>>(url);
+        },
     });
 }
 

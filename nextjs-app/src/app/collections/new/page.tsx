@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -32,7 +32,8 @@ interface AllocationEntry {
 
 export default function NewCollectionPage() {
     const router = useRouter();
-    const [customerId, setCustomerId] = useState('');
+    const searchParams = useSearchParams();
+    const [customerId, setCustomerId] = useState(searchParams.get('customer_id') || '');
     const [amount, setAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [distributionMethod, setDistributionMethod] = useState('auto');

@@ -16,12 +16,19 @@ import type {
 // =============================================================================
 
 /**
- * Fetch list of shipments
+ * Fetch list of shipments with optional filters
  */
-export function useShipments() {
+export function useShipments(params?: { status?: string }) {
     return useQuery({
-        queryKey: ['shipments'],
-        queryFn: () => api.get<ApiResponse<Shipment[]>>(endpoints.shipments.list),
+        queryKey: ['shipments', params?.status || ''],
+        queryFn: () => {
+            const queryParams = new URLSearchParams();
+            if (params?.status) queryParams.set('status', params.status);
+            const url = queryParams.toString()
+                ? `${endpoints.shipments.list}?${queryParams}`
+                : endpoints.shipments.list;
+            return api.get<ApiResponse<Shipment[]>>(url);
+        },
     });
 }
 

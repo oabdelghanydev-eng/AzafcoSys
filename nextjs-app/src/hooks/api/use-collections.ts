@@ -16,12 +16,20 @@ import type {
 // =============================================================================
 
 /**
- * Fetch list of collections
+ * Fetch list of collections with optional filters
  */
-export function useCollections() {
+export function useCollections(params?: { search?: string; payment_method?: string }) {
     return useQuery({
-        queryKey: ['collections'],
-        queryFn: () => api.get<ApiResponse<Collection[]>>(endpoints.collections.list),
+        queryKey: ['collections', params?.search || '', params?.payment_method || ''],
+        queryFn: () => {
+            const queryParams = new URLSearchParams();
+            if (params?.search) queryParams.set('search', params.search);
+            if (params?.payment_method) queryParams.set('payment_method', params.payment_method);
+            const url = queryParams.toString()
+                ? `${endpoints.collections.list}?${queryParams}`
+                : endpoints.collections.list;
+            return api.get<ApiResponse<Collection[]>>(url);
+        },
     });
 }
 

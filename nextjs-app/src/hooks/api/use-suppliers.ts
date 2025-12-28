@@ -15,12 +15,19 @@ import type {
 // =============================================================================
 
 /**
- * Fetch list of suppliers
+ * Fetch list of suppliers with optional search
  */
-export function useSuppliers() {
+export function useSuppliers(params?: { search?: string }) {
     return useQuery({
-        queryKey: ['suppliers'],
-        queryFn: () => api.get<ApiResponse<Supplier[]>>(endpoints.suppliers.list),
+        queryKey: ['suppliers', params?.search || ''],
+        queryFn: () => {
+            const queryParams = new URLSearchParams();
+            if (params?.search) queryParams.set('search', params.search);
+            const url = queryParams.toString()
+                ? `${endpoints.suppliers.list}?${queryParams}`
+                : endpoints.suppliers.list;
+            return api.get<ApiResponse<Supplier[]>>(url);
+        },
     });
 }
 

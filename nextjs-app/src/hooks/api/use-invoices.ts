@@ -101,6 +101,33 @@ export function useCancelInvoice() {
     });
 }
 
+/**
+ * Price adjustment for invoice (creates credit/debit note)
+ */
+export interface PriceAdjustmentItem {
+    product_name: string;
+    old_price: number;
+    new_price: number;
+    quantity: number;
+}
+
+export function usePriceAdjustment() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ invoiceId, adjustments }: {
+            invoiceId: number;
+            adjustments: PriceAdjustmentItem[];
+        }) => api.post(endpoints.invoices.priceAdjustment(invoiceId), { adjustments }),
+        onSuccess: (_, { invoiceId }) => {
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['invoice', invoiceId] });
+            queryClient.invalidateQueries({ queryKey: ['customers'] }); // Balance changes
+            queryClient.invalidateQueries({ queryKey: ['credit-notes'] });
+        },
+    });
+}
+
 // =============================================================================
 // Type Exports for convenience
 // =============================================================================

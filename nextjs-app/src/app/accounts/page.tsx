@@ -20,12 +20,89 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatCard } from '@/components/shared/stat-card';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { PermissionGate } from '@/components/shared/permission-gate';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
-import { useAccountsSummary, useCashboxTransactions, useTransfer } from '@/hooks/api/use-accounts';
+import { useAccountsSummary, useCashboxTransactions, useTransfer, useSetOpeningBalance } from '@/hooks/api/use-accounts';
 import { cn } from '@/lib/utils';
 
 // Quick amount buttons
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
+
+function OpeningBalanceForm({
+    accountType,
+    accountId,
+    currentBalance,
+}: {
+    accountType: 'cashbox' | 'bank';
+    accountId: number;
+    currentBalance: number;
+}) {
+    const [amount, setAmount] = useState(currentBalance.toString());
+    const [isEditing, setIsEditing] = useState(false);
+    const setOpeningBalance = useSetOpeningBalance();
+
+    const handleSave = async () => {
+        const newBalance = parseFloat(amount);
+        if (isNaN(newBalance) || newBalance < 0) {
+            toast.error('Please enter a valid amount');
+            return;
+        }
+
+        try {
+            await setOpeningBalance.mutateAsync({
+                accountId,
+                openingBalance: newBalance,
+            });
+            toast.success(`${accountType === 'cashbox' ? 'Cashbox' : 'Bank'} opening balance set!`);
+            setIsEditing(false);
+        } catch (err) {
+            const error = err as Error;
+            toast.error(error.message || 'Failed to set opening balance');
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+                {accountType === 'cashbox' ? (
+                    <Wallet className="h-5 w-5 text-green-600" />
+                ) : (
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                )}
+                <span className="font-medium">{accountType === 'cashbox' ? 'Cashbox' : 'Bank'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+                {isEditing ? (
+                    <>
+                        <Input
+                            type="number"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="w-32 text-right"
+                        />
+                        <Button
+                            size="sm"
+                            onClick={handleSave}
+                            disabled={setOpeningBalance.isPending}
+                        >
+                            {setOpeningBalance.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
+                            Cancel
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <span className="font-semibold money">{formatMoney(currentBalance)}</span>
+                        <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                            Edit
+                        </Button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
 
 function TransferSection({
     cashboxBalance,
@@ -299,6 +376,34 @@ export default function AccountsPage() {
                     className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200"
                 />
             </div>
+
+            {/* Opening Balance Section */}
+            <PermissionGate permission="accounts.set_opening_balance">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5" />
+                            Set Opening Balance
+                        </CardTitle>
+                        <CardDescription>
+                            Set the initial balance for each account. Can only be changed if no transactions exist.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <OpeningBalanceForm
+                            accountType="cashbox"
+                            accountId={summary.cashbox.id}
+                            currentBalance={summary.cashbox.balance}
+                        />
+                        <div className="my-4 border-t" />
+                        <OpeningBalanceForm
+                            accountType="bank"
+                            accountId={summary.bank.id}
+                            currentBalance={summary.bank.balance}
+                        />
+                    </CardContent>
+                </Card>
+            </PermissionGate>
 
             {/* Transfer Section */}
             <TransferSection

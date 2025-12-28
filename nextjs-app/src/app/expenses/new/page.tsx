@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -21,8 +21,9 @@ import { useUIStore } from '@/stores/ui-store';
 
 export default function NewExpensePage() {
     const router = useRouter();
-    const [type, setType] = useState('');
-    const [supplierId, setSupplierId] = useState('');
+    const searchParams = useSearchParams();
+    const [type, setType] = useState(searchParams.get('type') || '');
+    const [supplierId, setSupplierId] = useState(searchParams.get('supplier_id') || '');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
 import { useReturns } from '@/hooks/api/use-returns';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Return } from '@/types/api';
 
 function getStatusBadge(status: string) {
@@ -50,7 +52,18 @@ function ReturnCard({ returnItem }: { returnItem: Return }) {
 }
 
 export default function ReturnsPage() {
-    const { data: returns = [], isLoading, error, refetch } = useReturns();
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 300);
+
+    const { data: allReturns = [], isLoading, error, refetch } = useReturns();
+
+    // Client-side search filter
+    const returns = debouncedSearch && Array.isArray(allReturns)
+        ? allReturns.filter(r =>
+            r.return_number?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            r.customer?.name?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
+        : allReturns;
 
     const isEmpty = !Array.isArray(returns) || returns.length === 0;
 
@@ -87,7 +100,12 @@ export default function ReturnsPage() {
 
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search returns..." className="pl-10" />
+                <Input
+                    placeholder="Search returns..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             {isEmpty ? (

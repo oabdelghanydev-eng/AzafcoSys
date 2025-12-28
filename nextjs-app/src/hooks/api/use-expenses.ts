@@ -14,12 +14,20 @@ import type {
 // =============================================================================
 
 /**
- * Fetch list of expenses
+ * Fetch list of expenses with optional filters
  */
-export function useExpenses() {
+export function useExpenses(params?: { search?: string; type?: string }) {
     return useQuery({
-        queryKey: ['expenses'],
-        queryFn: () => api.get<ApiResponse<Expense[]>>(endpoints.expenses.list),
+        queryKey: ['expenses', params?.search || '', params?.type || ''],
+        queryFn: () => {
+            const queryParams = new URLSearchParams();
+            if (params?.search) queryParams.set('search', params.search);
+            if (params?.type) queryParams.set('type', params.type);
+            const url = queryParams.toString()
+                ? `${endpoints.expenses.list}?${queryParams}`
+                : endpoints.expenses.list;
+            return api.get<ApiResponse<Expense[]>>(url);
+        },
     });
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Truck, Search } from 'lucide-react';
@@ -10,12 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { PermissionGate } from '@/components/shared/permission-gate';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatDateShort, formatInteger } from '@/lib/formatters';
 import { useShipments } from '@/hooks/api/use-shipments';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Shipment } from '@/types/api';
 
 function getStatusBadge(status: string) {
@@ -52,9 +61,22 @@ function ShipmentCard({ shipment }: { shipment: Shipment }) {
 
 export default function ShipmentsPage() {
     const router = useRouter();
-    const { data, isLoading, error, refetch } = useShipments();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const debouncedSearch = useDebounce(searchTerm, 300);
 
-    const shipments = data?.data || [];
+    const { data, isLoading, error, refetch } = useShipments({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+
+    // Client-side search filter
+    const allShipments = data?.data || [];
+    const shipments = debouncedSearch
+        ? allShipments.filter(s =>
+            s.supplier?.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            String(s.id).includes(debouncedSearch)
+        )
+        : allShipments;
     const isEmpty = shipments.length === 0;
 
     if (isLoading) {
@@ -88,9 +110,28 @@ export default function ShipmentsPage() {
                 </PermissionGate>
             </div>
 
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search shipments..." className="pl-10" />
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search shipments..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                        <SelectItem value="settled">Settled</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {isEmpty ? (

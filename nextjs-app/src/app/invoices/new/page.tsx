@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Trash2, ShoppingCart, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -35,7 +35,8 @@ interface CartItem {
 
 export default function NewInvoicePage() {
     const router = useRouter();
-    const [customerId, setCustomerId] = useState<string>('');
+    const searchParams = useSearchParams();
+    const [customerId, setCustomerId] = useState<string>(searchParams.get('customer_id') || '');
     const [selectedProduct, setSelectedProduct] = useState<StockItem | null>(null);
     const [cartons, setCartons] = useState('');
     const [weight, setWeight] = useState('');
@@ -218,7 +219,27 @@ export default function NewInvoicePage() {
                     <CardHeader>
                         <CardTitle className="text-lg">Customer</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="space-y-4">
+                        {/* Recent Customers Quick Select */}
+                        {customers.length > 0 && !customerId && (
+                            <div className="space-y-2">
+                                <p className="text-sm text-muted-foreground">Recent customers:</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {customers.slice(0, 5).map((customer: Customer) => (
+                                        <Button
+                                            key={customer.id}
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCustomerId(customer.id.toString())}
+                                            className="text-sm"
+                                        >
+                                            {customer.name}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         <Select value={customerId} onValueChange={setCustomerId}>
                             <SelectTrigger className="touch-target">
                                 <SelectValue placeholder="Select customer" />
@@ -236,6 +257,21 @@ export default function NewInvoicePage() {
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* Customer Balance Display */}
+                        {customerId && (() => {
+                            const selected = customers.find((c: Customer) => c.id.toString() === customerId);
+                            return selected && (
+                                <div className={`p-3 rounded-lg border ${selected.balance > 0 ? 'bg-orange-50 border-orange-200' : 'bg-green-50 border-green-200'}`}>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium">{selected.name}</span>
+                                        <span className={`font-bold ${selected.balance > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                            {selected.balance > 0 ? `Owes: ${formatMoney(selected.balance)}` : 'No balance'}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                     </CardContent>
                 </Card>
 

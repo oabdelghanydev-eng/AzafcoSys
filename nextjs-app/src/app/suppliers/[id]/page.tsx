@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Edit2, FileText, Save, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit2, FileText, Save, X, Loader2, DollarSign, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,16 +78,27 @@ export default function SupplierDetailPage() {
                     </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    {/* Quick Action: Make Payment */}
+                    {supplier.balance > 0 && (
+                        <PermissionGate permission="expenses.create">
+                            <Button variant="default" asChild className="touch-target bg-red-600 hover:bg-red-700">
+                                <Link href={`/expenses/new?supplier_id=${supplier.id}&type=supplier_payment`}>
+                                    <DollarSign className="mr-2 h-4 w-4" />
+                                    Make Payment
+                                </Link>
+                            </Button>
+                        </PermissionGate>
+                    )}
                     <Button variant="outline" asChild className="touch-target">
                         <Link href={`/reports/supplier?id=${supplier.id}`}>
-                            <FileText className="mr-2 h-4 w-4" />
+                            <BarChart3 className="mr-2 h-4 w-4" />
                             Statement
                         </Link>
                     </Button>
                     {!isEditing ? (
                         <PermissionGate permission="suppliers.update">
-                            <Button onClick={() => setIsEditing(true)} className="touch-target">
+                            <Button onClick={() => setIsEditing(true)} variant="outline" className="touch-target">
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Edit
                             </Button>

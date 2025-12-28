@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Building2, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { Download, Building2, TrendingUp, TrendingDown, Loader2, FileSpreadsheet, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,6 +10,7 @@ import { api } from '@/lib/api/client';
 import { endpoints } from '@/lib/api/endpoints';
 import { formatCurrency } from '@/lib/utils';
 import { usePdfDownload } from '@/hooks/use-pdf-download';
+import { exportToCsv } from '@/lib/export';
 import type { ApiResponse } from '@/types/api';
 
 interface SupplierBalance {
@@ -65,17 +66,39 @@ export default function SupplierBalancesPage() {
         downloadPdf(endpoints.reports.supplierBalancesPdf, 'supplier-balances-report');
     };
 
+    const handleExportCsv = () => {
+        if (!report?.suppliers) return;
+        exportToCsv(report.suppliers, 'supplier-balances', [
+            { key: 'supplier_code', header: 'Code' },
+            { key: 'supplier_name', header: 'Supplier' },
+            { key: 'balance_type', header: 'Status' },
+            { key: 'balance', header: 'Balance' },
+        ]);
+    };
+
+    const handlePrint = () => window.print();
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Supplier Balances</h1>
                     <p className="text-muted-foreground">All supplier balances summary</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    {isDownloading ? 'Downloading...' : 'Download PDF'}
-                </Button>
+                <div className="flex gap-2 no-print">
+                    <Button variant="outline" onClick={handlePrint} disabled={!report}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
+                    <Button variant="outline" onClick={handleExportCsv} disabled={!report}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        CSV
+                    </Button>
+                    <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Downloading...' : 'PDF'}
+                    </Button>
+                </div>
             </div>
 
             {isLoading && (

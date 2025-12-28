@@ -1,11 +1,12 @@
 'use client';
 
-import { Download, Package, Truck, Scale, Loader2 } from 'lucide-react';
+import { Download, Package, Truck, Scale, Loader2, FileSpreadsheet, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useInventoryStockReport } from '@/hooks/api/use-reports';
 import { usePdfDownload } from '@/hooks/use-pdf-download';
+import { exportToCsv } from '@/lib/export';
 import { endpoints } from '@/lib/api/endpoints';
 
 export default function InventoryStockPage() {
@@ -17,17 +18,39 @@ export default function InventoryStockPage() {
         downloadPdf(endpoints.reports.inventoryStockPdf, 'inventory-stock-report');
     };
 
+    const handleExportCsv = () => {
+        if (!report?.products) return;
+        exportToCsv(report.products, 'inventory-stock', [
+            { key: 'product_name', header: 'Product' },
+            { key: 'total_cartons', header: 'Cartons' },
+            { key: 'total_weight', header: 'Weight (kg)' },
+            { key: 'shipments_count', header: 'Shipments' },
+        ]);
+    };
+
+    const handlePrint = () => window.print();
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Current Stock</h1>
                     <p className="text-muted-foreground">Available inventory by product</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    {isDownloading ? 'Downloading...' : 'Download PDF'}
-                </Button>
+                <div className="flex gap-2 no-print">
+                    <Button variant="outline" onClick={handlePrint} disabled={!report}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
+                    <Button variant="outline" onClick={handleExportCsv} disabled={!report}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        CSV
+                    </Button>
+                    <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Downloading...' : 'PDF'}
+                    </Button>
+                </div>
             </div>
 
             {isLoading && (

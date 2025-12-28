@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney } from '@/lib/formatters';
 import { useSuppliers } from '@/hooks/api/use-suppliers';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Supplier } from '@/types/api';
 
 function SupplierCard({ supplier }: { supplier: Supplier }) {
@@ -40,7 +42,10 @@ function SupplierCard({ supplier }: { supplier: Supplier }) {
 }
 
 export default function SuppliersPage() {
-    const { data, isLoading, error, refetch } = useSuppliers();
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 300);
+
+    const { data, isLoading, error, refetch } = useSuppliers({ search: debouncedSearch || undefined });
 
     const suppliers = data?.data || [];
     const isEmpty = suppliers.length === 0;
@@ -78,7 +83,12 @@ export default function SuppliersPage() {
 
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search suppliers..." className="pl-10" />
+                <Input
+                    placeholder="Search suppliers..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             {isEmpty ? (

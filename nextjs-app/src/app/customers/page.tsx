@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney } from '@/lib/formatters';
 import { useCustomers } from '@/hooks/api/use-customers';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Customer } from '@/types/api';
 
 function CustomerCard({ customer }: { customer: Customer }) {
@@ -44,7 +46,10 @@ function CustomerCard({ customer }: { customer: Customer }) {
 }
 
 export default function CustomersPage() {
-    const { data, isLoading, error, refetch } = useCustomers();
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 300);
+
+    const { data, isLoading, error, refetch } = useCustomers({ search: debouncedSearch || undefined });
 
     const customers = data?.data || [];
     const isEmpty = customers.length === 0;
@@ -82,7 +87,12 @@ export default function CustomersPage() {
 
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search customers..." className="pl-10" />
+                <Input
+                    placeholder="Search customers..."
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             {isEmpty ? (

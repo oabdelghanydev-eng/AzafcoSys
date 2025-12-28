@@ -105,6 +105,21 @@ export function useTransfer() {
     });
 }
 
+/**
+ * Set opening balance for an account
+ */
+export function useSetOpeningBalance() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ accountId, openingBalance }: { accountId: number; openingBalance: number }) =>
+            api.post(`/accounts/${accountId}/opening-balance`, { opening_balance: openingBalance }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+        },
+    });
+}
+
 // =============================================================================
 // Type Exports
 // =============================================================================

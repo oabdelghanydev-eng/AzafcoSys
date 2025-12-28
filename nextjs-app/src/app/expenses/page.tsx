@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Wallet, Filter } from 'lucide-react';
+import { Plus, Search, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,12 +10,20 @@ import { Badge } from '@/components/ui/badge';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { PermissionGate } from '@/components/shared/permission-gate';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { formatMoney, formatDateShort } from '@/lib/formatters';
 import { useExpenses } from '@/hooks/api/use-expenses';
+import { useDebounce } from '@/hooks/use-debounce';
 import type { Expense } from '@/types/api';
 
 function getTypeBadge(type: string) {
@@ -51,9 +60,22 @@ function ExpenseCard({ expense }: { expense: Expense }) {
 }
 
 export default function ExpensesPage() {
-    const { data, isLoading, error, refetch } = useExpenses();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<string>('all');
+    const debouncedSearch = useDebounce(searchTerm, 300);
 
-    const expenses = data?.data || [];
+    const { data, isLoading, error, refetch } = useExpenses({
+        type: typeFilter !== 'all' ? typeFilter : undefined,
+    });
+
+    // Client-side search filter (backend doesn't support search param)
+    const allExpenses = data?.data || [];
+    const expenses = debouncedSearch
+        ? allExpenses.filter(exp =>
+            exp.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            exp.supplier?.name?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        )
+        : allExpenses;
     const isEmpty = expenses.length === 0;
 
     if (isLoading) {
@@ -90,12 +112,24 @@ export default function ExpensesPage() {
             <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search expenses..." className="pl-10" />
+                    <Input
+                        placeholder="Search expenses..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
                 </div>
-                <Button variant="outline" className="touch-target">
-                    <Filter className="mr-2 h-4 w-4" />
-                    Type
-                </Button>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="company">Company</SelectItem>
+                        <SelectItem value="supplier">Supplier</SelectItem>
+                        <SelectItem value="supplier_payment">Payment</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {isEmpty ? (

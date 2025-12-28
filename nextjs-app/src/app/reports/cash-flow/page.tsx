@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, ArrowUpRight, ArrowDownRight, Wallet, Building2, Loader2 } from 'lucide-react';
+import { Download, ArrowUpRight, ArrowDownRight, Wallet, Building2, Loader2, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useCashFlowReport } from '@/hooks/api/use-reports';
 import { usePdfDownload } from '@/hooks/use-pdf-download';
+import { DateRangePicker } from '@/components/shared/date-range-picker';
 import { formatCurrency } from '@/lib/utils';
 import { endpoints } from '@/lib/api/endpoints';
 
@@ -26,45 +25,36 @@ export default function CashFlowPage() {
         downloadPdf(`${endpoints.reports.cashFlowPdf}?${params}`, 'cash-flow-report');
     };
 
+    const handlePrint = () => window.print();
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Cash Flow Report</h1>
                     <p className="text-muted-foreground">Cash inflows and outflows analysis</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    {isDownloading ? 'Downloading...' : 'Download PDF'}
-                </Button>
+                <div className="flex gap-2 no-print">
+                    <Button variant="outline" onClick={handlePrint} disabled={!report}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
+                    <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Downloading...' : 'PDF'}
+                    </Button>
+                </div>
             </div>
 
-            {/* Date Filters */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-base">Filter by Date</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex gap-4 flex-wrap">
-                        <div className="space-y-2">
-                            <Label>From</Label>
-                            <Input
-                                type="date"
-                                value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>To</Label>
-                            <Input
-                                type="date"
-                                value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Date Range Picker */}
+            <div className="no-print">
+                <DateRangePicker
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                    onDateFromChange={setDateFrom}
+                    onDateToChange={setDateTo}
+                />
+            </div>
 
             {isLoading && (
                 <div className="flex justify-center p-8">

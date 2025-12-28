@@ -39,6 +39,16 @@ export const endpoints = {
         create: '/invoices',
         detail: (id: number) => `/invoices/${id}`,
         cancel: (id: number) => `/invoices/${id}/cancel`,
+        priceAdjustment: (id: number) => `/invoices/${id}/price-adjustment`,
+    },
+
+    // Credit Notes
+    creditNotes: {
+        list: '/credit-notes',
+        credit: '/credit-notes/credit',
+        debit: '/credit-notes/debit',
+        detail: (id: number) => `/credit-notes/${id}`,
+        cancel: (id: number) => `/credit-notes/${id}/cancel`,
     },
 
     // Collections

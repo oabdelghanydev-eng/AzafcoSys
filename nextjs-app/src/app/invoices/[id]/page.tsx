@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Printer, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, X, Loader2, DollarSign, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { PermissionGate } from '@/components/shared/permission-gate';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
+import { PriceAdjustmentModal } from '@/components/invoices/price-adjustment-modal';
 import { formatMoney, formatDateShort, formatQuantity } from '@/lib/formatters';
 import { useInvoice, useCancelInvoice } from '@/hooks/api/use-invoices';
 import { useState } from 'react';
@@ -34,6 +35,7 @@ export default function InvoiceDetailPage() {
     const params = useParams();
     const _router = useRouter();
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+    const [showPriceAdjustment, setShowPriceAdjustment] = useState(false);
 
     const invoiceId = Number(params.id);
     const { data: invoice, isLoading, error, refetch } = useInvoice(invoiceId);
@@ -94,6 +96,30 @@ export default function InvoiceDetailPage() {
                         {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
                         {isDownloading ? 'Downloading...' : 'Print'}
                     </Button>
+                    {/* Price Adjustment for non-cancelled invoices */}
+                    {invoice.status !== 'cancelled' && (
+                        <PermissionGate permission="credit_notes.create">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowPriceAdjustment(true)}
+                                className="touch-target"
+                            >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Price Adjustment
+                            </Button>
+                        </PermissionGate>
+                    )}
+                    {/* Quick action: Receive Payment for unpaid invoices */}
+                    {invoice.status !== 'cancelled' && invoice.status !== 'paid' && invoice.balance > 0 && (
+                        <PermissionGate permission="collections.create">
+                            <Button variant="default" asChild className="touch-target bg-green-600 hover:bg-green-700">
+                                <Link href={`/collections/new?customer_id=${invoice.customer?.id}&invoice_id=${invoice.id}`}>
+                                    <DollarSign className="mr-2 h-4 w-4" />
+                                    Receive Payment
+                                </Link>
+                            </Button>
+                        </PermissionGate>
+                    )}
                     {invoice.status !== 'cancelled' && (
                         <PermissionGate permission="invoices.cancel">
                             <Button
@@ -221,6 +247,16 @@ export default function InvoiceDetailPage() {
                 onConfirm={handleCancel}
                 variant="destructive"
                 loading={cancelInvoice.isPending}
+            />
+
+            {/* Price Adjustment Modal */}
+            <PriceAdjustmentModal
+                open={showPriceAdjustment}
+                onOpenChange={setShowPriceAdjustment}
+                invoiceId={invoiceId}
+                invoiceNumber={invoice.invoice_number}
+                items={invoice.items || []}
+                onSuccess={() => refetch()}
             />
         </div>
     );

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Edit2, FileText, Save, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit2, FileText, Save, X, Loader2, DollarSign, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,16 +85,35 @@ export default function CustomerDetailPage() {
                     </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                    {/* Quick Actions */}
+                    <PermissionGate permission="invoices.create">
+                        <Button variant="default" asChild className="touch-target">
+                            <Link href={`/invoices/new?customer_id=${customer.id}`}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                New Invoice
+                            </Link>
+                        </Button>
+                    </PermissionGate>
+                    {customer.balance > 0 && (
+                        <PermissionGate permission="collections.create">
+                            <Button variant="default" asChild className="touch-target bg-green-600 hover:bg-green-700">
+                                <Link href={`/collections/new?customer_id=${customer.id}`}>
+                                    <DollarSign className="mr-2 h-4 w-4" />
+                                    Receive Payment
+                                </Link>
+                            </Button>
+                        </PermissionGate>
+                    )}
                     <Button variant="outline" asChild className="touch-target">
                         <Link href={`/reports/customer?id=${customer.id}`}>
-                            <FileText className="mr-2 h-4 w-4" />
+                            <BarChart3 className="mr-2 h-4 w-4" />
                             Statement
                         </Link>
                     </Button>
                     {!isEditing ? (
                         <PermissionGate permission="customers.update">
-                            <Button onClick={() => setIsEditing(true)} className="touch-target">
+                            <Button onClick={() => setIsEditing(true)} variant="outline" className="touch-target">
                                 <Edit2 className="mr-2 h-4 w-4" />
                                 Edit
                             </Button>

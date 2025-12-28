@@ -1,12 +1,13 @@
 'use client';
 
-import { Download, Users, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { Download, Users, AlertTriangle, Clock, Loader2, FileSpreadsheet, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useCustomerAgingReport } from '@/hooks/api/use-reports';
 import { usePdfDownload } from '@/hooks/use-pdf-download';
+import { exportToCsv } from '@/lib/export';
 import { formatCurrency } from '@/lib/utils';
 import { endpoints } from '@/lib/api/endpoints';
 
@@ -19,17 +20,50 @@ export default function CustomerAgingPage() {
         downloadPdf(endpoints.reports.customerAgingPdf, 'customer-aging-report');
     };
 
+    const handleExportCsv = () => {
+        if (!report?.customers) return;
+        exportToCsv(report.customers.map(c => ({
+            customer_code: c.customer_code,
+            customer_name: c.customer_name,
+            current: c.aging.current,
+            days_31_60: c.aging.days_31_60,
+            days_61_90: c.aging.days_61_90,
+            over_90: c.aging.over_90,
+            total_balance: c.total_balance,
+        })), 'customer-aging', [
+            { key: 'customer_code', header: 'Code' },
+            { key: 'customer_name', header: 'Customer' },
+            { key: 'current', header: '0-30 Days' },
+            { key: 'days_31_60', header: '31-60 Days' },
+            { key: 'days_61_90', header: '61-90 Days' },
+            { key: 'over_90', header: '90+ Days' },
+            { key: 'total_balance', header: 'Total' },
+        ]);
+    };
+
+    const handlePrint = () => window.print();
+
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">Customer Aging Report</h1>
                     <p className="text-muted-foreground">Outstanding invoices by age</p>
                 </div>
-                <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
-                    {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    {isDownloading ? 'Downloading...' : 'Download PDF'}
-                </Button>
+                <div className="flex gap-2 no-print">
+                    <Button variant="outline" onClick={handlePrint} disabled={!report}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
+                    <Button variant="outline" onClick={handleExportCsv} disabled={!report}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        CSV
+                    </Button>
+                    <Button onClick={handleDownloadPdf} disabled={!report || isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Downloading...' : 'PDF'}
+                    </Button>
+                </div>
             </div>
 
             {isLoading && (
