@@ -202,7 +202,7 @@ class InvoiceController extends Controller
      *
      * Permission: invoices.view
      */
-    public function pdf(Invoice $invoice, \App\Services\PdfGeneratorService $pdfService)
+    public function pdf(Invoice $invoice, \App\Services\Reports\PdfGeneratorService $pdfService)
     {
         $this->checkPermission('invoices.view');
 
@@ -234,8 +234,6 @@ class InvoiceController extends Controller
             ])->toArray(),
         ];
 
-        $pdf = $pdfService->generateFromView('reports.invoice', $data);
-
-        return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
+        return $pdfService->download('reports.invoice', $data, "invoice-{$invoice->invoice_number}");
     }
 }
