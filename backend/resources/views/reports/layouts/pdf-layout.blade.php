@@ -236,19 +236,20 @@
 
         .final-total {
             font-size: 12pt;
-            background-color: #1a365d;
-            color: #fff;
+            background-color: #f0fff4;
+            color: #2d3748;
             padding: 12px 15px;
             margin-top: 12px;
             border-radius: 5px;
+            border: 2px solid #48bb78;
         }
 
         .final-total .summary-label {
-            color: #e2e8f0;
+            color: #4a5568;
         }
 
         .final-total .summary-value {
-            color: #48bb78;
+            color: #276749;
             font-size: 14pt;
         }
 
