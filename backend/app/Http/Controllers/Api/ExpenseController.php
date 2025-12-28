@@ -64,8 +64,8 @@ class ExpenseController extends Controller
         $this->checkPermission('expenses.create');
 
         $validated = $request->validate([
-            'type' => 'required|in:supplier,company',
-            'supplier_id' => 'required_if:type,supplier|nullable|exists:suppliers,id',
+            'type' => 'required|in:supplier,company,supplier_payment',
+            'supplier_id' => 'required_if:type,supplier|required_if:type,supplier_payment|nullable|exists:suppliers,id',
             'shipment_id' => 'nullable|exists:shipments,id',
             'date' => 'nullable|date',  // Optional - will use daily report date
             'amount' => 'required|numeric|min:0.01',
