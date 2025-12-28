@@ -115,13 +115,13 @@
             <span class="en">Totals</span>
         </div>
 
-        <div class="summary-box" style="background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);">
+        <div class="summary-box" style="background: #f0fff4; border: 2px solid #48bb78;">
             <div class="summary-row">
                 <span class="summary-label">
                     <span class="ar">المجموع الفرعي</span>
                     <span class="en">Subtotal</span>
                 </span>
-                <span class="summary-value money">{{ $currency($invoice['subtotal']) }}</span>
+                <span class="summary-value money" style="color: #2d3748;">{{ $currency($invoice['subtotal']) }}</span>
             </div>
             @if(($invoice['discount'] ?? 0) > 0)
                 <div class="summary-row">
@@ -132,13 +132,14 @@
                     <span class="summary-value money positive">-{{ $currency($invoice['discount']) }}</span>
                 </div>
             @endif
-            <div class="summary-row total-row">
+            <div class="summary-row total-row"
+                style="background: #c6f6d5; border-radius: 5px; padding: 8px; margin: 8px 0;">
                 <span class="summary-label">
                     <span class="ar">الإجمالي</span>
                     <span class="en">Total</span>
                 </span>
                 <span class="summary-value money"
-                    style="font-size: 1.2em; color: #fbbf24;">{{ $currency($invoice['total']) }}</span>
+                    style="font-size: 1.2em; color: #276749;">{{ $currency($invoice['total']) }}</span>
             </div>
             <div class="summary-row">
                 <span class="summary-label">
@@ -147,7 +148,8 @@
                 </span>
                 <span class="summary-value money positive">{{ $currency($invoice['paid_amount'] ?? 0) }}</span>
             </div>
-            <div class="summary-row total-row">
+            <div class="summary-row total-row"
+                style="background: {{ ($invoice['balance'] ?? 0) > 0 ? '#fed7d7' : '#c6f6d5' }}; border-radius: 5px; padding: 8px; margin-top: 8px;">
                 <span class="summary-label">
                     <span class="ar">المتبقي</span>
                     <span class="en">Balance</span>
