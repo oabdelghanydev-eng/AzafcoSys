@@ -111,16 +111,35 @@ class CollectionController extends Controller
     }
 
     /**
-     * Delete collection.
-     * Permission: collections.delete
+     * Cancel collection (reverses all effects).
+     * Permission: collections.cancel
+     * 
+     * Note: Deletion is FORBIDDEN per BL_Collections.md (BR-COL-007)
+     * Use cancel instead to preserve audit trail.
      */
-    public function destroy(Collection $collection)
+    public function cancel(Collection $collection)
     {
-        $this->checkPermission('collections.delete');
+        $this->checkPermission('collections.cancel');
 
-        $collection->delete();
+        if ($collection->status === 'cancelled') {
+            return $this->error(
+                'COL_003',
+                'التحصيل ملغى بالفعل',
+                'Collection is already cancelled',
+                422
+            );
+        }
 
-        return $this->success(null, 'تم حذف التحصيل بنجاح');
+        $collection->update([
+            'status' => 'cancelled',
+            'cancelled_by' => auth()->id(),
+            'cancelled_at' => now(),
+        ]);
+
+        return $this->success(
+            new CollectionResource($collection->fresh()),
+            'تم إلغاء التحصيل بنجاح'
+        );
     }
 
     /**

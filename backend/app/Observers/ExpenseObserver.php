@@ -38,8 +38,8 @@ class ExpenseObserver
                 if ($expense->payment_method === 'cash' && $account->balance < $expense->amount) {
                     throw new \App\Exceptions\BusinessException(
                         'TRS_001',
-                        'رصيد الخزنة غير كافي. المتاح: '.$account->balance,
-                        'Insufficient cashbox balance. Available: '.$account->balance
+                        'رصيد الخزنة غير كافي. المتاح: ' . $account->balance,
+                        'Insufficient cashbox balance. Available: ' . $account->balance
                     );
                 }
 
@@ -71,7 +71,7 @@ class ExpenseObserver
 
     /**
      * Handle the Expense "deleted" event.
-     * Reverse all changes
+     * Reverse all changes by creating REVERSAL transactions (audit trail preserved)
      */
     public function deleted(Expense $expense): void
     {
@@ -90,15 +90,23 @@ class ExpenseObserver
             if ($account) {
                 $account->increment('balance', (float) $expense->amount);
 
-                // Delete related transaction
+                // Create REVERSAL transaction (preserves audit trail)
+                // This is accounting best practice - never hard-delete financial transactions
+                $reversalData = [
+                    'account_id' => $account->id,
+                    'type' => 'in',  // Reversal: money comes back IN
+                    'amount' => $expense->amount,
+                    'balance_after' => $account->balance,
+                    'reference_type' => Expense::class,
+                    'reference_id' => $expense->id,
+                    'description' => '[إلغاء] ' . $expense->description,
+                    'created_by' => auth()->id(),
+                ];
+
                 if ($expense->payment_method === 'cash') {
-                    CashboxTransaction::where('reference_type', Expense::class)
-                        ->where('reference_id', $expense->id)
-                        ->delete();
+                    CashboxTransaction::create($reversalData);
                 } else {
-                    BankTransaction::where('reference_type', Expense::class)
-                        ->where('reference_id', $expense->id)
-                        ->delete();
+                    BankTransaction::create($reversalData);
                 }
             }
         });

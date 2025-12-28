@@ -70,9 +70,17 @@ export default function NewReturnPage() {
     // Get invoice items from selected invoice
     const invoiceItems: InvoiceItem[] = invoiceDetail?.items ?? [];
 
-    // Calculate what's available to return (original qty minus already added)
+    // Calculate what's available to return
+    // Must account for:
+    // 1. cartons_returned / quantity_returned (from backend - already returned via previous returns)
+    // 2. alreadyAdded (items added in this form session but not yet submitted)
     const availableItems = useMemo(() => {
         return invoiceItems.map(item => {
+            // Backend tracks already-returned values
+            const previouslyReturnedCartons = item.cartons_returned ?? 0;
+            const previouslyReturnedWeight = item.quantity_returned ?? 0;
+
+            // Items added in current form session (not yet saved)
             const alreadyAddedWeight = items
                 .filter(i => i.invoiceItemId === item.id)
                 .reduce((sum, i) => sum + i.weight, 0);
@@ -80,10 +88,16 @@ export default function NewReturnPage() {
                 .filter(i => i.invoiceItemId === item.id)
                 .reduce((sum, i) => sum + i.cartons, 0);
 
+            // Remaining = original - previouslyReturned - currentFormAdditions
+            const remainingWeight = item.quantity - previouslyReturnedWeight - alreadyAddedWeight;
+            const remainingCartons = item.cartons - previouslyReturnedCartons - alreadyAddedCartons;
+
             return {
                 ...item,
-                remainingWeight: item.quantity - alreadyAddedWeight,
-                remainingCartons: item.cartons - alreadyAddedCartons,
+                previouslyReturnedCartons,
+                previouslyReturnedWeight,
+                remainingWeight: Math.max(0, remainingWeight),
+                remainingCartons: Math.max(0, remainingCartons),
             };
         }).filter(item => item.remainingWeight > 0 || item.remainingCartons > 0);
     }, [invoiceItems, items]);
@@ -172,11 +186,12 @@ export default function NewReturnPage() {
         try {
             await createReturn.mutateAsync({
                 customer_id: parseInt(customerId),
-                original_invoice_id: parseInt(invoiceId), // Link to original invoice
+                original_invoice_id: parseInt(invoiceId),
                 items: items.map(item => ({
                     product_id: item.product_id,
-                    quantity: item.weight, // Backend expects 'quantity' (weight in kg)
-                    unit_price: item.price, // Backend expects 'unit_price'
+                    cartons: item.cartons,    // Required for inventory tracking
+                    quantity: item.weight,     // Weight in kg (for pricing)
+                    unit_price: item.price,    // Price per kg
                 })),
             });
             toast.success('Return recorded successfully');

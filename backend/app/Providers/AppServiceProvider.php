@@ -54,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register Observers
         Invoice::observe(InvoiceObserver::class);
+        \App\Models\InvoiceItem::observe(\App\Observers\InvoiceItemObserver::class);
         Collection::observe(CollectionObserver::class);
         CollectionAllocation::observe(CollectionAllocationObserver::class);
         Shipment::observe(ShipmentObserver::class);

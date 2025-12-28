@@ -15,13 +15,14 @@ class StoreReturnRequest extends FormRequest
     {
         return [
             'customer_id' => ['required', 'exists:customers,id'],
-            'original_invoice_id' => ['nullable', 'exists:invoices,id'],
+            'original_invoice_id' => ['required', 'exists:invoices,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
 
             // Items
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'items.*.cartons' => ['required', 'integer', 'min:1'],  // Required for inventory
+            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],  // Weight in kg
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.shipment_item_id' => ['nullable', 'exists:shipment_items,id'],
         ];
@@ -50,9 +51,13 @@ class StoreReturnRequest extends FormRequest
     {
         return [
             'customer_id.required' => 'Customer is required',
+            'original_invoice_id.required' => 'Original invoice is required for returns',
+            'original_invoice_id.exists' => 'Invoice not found',
             'items.required' => 'At least one item is required',
             'items.*.product_id.required' => 'Product is required',
-            'items.*.quantity.required' => 'Quantity is required',
+            'items.*.cartons.required' => 'Number of cartons is required',
+            'items.*.cartons.min' => 'Cartons must be at least 1',
+            'items.*.quantity.required' => 'Weight is required',
             'items.*.unit_price.required' => 'Price is required',
         ];
     }

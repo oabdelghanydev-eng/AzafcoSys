@@ -30,10 +30,10 @@ class ReturnController extends Controller
     public function index(Request $request)
     {
         $returns = ReturnModel::with(['customer'])
-            ->when($request->customer_id, fn ($q, $id) => $q->where('customer_id', $id))
-            ->when($request->date_from, fn ($q, $d) => $q->whereDate('date', '>=', $d))
-            ->when($request->date_to, fn ($q, $d) => $q->whereDate('date', '<=', $d))
-            ->when($request->status, fn ($q, $s) => $q->where('status', $s))
+            ->when($request->customer_id, fn($q, $id) => $q->where('customer_id', $id))
+            ->when($request->date_from, fn($q, $d) => $q->whereDate('date', '>=', $d))
+            ->when($request->date_to, fn($q, $d) => $q->whereDate('date', '<=', $d))
+            ->when($request->status, fn($q, $s) => $q->where('status', $s))
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->paginate($request->per_page ?? 15);
@@ -52,7 +52,7 @@ class ReturnController extends Controller
             $return = $this->returnService->createReturn(
                 $validated['customer_id'],
                 $validated['items'],
-                $validated['original_invoice_id'] ?? null,
+                $validated['original_invoice_id'],
                 $validated['notes'] ?? null
             );
 

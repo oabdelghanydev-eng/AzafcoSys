@@ -112,10 +112,12 @@ export interface Invoice {
 export interface InvoiceItem {
     id: number;
     product: Pick<Product, 'id' | 'name'>;
-    cartons: number;
-    quantity: number; // total_weight
-    unit_price: number; // price per kg
-    subtotal: number; // line_total
+    cartons: number;                // Total cartons sold (inventory)
+    cartons_returned?: number;      // Cartons already returned
+    quantity: number;               // Total weight sold (kg) - for pricing
+    quantity_returned?: number;     // Weight already returned (kg)
+    unit_price: number;             // Price per kg
+    subtotal: number;               // Line total
 }
 
 export interface CreateInvoiceData {
@@ -281,13 +283,15 @@ export interface Return {
 export interface ReturnItem {
     id: number;
     product: Pick<Product, 'id' | 'name'>;
-    cartons: number;
-    weight: number;
-    quantity?: number; // alias for cartons or units
-    price: number;
-    unit_price?: number; // alias for price
-    subtotal: number;
-    total?: number; // alias for subtotal
+    // Backend fields (authoritative):
+    quantity: number;    // Weight in kg (backend column name)
+    unit_price: number;  // Price per kg
+    subtotal: number;    // quantity × unit_price
+    // Legacy aliases (for backward compatibility with old data):
+    weight?: number;     // @deprecated use quantity
+    price?: number;      // @deprecated use unit_price
+    total?: number;      // @deprecated use subtotal
+    cartons?: number;    // Optional: number of cartons if tracked
 }
 
 export interface CreateReturnData {
@@ -299,8 +303,9 @@ export interface CreateReturnData {
 
 export interface CreateReturnItemData {
     product_id: number;
-    quantity: number;     // Weight in kg (backend expects 'quantity')
-    unit_price: number;   // Price per kg (backend expects 'unit_price')
+    cartons: number;          // Number of cartons returned (inventory)
+    quantity: number;         // Weight in kg (pricing)
+    unit_price: number;       // Price per kg
     shipment_item_id?: number; // Optional: link to shipment item
 }
 

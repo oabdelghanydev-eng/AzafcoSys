@@ -75,14 +75,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Collections
         Route::get('/collections/unpaid-invoices', [CollectionController::class, 'getUnpaidInvoices']);
-        Route::apiResource('collections', CollectionController::class)->except(['update']);
+        Route::apiResource('collections', CollectionController::class)->except(['update', 'destroy']);
+        Route::post('/collections/{collection}/cancel', [CollectionController::class, 'cancel']);
 
         // Returns
         Route::apiResource('returns', ReturnController::class)->except(['update', 'destroy']);
         Route::post('/returns/{return}/cancel', [ReturnController::class, 'cancel']);
 
-        // Expenses
-        Route::apiResource('expenses', ExpenseController::class);
+        // Expenses (update is FORBIDDEN - use cancel instead per AA-2025-12-27)
+        Route::apiResource('expenses', ExpenseController::class)->except(['update']);
+        Route::post('/expenses/{expense}/cancel', [ExpenseController::class, 'cancel']);
     });
 
     // Invoice PDF (doesn't require open day - view only)
@@ -101,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/accounts/summary', [AccountController::class, 'summary']);
     Route::get('/accounts/{account}', [AccountController::class, 'show']);
     Route::get('/accounts/{account}/transactions', [AccountController::class, 'transactions']);
+    Route::post('/accounts/{account}/opening-balance', [AccountController::class, 'setOpeningBalance']);
 
     // Cashbox Operations
     Route::get('/cashbox', [CashboxController::class, 'index']);

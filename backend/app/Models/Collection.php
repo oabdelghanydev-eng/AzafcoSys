@@ -20,11 +20,13 @@ class Collection extends Model
         'amount',
         'payment_method',
         'distribution_method',
-        'status',                   // Critical for cancellation Observer
+        'status',
         'allocated_amount',
         'unallocated_amount',
         'notes',
         'created_by',
+        'cancelled_by',
+        'cancelled_at',
     ];
 
     protected $casts = [
@@ -32,6 +34,7 @@ class Collection extends Model
         'amount' => 'decimal:2',
         'allocated_amount' => 'decimal:2',
         'unallocated_amount' => 'decimal:2',
+        'cancelled_at' => 'datetime',
     ];
 
     // Relationships

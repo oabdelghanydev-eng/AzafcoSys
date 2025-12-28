@@ -17,7 +17,9 @@ class InvoiceItemResource extends JsonResource
             ],
             'shipment_item_id' => $this->shipment_item_id,
             'cartons' => $this->cartons,
+            'cartons_returned' => (int) ($this->cartons_returned ?? 0),
             'quantity' => (float) $this->quantity,
+            'quantity_returned' => (float) ($this->quantity_returned ?? 0),
             'unit_price' => (float) $this->unit_price,
             'subtotal' => (float) $this->subtotal,
         ];

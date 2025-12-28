@@ -182,28 +182,35 @@ export default function ReturnDetailPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Product</TableHead>
-                                    <TableHead className="text-right">Qty</TableHead>
-                                    <TableHead className="text-right">Weight</TableHead>
+                                    <TableHead className="text-right">Weight (kg)</TableHead>
                                     <TableHead className="text-right">Price/KG</TableHead>
                                     <TableHead className="text-right">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {items.map((item: ReturnItem, index: number) => (
-                                    <TableRow key={item.id || index}>
-                                        <TableCell className="font-medium">
-                                            {item.product?.name || 'Product'}
-                                        </TableCell>
-                                        <TableCell className="text-right">{item.quantity}</TableCell>
-                                        <TableCell className="text-right">{item.weight} KG</TableCell>
-                                        <TableCell className="text-right money">
-                                            {formatMoney(item.unit_price)}
-                                        </TableCell>
-                                        <TableCell className="text-right money font-medium">
-                                            {formatMoney(item.total)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                {items.map((item: ReturnItem, index: number) => {
+                                    // quantity = weight in kg, subtotal = calculated amount
+                                    const weight = item.quantity ?? item.weight ?? 0;
+                                    const unitPrice = item.unit_price ?? item.price ?? 0;
+                                    const amount = item.subtotal ?? item.total ?? (weight * unitPrice);
+
+                                    return (
+                                        <TableRow key={item.id || index}>
+                                            <TableCell className="font-medium">
+                                                {item.product?.name || 'Product'}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {typeof weight === 'number' ? weight.toFixed(3) : weight}
+                                            </TableCell>
+                                            <TableCell className="text-right money">
+                                                {formatMoney(unitPrice)}
+                                            </TableCell>
+                                            <TableCell className="text-right money font-medium">
+                                                {formatMoney(amount)}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     ) : (

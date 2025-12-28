@@ -362,7 +362,10 @@ class DailyReportService
     }
 
     /**
-     * Get last closing balance
+     * Get last closing balance.
+     * 
+     * For subsequent days: Use previous day's closing balance.
+     * For first day: Use opening_balance if set, otherwise current balance.
      */
     private function getLastClosingBalance(string $type): float
     {
@@ -375,10 +378,20 @@ class DailyReportService
             return (float) ($lastReport->{"{$type}_closing"} ?? 0);
         }
 
-        // First day - use current account balance
+        // First day - prefer opening_balance if set, otherwise use current balance
         $account = Account::{$type}()->first();
 
-        return (float) ($account?->balance ?? 0);
+        if (!$account) {
+            return 0;
+        }
+
+        // If opening_balance was explicitly set, use it
+        if ($account->opening_balance_set_at !== null) {
+            return (float) $account->opening_balance;
+        }
+
+        // Fallback to current balance (maintains backward compatibility)
+        return (float) $account->balance;
     }
 
     /**

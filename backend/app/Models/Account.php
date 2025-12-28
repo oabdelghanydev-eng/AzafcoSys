@@ -14,12 +14,17 @@ class Account extends Model
         'name',
         'type',
         'balance',
+        'opening_balance',
+        'opening_balance_set_at',
+        'opening_balance_set_by',
         'notes',
         'is_active',
     ];
 
     protected $casts = [
         'balance' => 'decimal:2',
+        'opening_balance' => 'decimal:2',
+        'opening_balance_set_at' => 'datetime',
         'is_active' => 'boolean',
     ];
 

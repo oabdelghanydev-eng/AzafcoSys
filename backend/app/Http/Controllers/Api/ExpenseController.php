@@ -131,32 +131,29 @@ class ExpenseController extends Controller
     }
 
     /**
-     * Update expense
-     * Permission: expenses.edit
+     * Cancel/Delete expense (reverses all effects).
+     * Permission: expenses.delete
+     * 
+     * CRITICAL: Editing expenses is FORBIDDEN because the Observer only handles
+     * created/deleted events. Changing the amount without updating the treasury
+     * would cause permanent ledger corruption.
+     * 
+     * Per Atomic Analysis AA-2025-12-27: "Editing is dangerous and unsafe"
+     * 
+     * Note: Expenses use hard delete (not soft) - the Observer reverses
+     * all treasury and supplier balance effects.
      */
-    public function update(Request $request, Expense $expense): JsonResponse
+    public function cancel(Expense $expense): JsonResponse
     {
-        $this->checkPermission('expenses.edit');
+        $this->checkPermission('expenses.delete');
 
-        $validated = $request->validate([
-            'type' => 'sometimes|required|in:supplier,company',
-            'supplier_id' => 'nullable|exists:suppliers,id',
-            'shipment_id' => 'nullable|exists:shipments,id',
-            'date' => 'sometimes|required|date',
-            'amount' => 'sometimes|required|numeric|min:0.01',
-            'description' => 'sometimes|required|string|max:500',
-            'payment_method' => 'sometimes|required|in:cash,bank',
-            'category' => 'nullable|string|max:100',
-            'notes' => 'nullable|string',
-        ]);
+        // delete() triggers ExpenseObserver::deleted() which reverses:
+        // - Supplier balance (if supplier expense)
+        // - Account balance (cashbox/bank)
+        // - Deletes the transaction record
+        $expense->delete();
 
-        $expense->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'تم تحديث المصروف بنجاح',
-            'data' => new ExpenseResource($expense->fresh(['supplier', 'shipment'])),
-        ]);
+        return $this->success(null, 'تم إلغاء المصروف بنجاح');
     }
 
     /**

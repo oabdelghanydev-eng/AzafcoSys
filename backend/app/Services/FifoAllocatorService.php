@@ -25,9 +25,10 @@ class FifoAllocatorService
         $remaining = $cartons;
 
         // Get available shipment items (FIFO: by fifo_sequence)
+        // Uses model scope instead of raw SQL for maintainability
         $availableItems = ShipmentItem::query()
             ->where('product_id', $productId)
-            ->whereRaw('(cartons + carryover_in_cartons - sold_cartons - carryover_out_cartons) > 0')
+            ->withStock()  // Uses model scope instead of raw SQL
             ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
             ->orderBy('shipments.fifo_sequence', 'asc')
@@ -93,37 +94,45 @@ class FifoAllocatorService
             $totalAllocatedCartons = $allocations->sum('cartons');
             $remainingWeight = $totalWeight;
 
-            foreach ($allocations as $index => $allocation) {
-                // Update shipment item - increment sold_cartons
-                ShipmentItem::where('id', $allocation['shipment_item_id'])
-                    ->increment('sold_cartons', $allocation['cartons']);
+            // Mark that we're creating via FIFO service (for Observer guard)
+            \App\Observers\InvoiceItemObserver::markViaFifoService();
 
-                // Distribute weight proportionally across allocations
-                $isLast = ($index === $allocations->count() - 1);
-                if ($isLast) {
-                    // Last allocation gets remaining weight to avoid rounding issues
-                    $allocatedWeight = $remainingWeight;
-                } else {
-                    // Proportional weight: (cartons / totalCartons) * totalWeight
-                    $allocatedWeight = round(
-                        ($allocation['cartons'] / $totalAllocatedCartons) * $totalWeight,
-                        3
-                    );
-                    $remainingWeight -= $allocatedWeight;
+            try {
+                foreach ($allocations as $index => $allocation) {
+                    // Update shipment item - increment sold_cartons
+                    ShipmentItem::where('id', $allocation['shipment_item_id'])
+                        ->increment('sold_cartons', $allocation['cartons']);
+
+                    // Distribute weight proportionally across allocations
+                    $isLast = ($index === $allocations->count() - 1);
+                    if ($isLast) {
+                        // Last allocation gets remaining weight to avoid rounding issues
+                        $allocatedWeight = $remainingWeight;
+                    } else {
+                        // Proportional weight: (cartons / totalCartons) * totalWeight
+                        $allocatedWeight = round(
+                            ($allocation['cartons'] / $totalAllocatedCartons) * $totalWeight,
+                            3
+                        );
+                        $remainingWeight -= $allocatedWeight;
+                    }
+
+                    // Create invoice item
+                    $item = InvoiceItem::create([
+                        'invoice_id' => $invoiceId,
+                        'product_id' => $productId,
+                        'shipment_item_id' => $allocation['shipment_item_id'],
+                        'cartons' => $allocation['cartons'],
+                        'quantity' => $allocatedWeight,  // actual weight from scale
+                        'unit_price' => $unitPrice,
+                        'subtotal' => $allocatedWeight * $unitPrice,
+                    ]);
+
+                    $createdItems->push($item);
                 }
-
-                // Create invoice item
-                $item = InvoiceItem::create([
-                    'invoice_id' => $invoiceId,
-                    'product_id' => $productId,
-                    'shipment_item_id' => $allocation['shipment_item_id'],
-                    'cartons' => $allocation['cartons'],
-                    'quantity' => $allocatedWeight,  // actual weight from scale
-                    'unit_price' => $unitPrice,
-                    'subtotal' => $allocatedWeight * $unitPrice,
-                ]);
-
-                $createdItems->push($item);
+            } finally {
+                // Always reset flag
+                \App\Observers\InvoiceItemObserver::resetFifoFlag();
             }
 
             return $createdItems;
@@ -148,12 +157,13 @@ class FifoAllocatorService
      */
     public function getAvailableStock(int $productId): int
     {
+        // Uses model accessor for consistency - returns sum of remaining_cartons
         return (int) ShipmentItem::query()
             ->where('product_id', $productId)
-            ->whereRaw('(cartons + carryover_in_cartons - sold_cartons - carryover_out_cartons) > 0')
+            ->withStock()
             ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
-            ->selectRaw('SUM(cartons + carryover_in_cartons - sold_cartons - carryover_out_cartons) as total')
-            ->value('total') ?? 0;
+            ->get()
+            ->sum('remaining_cartons');
     }
 
     /**
@@ -163,7 +173,7 @@ class FifoAllocatorService
     {
         return ShipmentItem::query()
             ->where('product_id', $productId)
-            ->whereRaw('(cartons + carryover_in_cartons - sold_cartons - carryover_out_cartons) > 0')
+            ->withStock()  // Uses model scope instead of raw SQL
             ->whereHas('shipment', fn($q) => $q->whereIn('status', ['open', 'closed']))
             ->join('shipments', 'shipment_items.shipment_id', '=', 'shipments.id')
             ->orderBy('shipments.fifo_sequence', 'asc')
