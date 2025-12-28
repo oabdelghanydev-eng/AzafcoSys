@@ -227,9 +227,9 @@ class InvoiceController extends Controller
             ],
             'items' => $invoice->items->map(fn($item) => [
                 'product_name' => $item->product->name_en ?? $item->product->name,
-                'quantity' => $item->quantity,
-                'total_weight' => (float) $item->total_weight,
-                'unit_price' => (float) $item->unit_price,
+                'cartons' => $item->cartons,                    // عدد الكراتين
+                'total_weight' => (float) $item->quantity,      // الوزن بالكيلو (ADR-001: quantity = weight)
+                'unit_price' => (float) $item->unit_price,      // السعر لكل كيلو
                 'subtotal' => (float) $item->subtotal,
             ])->toArray(),
         ];

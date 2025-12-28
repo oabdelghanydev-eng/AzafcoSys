@@ -73,15 +73,15 @@
                         <span class="en">Product</span>
                     </th>
                     <th style="width: 12%;">
-                        <span class="ar">الكمية</span>
-                        <span class="en">Qty</span>
+                        <span class="ar">الكراتين</span>
+                        <span class="en">Cartons</span>
                     </th>
                     <th style="width: 15%;">
-                        <span class="ar">الوزن (ك)</span>
+                        <span class="ar">الوزن (كجم)</span>
                         <span class="en">Weight (kg)</span>
                     </th>
                     <th style="width: 15%;">
-                        <span class="ar">السعر/ك</span>
+                        <span class="ar">السعر/كجم</span>
                         <span class="en">Price/kg</span>
                     </th>
                     <th style="width: 18%;">
@@ -95,8 +95,8 @@
                     <tr>
                         <td>{{ $index + 1 }}</td>
                         <td>{{ $item['product_name'] }}</td>
-                        <td>{{ $number($item['quantity']) }}</td>
-                        <td>{{ $number($item['total_weight']) }}</td>
+                        <td>{{ number_format($item['cartons'], 0) }}</td>
+                        <td>{{ number_format($item['total_weight'], 2) }}</td>
                         <td class="money">{{ $currency($item['unit_price']) }}</td>
                         <td class="money">{{ $currency($item['subtotal']) }}</td>
                     </tr>
