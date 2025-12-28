@@ -366,7 +366,7 @@ export default function NewCollectionPage() {
                                                 size="sm"
                                                 onClick={() => handleAllocationChange(
                                                     alloc.invoice_id,
-                                                    alloc.invoice_balance.toFixed(2)
+                                                    parseFloat(String(alloc.invoice_balance)).toFixed(2)
                                                 )}
                                             >
                                                 Full
