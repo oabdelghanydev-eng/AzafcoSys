@@ -22,7 +22,7 @@ import { PermissionGate } from '@/components/shared/permission-gate';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingState } from '@/components/shared/loading-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { formatDateShort, formatInteger } from '@/lib/formatters';
+import { formatDateShort } from '@/lib/formatters';
 import { useShipments } from '@/hooks/api/use-shipments';
 import { useDebounce } from '@/hooks/use-debounce';
 import type { Shipment } from '@/types/api';
@@ -49,10 +49,7 @@ function ShipmentCard({ shipment }: { shipment: Shipment }) {
                         </div>
                         {getStatusBadge(shipment.status)}
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{formatDateShort(shipment.date)}</span>
-                        <span className="font-semibold">{formatInteger(shipment.total_cartons || 0)} cartons</span>
-                    </div>
+                    <p className="text-sm text-muted-foreground">{formatDateShort(shipment.date)}</p>
                 </CardContent>
             </Card>
         </Link>
@@ -154,8 +151,6 @@ export default function ShipmentsPage() {
                                     <TableHead>ID</TableHead>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Supplier</TableHead>
-                                    <TableHead>Items</TableHead>
-                                    <TableHead>Cartons</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -169,8 +164,6 @@ export default function ShipmentsPage() {
                                         <TableCell className="font-medium">#{s.id}</TableCell>
                                         <TableCell>{formatDateShort(s.date)}</TableCell>
                                         <TableCell>{s.supplier?.name}</TableCell>
-                                        <TableCell>{s.items?.length || 0}</TableCell>
-                                        <TableCell>{formatInteger(s.total_cartons || 0)}</TableCell>
                                         <TableCell>{getStatusBadge(s.status)}</TableCell>
                                     </TableRow>
                                 ))}
