@@ -82,6 +82,26 @@ class Sev1FixVerificationTest extends TestCase
             'weight_per_unit' => 10.5,
         ]);
 
+        // Create an invoice first (required for createReturn)
+        $invoice = \App\Models\Invoice::factory()->create([
+            'customer_id' => $this->customer->id,
+            'total' => 500,
+            'balance' => 500,
+            'status' => 'active',
+        ]);
+
+        // Create invoice item linked to shipment item
+        \App\Models\InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'product_id' => $product->id,
+            'shipment_item_id' => $shipmentItem->id,
+            'shipment_id' => $shipment->id,
+            'cartons' => 10,
+            'quantity' => 105,
+            'unit_price' => 50.00,
+            'subtotal' => 500.00,
+        ]);
+
         $returnService = app(ReturnService::class);
 
         // Create return through service
@@ -91,10 +111,12 @@ class Sev1FixVerificationTest extends TestCase
                 [
                     'product_id' => $product->id,
                     'cartons' => 2,
-                    'unit_price' => 100.00,
+                    'quantity' => 21.0,  // 2 cartons * 10.5 weight
+                    'unit_price' => 50.00,  // Must match invoice item
                     'shipment_item_id' => $shipmentItem->id,
                 ],
-            ]
+            ],
+            $invoice->id  // Required invoice ID
         );
 
         // Cancel through service - should work

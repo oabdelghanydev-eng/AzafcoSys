@@ -16,6 +16,7 @@ import { LoadingState } from '@/components/shared/loading-state';
 import { RequireOpenDay } from '@/components/shared/require-open-day';
 import { formatMoney } from '@/lib/formatters';
 import { useSuppliers } from '@/hooks/api/use-suppliers';
+import { useShipments } from '@/hooks/api/use-shipments';
 import { useCreateExpense } from '@/hooks/api/use-expenses';
 import { useUIStore } from '@/stores/ui-store';
 
@@ -24,6 +25,7 @@ export default function NewExpensePage() {
     const searchParams = useSearchParams();
     const [type, setType] = useState(searchParams.get('type') || '');
     const [supplierId, setSupplierId] = useState(searchParams.get('supplier_id') || '');
+    const [shipmentId, setShipmentId] = useState(searchParams.get('shipment_id') || '');
     const [amount, setAmount] = useState('');
     const [description, setDescription] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -33,14 +35,22 @@ export default function NewExpensePage() {
 
     // API hooks
     const { data: suppliersData, isLoading: suppliersLoading } = useSuppliers();
+    const { data: shipmentsData, isLoading: shipmentsLoading } = useShipments({ status: 'open' });
     const createExpense = useCreateExpense();
 
     const suppliers = suppliersData?.data ?? suppliersData ?? [];
+    const shipments = shipmentsData?.data ?? shipmentsData ?? [];
     const showSupplierSelect = type === 'supplier' || type === 'supplier_payment';
+    const showShipmentSelect = type === 'supplier' || type === 'supplier_payment';
 
     // Auto-select first supplier for faster data entry when supplier is needed
     if (showSupplierSelect && !supplierId && Array.isArray(suppliers) && suppliers.length > 0) {
         setSupplierId(suppliers[0].id.toString());
+    }
+
+    // Auto-select oldest (first) shipment for faster data entry when shipment is needed
+    if (showShipmentSelect && !shipmentId && Array.isArray(shipments) && shipments.length > 0) {
+        setShipmentId(shipments[0].id.toString());
     }
 
     const handleSubmit = async () => {
@@ -54,6 +64,11 @@ export default function NewExpensePage() {
             return;
         }
 
+        if (showShipmentSelect && !shipmentId) {
+            toast.error('Please select a shipment');
+            return;
+        }
+
         if (!workingDate) {
             toast.error('Please open a day first');
             return;
@@ -64,6 +79,7 @@ export default function NewExpensePage() {
                 date: workingDate,
                 type: type as 'company' | 'supplier' | 'supplier_payment',
                 supplier_id: showSupplierSelect ? parseInt(supplierId) : undefined,
+                shipment_id: showShipmentSelect ? parseInt(shipmentId) : undefined,
                 amount: parseFloat(amount),
                 description,
                 payment_method: paymentMethod as 'cash' | 'bank',
@@ -76,7 +92,7 @@ export default function NewExpensePage() {
         }
     };
 
-    if (suppliersLoading) {
+    if (suppliersLoading || shipmentsLoading) {
         return <LoadingState message="Loading..." />;
     }
 
@@ -129,6 +145,25 @@ export default function NewExpensePage() {
                                         {Array.isArray(suppliers) && suppliers.map((s: { id: number; name: string }) => (
                                             <SelectItem key={s.id} value={s.id.toString()}>
                                                 {s.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
+                        {/* Shipment (conditional - required for supplier expenses) */}
+                        {showShipmentSelect && (
+                            <div className="space-y-2">
+                                <Label>Shipment *</Label>
+                                <Select value={shipmentId} onValueChange={setShipmentId}>
+                                    <SelectTrigger className="touch-target">
+                                        <SelectValue placeholder="Select shipment" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {Array.isArray(shipments) && shipments.map((s) => (
+                                            <SelectItem key={s.id} value={s.id.toString()}>
+                                                SHP-{s.id} ({s.supplier?.name})
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

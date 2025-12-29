@@ -209,6 +209,7 @@ export interface CreateExpenseData {
     amount: number;
     payment_method: PaymentMethod;
     supplier_id?: number;
+    shipment_id?: number;  // Required for supplier and supplier_payment types
     notes?: string;
 }
 

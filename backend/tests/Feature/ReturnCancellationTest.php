@@ -73,30 +73,57 @@ class ReturnCancellationTest extends TestCase
     {
         $returnService = app(ReturnService::class);
 
-        // Create a return worth 200 EGP (decreases customer balance by 200)
+        // Create an invoice first (required for createReturn)
+        $invoice = Invoice::factory()->create([
+            'customer_id' => $this->customer->id,
+            'total' => 500,
+            'balance' => 500,
+            'status' => 'active',
+        ]);
+
+        // Create invoice item linked to shipment item
+        $invoiceItem = \App\Models\InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'product_id' => $this->product->id,
+            'shipment_item_id' => $this->shipmentItem->id,
+            'shipment_id' => $this->shipment->id,
+            'cartons' => 10,
+            'quantity' => 105, // 10 cartons * 10.5 weight
+            'unit_price' => 50.00,
+            'subtotal' => 500.00,
+        ]);
+
+        // Update customer balance after invoice
+        $this->customer->update(['balance' => 1500.00]); // 1000 + 500 invoice
+
+        // Create a return worth 105 EGP (2 cartons * 10.5 weight * 50/kg = 1050, but we use total weight*price)
         $return = $returnService->createReturn(
             $this->customer->id,
             [
                 [
                     'product_id' => $this->product->id,
                     'cartons' => 2,
-                    'unit_price' => 100.00, // 2 cartons * 100 = 200 EGP
+                    'quantity' => 21.0,  // 2 cartons * 10.5 weight per carton
+                    'unit_price' => 50.00,  // Must match invoice item unit_price
                     'shipment_item_id' => $this->shipmentItem->id,
                 ],
-            ]
+            ],
+            $invoice->id  // Required invoice ID
         );
 
-        // Customer balance should have decreased by 200
+        // Customer balance should have decreased by return amount
         $this->customer->refresh();
-        $this->assertEquals(800.00, (float) $this->customer->balance);
+        $returnAmount = 21.0 * 50.00;  // quantity * unit_price = 1050
+        $expectedAfterReturn = 1500.00 - $returnAmount;
+        $this->assertEquals($expectedAfterReturn, (float) $this->customer->balance);
 
         // Cancel the return
         $returnService->cancelReturn($return);
 
-        // Customer balance should increase by 200 (back to 1000)
-        // NOT by 400 (which would happen with double-credit bug)
+        // Customer balance should increase by return amount (back to 1500)
+        // NOT by double (which would happen with double-credit bug)
         $this->customer->refresh();
-        $this->assertEquals(1000.00, (float) $this->customer->balance);
+        $this->assertEquals(1500.00, (float) $this->customer->balance);
     }
 
     /**
@@ -110,6 +137,26 @@ class ReturnCancellationTest extends TestCase
     {
         $returnService = app(ReturnService::class);
 
+        // Create an invoice first (required for createReturn)
+        $invoice = Invoice::factory()->create([
+            'customer_id' => $this->customer->id,
+            'total' => 500,
+            'balance' => 500,
+            'status' => 'active',
+        ]);
+
+        // Create invoice item linked to shipment item
+        $invoiceItem = \App\Models\InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'product_id' => $this->product->id,
+            'shipment_item_id' => $this->shipmentItem->id,
+            'shipment_id' => $this->shipment->id,
+            'cartons' => 10,
+            'quantity' => 105, // 10 cartons * 10.5 weight
+            'unit_price' => 50.00,
+            'subtotal' => 500.00,
+        ]);
+
         // Initial state: 50 sold_cartons
         $initialSoldCartons = $this->shipmentItem->sold_cartons;
         $this->assertEquals(50, $initialSoldCartons);
@@ -121,10 +168,12 @@ class ReturnCancellationTest extends TestCase
                 [
                     'product_id' => $this->product->id,
                     'cartons' => 5,
+                    'quantity' => 52.5,  // 5 cartons * 10.5 weight
                     'unit_price' => 50.00,
                     'shipment_item_id' => $this->shipmentItem->id,
                 ],
-            ]
+            ],
+            $invoice->id  // Required invoice ID
         );
 
         // sold_cartons should have decreased by 5
@@ -147,16 +196,38 @@ class ReturnCancellationTest extends TestCase
     {
         $returnService = app(ReturnService::class);
 
+        // Create an invoice first (required for createReturn)
+        $invoice = Invoice::factory()->create([
+            'customer_id' => $this->customer->id,
+            'total' => 500,
+            'balance' => 500,
+            'status' => 'active',
+        ]);
+
+        // Create invoice item linked to shipment item
+        $invoiceItem = \App\Models\InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'product_id' => $this->product->id,
+            'shipment_item_id' => $this->shipmentItem->id,
+            'shipment_id' => $this->shipment->id,
+            'cartons' => 10,
+            'quantity' => 105,
+            'unit_price' => 50.00,
+            'subtotal' => 500.00,
+        ]);
+
         $return = $returnService->createReturn(
             $this->customer->id,
             [
                 [
                     'product_id' => $this->product->id,
                     'cartons' => 1,
-                    'unit_price' => 100.00,
+                    'quantity' => 10.5,  // 1 carton * 10.5 weight
+                    'unit_price' => 50.00,
                     'shipment_item_id' => $this->shipmentItem->id,
                 ],
-            ]
+            ],
+            $invoice->id  // Required invoice ID
         );
 
         $this->assertEquals('active', $return->status);
