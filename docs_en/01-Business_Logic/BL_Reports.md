@@ -517,10 +517,9 @@ class ShipmentSettlementReportService
     
     private function getSupplierPayments(Shipment $shipment): float
     {
-        // Get transfers/payments to supplier during shipment period
-        return Expense::where('supplier_id', $shipment->supplier_id)
+        // Get payments linked to this shipment (same as supplier expenses)
+        return Expense::where('shipment_id', $shipment->id)
             ->where('type', 'supplier_payment')
-            ->whereBetween('date', [$shipment->date, now()])
             ->sum('amount');
     }
 }

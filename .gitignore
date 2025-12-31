@@ -79,3 +79,6 @@ frontend/*.tsbuildinfo
 *.log
 *.tmp
 *.temp
+
+# Local development scripts
+start-lan-dev.ps1
